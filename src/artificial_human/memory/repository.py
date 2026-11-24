@@ -320,6 +320,14 @@ class MemoryRepository:
             )
         return cursor.rowcount == 1
 
+    def delete_training_example(self, owner_id: str, example_id: str) -> bool:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "DELETE FROM training_examples WHERE id = ? AND owner_id = ?",
+                (example_id, owner_id),
+            )
+        return cursor.rowcount == 1
+
     def export_training_corpus(self, owner_id: str) -> list[dict[str, str]]:
         approved = self.list_training_examples(owner_id, status="approved", limit=500)
         return [
