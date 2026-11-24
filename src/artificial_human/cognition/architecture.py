@@ -27,6 +27,7 @@ class CognitiveCycle:
     prediction: PredictionAssessment
     attended: tuple[tuple[str, str, float], ...]
     working_memory_state: dict[str, object]
+    working_memory_context: tuple[dict[str, str], ...]
 
     @property
     def plan(self) -> GoalPlan:
@@ -183,7 +184,6 @@ class CognitiveArchitecture:
                 salience=1.0,
             )
         )
-        memory_by_id = {item.memory.id: item.memory for item in selected_memories}
         for match in selected_memories:
             workspace.remember(
                 new_working_memory_entry(
@@ -209,7 +209,6 @@ class CognitiveArchitecture:
         attended_trace = tuple(
             (item.reference_id, item.kind, item.weight) for item in attended
         )
-        del memory_by_id
         return CognitiveCycle(
             percept=percept,
             memories=selected_memories,
@@ -218,4 +217,13 @@ class CognitiveArchitecture:
             prediction=prediction,
             attended=attended_trace,
             working_memory_state=workspace.public_state(),
+            working_memory_context=tuple(
+                {
+                    "id": item.id,
+                    "kind": item.kind,
+                    "source": item.source,
+                    "content": item.content,
+                }
+                for item in workspace.context(limit=5)
+            ),
         )
