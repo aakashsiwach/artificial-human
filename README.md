@@ -58,7 +58,7 @@ Personal memory is **off until the owner explicitly grants consent**.
 1. Start the API.
 2. Create a personal-memory consent grant with POST /consents.
 3. Add memories with POST /memories, referencing the returned consent ID.
-4. Inspect, export, correct, or delete saved memories through the API.
+4. Inspect, export, or delete saved memories through the API.
 
 Do not store passwords, API keys, authentication tokens, or other secrets in personal memory.
 
