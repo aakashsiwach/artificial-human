@@ -51,7 +51,7 @@ def test_brain_uses_profile_recalled_memory_and_approved_demonstrations(tmp_path
     )
     assert [item.id for item in approved_examples] == [example.id]
     ranked_examples = BrainService.retriever_rank_examples(
-        "How should I explain a backend concept?",
+        "How should I explain a backend concept with concise technical explanations?",
         approved_examples,
         limit=3,
     )
@@ -61,7 +61,7 @@ def test_brain_uses_profile_recalled_memory_and_approved_demonstrations(tmp_path
     brain = BrainService(provider, LearningSystem(repository))
     response = brain.respond(
         owner_id="owner",
-        query="How should I explain a backend concept?",
+        query="How should I explain a backend concept with concise technical explanations?",
         profile=IdentityProfile(
             owner_id="owner",
             display_name="Owner",
