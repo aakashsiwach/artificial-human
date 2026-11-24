@@ -33,7 +33,7 @@ class ArtificialOrganism:
         identity_path: str | Path | None = None,
         brain_provider: ChatProvider | None = None,
     ) -> None:
-        self.owner_id = owner_id or os.getenv("ARTIFICIAL_HUMAN_OWNER_ID", "local-owner")
+        self.owner_id: str = (\n            owner_id or os.getenv("ARTIFICIAL_HUMAN_OWNER_ID") or "local-owner"\n        )
         self.identity_repository = IdentityRepository(self.owner_id, identity_path)
         self.identity = self.identity_repository.load()
         self.memory = MemoryRepository(database_path)
@@ -93,6 +93,8 @@ class ArtificialOrganism:
     def evaluate_health(self, name: str, value: float, source: str = "manual") -> dict[str, Any]:
         signal, incident = self.immune.evaluate(name, value, source=source)
         if incident is not None:
+            if signal is None:
+                raise RuntimeError("Immune system returned an incident without its signal.")
             containment = self.immune.neutrophil.recommend_containment(incident)
             self.nervous_system.publish("immune.incident_detected", incident)
             proposal = self.regeneration.propose(incident)
