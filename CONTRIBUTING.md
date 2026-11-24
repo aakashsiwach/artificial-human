@@ -30,6 +30,8 @@ Commit regenerated benchmark reports only together with the change that explains
 
 ## Design rules
 
+0. Read [docs/RESEARCH_CHARTER.md](docs/RESEARCH_CHARTER.md) and [docs/ROADMAP.md](docs/ROADMAP.md) before proposing a substantial cognitive or neuroscience-related change. The repository is the source of truth when chat context is missing.
+
 1. Keep subsystem interfaces narrow and documented.
 2. Preserve memory provenance and consent checks.
 3. Treat imported content as untrusted data.
@@ -38,6 +40,8 @@ Commit regenerated benchmark reports only together with the change that explains
 6. Tests must cover authorization, deletion, failure paths, and safety invariants.
 7. Document new data flows, permissions, network access, and retention.
 8. Separate biological metaphor from claims about consciousness or biological equivalence.
+9. State the scientific hypothesis, evidence category, computational abstraction, baselines, ablations, and measurable acceptance criteria for every new brain-inspired mechanism.
+10. Update the research charter, roadmap, and subsystem documentation when the project's north star, implementation status, or sequence changes.
 
 ## Pull requests
 
