@@ -2,6 +2,8 @@
 
 ## Research direction
 
+Read the [Research Charter](RESEARCH_CHARTER.md) before planning a new cognitive subsystem. It is the durable north star for the project, documents the scientific evidence hierarchy and technology strategy, and includes a context-recovery prompt for future AI-assisted sessions.
+
 Artificial Human is intended to be an artificial mind whose architecture is informed by human neuroscience and cognitive science. The human brain is the research reference, not a decorative metaphor. The current implementation is a set of transparent software mechanisms inspired by selected cognitive functions; it is not a neural simulation, a complete human brain, or evidence of consciousness.
 
 The language model is a component used for language generation and deliberation. It is not the architecture itself and must not be treated as a replacement for perception, attention, memory, learning, prediction, executive control, or action selection.
@@ -22,6 +24,14 @@ A request passes through an explicit pipeline:
 The cycle is coordinated by `CognitiveArchitecture` in `src/artificial_human/cognition/architecture.py`. Its component implementations live beside it in the `cognition` package.
 
 ## Biological inspiration and honest implementation status
+## Target research architecture (not yet implemented)
+
+The longer-term target is a closed-loop cognitive system:
+
+**Sensory and interoceptive input → perceptual state estimation → memory retrieval and association → attention and limited workspace → predictive world model → affective appraisal and homeostatic state → goal and action selection → environment interaction → outcome/prediction-error evaluation → learning, plasticity, and memory consolidation.**
+
+Language is a communication and representation capability within this wider system; a language model must not become a substitute for the other cognitive systems. The target is a research direction, not the current runtime. See the [Research Charter](RESEARCH_CHARTER.md) for its stages, evidence requirements, and technology options.
+
 
 | Human cognitive function / system | Current software component | Current status |
 | --- | --- | --- |
@@ -134,5 +144,7 @@ Approved learning examples are supplied as demonstrations. The system does not a
 Metrics include normalized exact match, token precision/recall/F1, and ROUGE-L precision/recall/F1. Inputs are capped at 1,000 tokens for the comparison and report whether truncation occurred. These are surface-form metrics only: paraphrases may score poorly, and matching words do not prove semantic accuracy, decision consistency, or personal identity. Keep evaluation references separate from training demonstrations to reduce data leakage. Evaluation requests and outputs are not stored.
 
 ## What is not implemented yet
+
+The current implementation is a modular computational prototype. It is not a human brain simulation. The following capabilities remain research and implementation work:
 
 This milestone does not implement spiking neurons, synaptic plasticity, a biologically realistic neural network, multimodal vision/hearing, emotional appraisal, homeostatic drives, basal-ganglia-like reinforcement learning, cerebellar motor adaptation, a full autobiographical memory system, or biological sleep stages. These must be researched, specified, implemented, and evaluated as distinct subsystems rather than claimed from an LLM prompt.
