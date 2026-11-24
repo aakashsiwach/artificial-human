@@ -227,6 +227,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         changed = get_organism().memory.revoke_consent(get_organism().owner_id, consent_id)
         if not changed:
             raise HTTPException(status_code=404, detail="Active consent not found")
+        get_organism().cognitive_brain.clear_owner_sessions(get_organism().owner_id)
         return {"revoked": True}
 
     @app.post("/memories", status_code=201)
@@ -270,12 +271,17 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         deleted = get_organism().memory.delete(get_organism().owner_id, memory_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Memory not found")
+        get_organism().cognitive_brain.clear_owner_sessions(get_organism().owner_id)
         return {"deleted": True}
 
     @app.delete("/memories")
     def erase_memories() -> dict[str, int]:
-        count = get_organism().memory.erase_owner(get_organism().owner_id)
-        return {"deleted": count}
+        organism_ref = get_organism()
+        count = organism_ref.memory.erase_owner(organism_ref.owner_id)
+        sessions_cleared = organism_ref.cognitive_brain.clear_owner_sessions(
+            organism_ref.owner_id
+        )
+        return {"deleted": count, "sessions_cleared": sessions_cleared}
 
     @app.post("/training/examples", status_code=201)
     def add_training_example(payload: TrainingExampleRequest) -> dict[str, Any]:
@@ -357,6 +363,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         )
         if not deleted:
             raise HTTPException(status_code=404, detail="Training example not found")
+        organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         return {"deleted": True}
 
     @app.get("/training/corpus")
