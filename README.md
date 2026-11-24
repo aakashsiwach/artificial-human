@@ -38,6 +38,18 @@ The API binds to 127.0.0.1:8000. OpenAPI docs: http://127.0.0.1:8000/docs.
 
 Set ARTIFICIAL_HUMAN_DB_PATH to choose the SQLite database location. The default is .artificial-human/organism.sqlite3.
 
+## Brain / intelligence milestone
+
+- Configurable OpenAI-compatible chat-completions provider for local or remote models.
+- Saved owner identity profile with editable principles, boundaries, and communication preferences.
+- Consent-filtered lexical retrieval over active personal memories.
+- Owner-approved learning demonstrations supplied as style/task examples.
+- Assistant and style-clone drafting modes with evidence references.
+- Provider status and bounded request settings; credentials are not exposed by status or errors.
+- Chat requests are not automatically stored.
+
+See [Brain and intelligence](docs/BRAIN.md) for configuration and API usage. This is model-backed style conditioning, not yet fine-tuning or a complete digital clone.
+
 ## Implemented in this foundation
 
 - Modular Python runtime and subsystem boundaries.

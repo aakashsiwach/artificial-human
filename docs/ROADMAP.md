@@ -17,20 +17,25 @@ The project is intentionally incremental. “Artificial human” describes the l
 - [x] Separate consent scope for owner-supervised learning examples.
 - [x] Pending-review, approve/reject, delete, and approved-corpus export workflow.
 
-## Milestone 1 — personal identity and memory
+## Milestone 1 — model-backed brain and identity
 
-- Define owner-controlled identity schema and import/export format.
-- Add memory review UI and source-level correction.
-- Add embeddings and retrieval behind a provider-neutral interface.
-- Add temporal and relationship-aware memory with explicit retention.
-- Build evaluations for faithful recall and uncertainty.
+- [x] Persist owner-authored identity profiles and boundaries.
+- [x] Add an OpenAI-compatible provider adapter for local and remote models.
+- [x] Add consent-filtered lexical memory retrieval.
+- [x] Supply owner-approved demonstrations in style-clone drafting mode.
+- [x] Expose brain, identity, and provider status APIs.
+- [x] Return evidence references and keep conversations non-persistent by default.
+- [ ] Add semantic/vector and hybrid retrieval with measured retrieval evaluations.
+- [ ] Add structured conversation sessions with explicit opt-in persistence.
 
-## Milestone 2 — cognition
+## Milestone 2 — deeper cognition and clone evaluation
 
-- Add pluggable reasoning provider interfaces and model routing.
-- Add planning, reflection, tool registry, and bounded execution.
-- Evaluate clone fidelity against owner-approved examples.
+- Add multi-step reasoning, reflection, and plan critique.
+- Add a bounded tool registry with per-tool scopes and approval policies.
+- Build clone-fidelity benchmarks from owner-approved held-out examples.
+- Measure voice/style similarity, factual recall, decision consistency, and uncertainty calibration.
 - Distinguish remembered facts, inferences, predictions, and generated content.
+- Evaluate local fine-tuning or other adaptation methods against a held-out baseline.
 
 ## Milestone 3 — body telemetry and immune system
 
