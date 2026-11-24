@@ -45,6 +45,18 @@ Use modern foundation models, deep-learning runtimes, embeddings, graph and rela
 
 The cycle is coordinated by `CognitiveArchitecture`. Each stage has an independent component, a documented input/output boundary, and tests. The novelty score and attention weights are engineering heuristics; they are not neural signals.
 
+### Measured comparison with selected human findings (qualitative)
+
+The [cognitive evaluation](COGNITIVE_EVALUATION.md) records where current software behaviour departs from well-replicated human findings. These are comparisons of task behaviour, not tests of biological mechanism:
+
+| Human finding | Current software behaviour |
+| --- | --- |
+| Salient distractors can capture attention, but goal-relevance usually dominates (Theeuwes, 2010; Desimone & Duncan, 1995) | Fixed linear weighting; high-salience distractors with moderate relevance win selection |
+| Working-memory capacity is about four chunks (Cowan, 2001) | Fixed capacity of seven items; no chunking |
+| Short-term forgetting is better explained by interference than by decay (Lewandowsky, Oberauer & Brown, 2009) | Forgetting is purely decay-driven and content-agnostic; no similarity-based interference |
+| Free recall shows primacy and recency (Murdock, 1962) | Recency only |
+| Semantic incongruity is detected even when words overlap (Kutas & Hillyard, 1980) | Lexical novelty scores contradictions and script violations as familiar |
+
 ## Wider organism
 
 | Biological inspiration | Digital subsystem | Responsibility |
@@ -101,6 +113,6 @@ The current cycle is text-driven and ends in language generation. The longer-ter
 This is a target architecture, not a claim that these modules are implemented. Each addition must have its own hypothesis, interface, benchmark, and safety boundary.
 
 
-For each proposed subsystem, document the biological evidence, the computational hypothesis, the abstraction level, measurable predictions, test datasets, failure modes, and ethical constraints. Prefer small falsifiable models over decorative brain-region labels. Compare alternatives and record when the biological evidence is unsettled.
+For each proposed subsystem, document the biological evidence, the baseline measured by `cognition-eval`, the computational hypothesis, the abstraction level, measurable predictions, test datasets, failure modes, and ethical constraints. Prefer small falsifiable models over decorative brain-region labels. Compare alternatives and record when the biological evidence is unsettled.
 
 The project does not claim current AI is conscious, a literal human, or equivalent to a human brain.

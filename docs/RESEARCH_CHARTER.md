@@ -152,6 +152,10 @@ As of 2026-11-24, the following project foundations are merged.
 - Versioned transactional SQLite migrations.
 - Synthetic memory-retrieval benchmark and offline CI benchmark.
 
+### Evaluation foundation
+
+- `artificial-human cognition-eval`: reproducible, offline evaluation of attention, working memory, prediction/novelty, long-term recall, and six integrated multi-turn scenarios, with tuning/eval splits, fixed seeds, baselines, ablations and failure cases ([research record](COGNITIVE_EVALUATION.md), [report](benchmarks/cognitive-evaluation-report.md)).
+
 ### Wider organism foundation
 
 The repository also contains identity, consent, learning-review, event-bus, circulation/resource-budget, immune/incident, regeneration-proposal, and sleep/consolidation-review foundations. These are software subsystems and safety workflows, not literal organs or biological processes.
@@ -167,10 +171,11 @@ The repository also contains identity, consent, learning-review, event-bus, circ
 - Temporal intent is based on English rules and may fail on unusual wording or other languages.
 - There is no affective appraisal, interoceptive body model, homeostatic drive system, or reinforcement-based action selection.
 - There is no spiking neural substrate or neuromorphic hardware integration.
-- The benchmark is small, synthetic, English-only, and authored within the project. It is a regression tool, not evidence of human-like memory.
+- The benchmarks are small, synthetic, English-only, and authored within the project. They are regression tools, not evidence of human-like cognition. No externally authored evaluation material has yet been adopted.
+- Measured baseline weaknesses (see the cognitive evaluation report): salient distractors defeat the attention formula; per-source normalisation lets weak learning examples take attention slots; working-memory forgetting is decay-driven, recency-only and content-agnostic; lexical novelty treats contradictions and script violations as familiar; retrieval ignores the conversational context held in working memory.
 - The system is not a complete artificial human, a biologically faithful brain simulation, or evidence of consciousness.
 
-The current implementation details and benchmark evidence live in [Brain and intelligence](BRAIN.md), [Long-term memory](MEMORY.md), [Architecture](ARCHITECTURE.md), and [the memory benchmark report](benchmarks/memory-retrieval-report.md).
+The current implementation details and benchmark evidence live in [Brain and intelligence](BRAIN.md), [Long-term memory](MEMORY.md), [Architecture](ARCHITECTURE.md), [the memory benchmark report](benchmarks/memory-retrieval-report.md), and [the cognitive evaluation report](benchmarks/cognitive-evaluation-report.md).
 
 ## 5. Research-to-implementation architecture
 
@@ -248,6 +253,7 @@ The roadmap is maintained in [ROADMAP.md](ROADMAP.md). The following is the acti
 - Add externally authored or independently reviewed evaluation material with suitable licences.
 - Establish multi-turn tasks for retention, interference, context switching, contradiction handling, calibration, and generalisation.
 - Measure end-to-end latency, resource use, failure recovery, and privacy invariants.
+- *Status:* the synthetic baseline (all five areas, multi-turn retention, interference, context switching and contradiction handling, runtime and peak-memory measurement) is implemented. Externally authored material, calibration, generalisation and failure-recovery measures remain open.
 
 ### Stage 2 — associative memory and memory dynamics
 
@@ -432,6 +438,10 @@ This list is a starting point, not an exhaustive review of neuroscience. Revisit
 
 12. **Brown & Varghese (2026), “Computing inspired by the brain: a journey from algorithms to organoids.”** Review spanning brain-inspired algorithms, neuromorphic hardware, and organoid intelligence, including substantial technical, biological, and ethical barriers.  
     https://doi.org/10.1038/s43588-026-01012-x
+
+### Cognitive evaluation
+
+The primary sources motivating the attention, working-memory, prediction and recall benchmarks (for example Desimone & Duncan, 1995; Cowan, 2001; Oberauer et al., 2018, doi:10.1037/bul0000153; Lewandowsky, Oberauer & Brown, 2009; Kutas & Hillyard, 1980), together with the dataset-licence review, are recorded in [COGNITIVE_EVALUATION.md](COGNITIVE_EVALUATION.md#references).
 
 ### Consciousness: keep the uncertainty explicit
 

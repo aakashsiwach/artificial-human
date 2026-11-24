@@ -6,7 +6,7 @@ The long-term goal is a computational artificial mind whose architecture is grou
 
 ## Strategic execution order
 
-1. **Close the measurement gap (next):** build held-out, multi-turn benchmarks for attention, working-memory retention, prediction, and memory recall. Expand beyond the current small, project-authored English memory dataset and record baselines, ablations, failure cases, and resource use.
+1. **Close the measurement gap (in progress):** build held-out, multi-turn benchmarks for attention, working-memory retention, prediction, and memory recall. Expand beyond the current small, project-authored English memory dataset and record baselines, ablations, failure cases, and resource use. *Status:* a synthetic, reproducible baseline across all five areas exists ([report](benchmarks/cognitive-evaluation-report.md)). Externally authored data and calibration/generalisation tasks remain open.
 2. **Deepen memory and learning:** add associative/relational memory, temporal context and contiguity, retrieval-dependent strengthening, forgetting/interference, source monitoring, and owner-reviewed consolidation. Compare each mechanism with the current static memory baseline.
 3. **Ground the mind in the environment:** add permission-scoped multimodal perception, spatial/world-state representations, and uncertainty-aware multisensory integration.
 4. **Add affect and regulation:** research bounded appraisal, interoception, homeostasis, and motivation, with explicit state and no unsupported claims about feelings.
@@ -49,7 +49,10 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
   - [x] Bitemporal records (event, recorded, validity times), supersession links, `known_at`/`valid_at` queries, contradiction preservation.
   - [x] Integration before attention in the cognitive cycle, with retrieval channels in the trace.
   - [x] Reproducible synthetic benchmark with tuning/eval split, baselines and ablations (Recall@K, Precision@K, MRR, nDCG@K).
-- [ ] Build held-out benchmarks for attention, working-memory retention, recall, and prediction. (A synthetic long-term recall benchmark exists; it is not externally authored and does not cover attention, working memory, or prediction.)
+- [ ] Build held-out benchmarks for attention, working-memory retention, recall, and prediction. (Remains open: no externally authored or independently reviewed material has been adopted.)
+  - [x] Reproducible synthetic benchmarks with tuning/eval splits, fixed seeds, baselines, ablations, failure cases and resource measurements for attention, working memory, prediction/novelty, long-term recall, and six integrated multi-turn scenarios. Offline `artificial-human cognition-eval` runs in CI on Python 3.12 and 3.13 ([research record](COGNITIVE_EVALUATION.md), [report](benchmarks/cognitive-evaluation-report.md)).
+  - [ ] Externally authored or independently reviewed evaluation material with a verified, compatible licence (LoCoMo, LongMemEval and STS-B were reviewed and not adopted; see the research record).
+  - [ ] Calibration and generalisation tasks (Charter Stage 1); not yet covered.
 - [ ] Add multimodal perception behind permission-scoped sensory interfaces.
 
 ## Milestone 2 — deeper biological and cognitive mechanisms
@@ -70,7 +73,7 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [ ] Add continual learning with replay, forgetting controls, and catastrophic-forgetting evaluations.
 - [ ] Evaluate model adaptation separately from memory retrieval and prompt conditioning.
 - [ ] Measure factual recall, generalization, decision consistency, calibration, and transfer.
-- [ ] Maintain a benchmark suite that catches regressions across cognitive functions.
+- [ ] Maintain a benchmark suite that catches regressions across cognitive functions. (A baseline suite exists via `cognition-eval`; automatic regression thresholds are not yet enforced in CI.)
 - [ ] Add multimodal perception and grounded prediction as separately evaluated capabilities.
 
 ## Milestone 4 — organism telemetry and immune system

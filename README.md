@@ -50,9 +50,33 @@ Long-term memory can retrieve by meaning as well as by keywords. "What is the bo
 
 - Semantic embeddings come from a **local** model (`fastembed`/ONNX, `BAAI/bge-small-en-v1.5`), installed with `pip install -e ".[semantic]"` and enabled with `ARTIFICIAL_HUMAN_EMBEDDING_BACKEND=fastembed`. Without it, retrieval is lexical + temporal. Remote embedding services need an operator opt-in, HTTPS, and owner `external_embedding` consent.
 - Deleting a memory or revoking consent removes its vectors in the same transaction.
-- A reproducible benchmark compares lexical, semantic, hybrid, and hybrid + temporal retrieval: `artificial-human memory-eval --output-dir docs/benchmarks`. On the synthetic eval split, MRR is 0.651 lexical, 0.807 semantic, 0.833 hybrid, and 0.960 hybrid + temporal. Adding the lexical channel lowers irrelevant-query rejection, from 0.857 to 0.714. See the [report](docs/benchmarks/memory-retrieval-report.md).
+- A reproducible benchmark compares lexical, semantic, hybrid, and hybrid + temporal retrieval: `artificial-human memory-eval --output-dir docs/benchmarks`. On the synthetic eval split (dataset v1.1.0), MRR is 0.681 lexical, 0.824 semantic, 0.848 hybrid, and 0.964 hybrid + temporal. Adding the lexical channel lowers irrelevant-query rejection, from 0.857 to 0.714. See the [report](docs/benchmarks/memory-retrieval-report.md).
 
 Full details, configuration, limitations and the comparison with biological memory are in [Long-term memory](docs/MEMORY.md). The design rationale is in [ADR 0001](docs/adr/0001-semantic-hybrid-temporal-memory.md).
+
+## Cognitive evaluation
+
+`artificial-human cognition-eval` measures the existing subsystems against simple baselines. It runs offline and deterministically, with no LLM and no model download:
+
+- **Attention:** 150 eval candidate sets in five conditions. Compared with relevance-only, salience-only and input-order ranking.
+- **Working memory:** retention against intervening items and capacity, interference, reactivation, eviction and sessions. Compared with FIFO, LRU and salience without decay.
+- **Prediction/novelty:** 36 eval items (18 tuning) with authored labels. Compared with content-word overlap and Jaccard distance.
+- **Memory:** the long-term memory benchmark above.
+- **Integration:** six multi-turn scenarios through the full cognitive cycle.
+
+```bash
+artificial-human cognition-eval --suite all --output-dir docs/benchmarks
+artificial-human cognition-eval --suite working-memory --format json
+```
+
+Selected measured findings:
+
+- The attention formula is worse than relevance-only when salient distractors are present (nDCG@k 0.518 vs 0.973).
+- Working-memory retention is recency-only and content-agnostic.
+- Lexical novelty treats contradictions as familiar (eval AUROC 0.597).
+- Retrieval ignores the conversational context held in working memory.
+
+These are software benchmarks on synthetic data, not measures of human cognition or biological fidelity. See the [cognitive evaluation report](docs/benchmarks/cognitive-evaluation-report.md) and the [research record](docs/COGNITIVE_EVALUATION.md).
 
 **Important:** the attention and novelty calculations are transparent engineering heuristics. Language perception is currently text-only. This milestone does not implement spiking neurons, realistic neural networks, emotion, homeostatic drives, reinforcement learning, or the full range of human cognitive abilities.
 
@@ -113,7 +137,7 @@ Without a session ID, working memory is request-scoped. With one, it is retained
 - `POST /memories/{id}/contradictions` — link conflicting memories.
 - `GET /memories/index/status`, `POST /memories/index/rebuild` — semantic index status and re-indexing.
 
-CLI equivalents: `artificial-human memory-search`, `memory-index status|rebuild`, `memory-eval`.
+CLI equivalents: `artificial-human memory-search`, `memory-index status|rebuild`, `memory-eval`, and `cognition-eval` for the cognitive evaluation.
 
 ## Implemented organism foundation
 
@@ -124,6 +148,7 @@ CLI equivalents: `artificial-human memory-search`, `memory-index status|rebuild`
 - Consent revocation, deletion, owner erasure, and export (including derived embeddings).
 - Versioned, transactional SQLite schema migrations that preserve existing records.
 - Semantic, hybrid and temporal long-term memory retrieval with a measured benchmark.
+- Reproducible, offline cognitive evaluation of attention, working memory, prediction/novelty, memory and multi-turn behaviour.
 - Internal event bus, priority queue, and declared resource budgets.
 - Health signal policies and anomaly-to-incident flow.
 - Reviewable repair proposals and sleep/consolidation previews.
@@ -156,6 +181,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 - [Research Charter and Project North Star](docs/RESEARCH_CHARTER.md)
 - [Long-term memory](docs/MEMORY.md)
 - [Memory retrieval benchmark report](docs/benchmarks/memory-retrieval-report.md)
+- [Cognitive evaluation research record](docs/COGNITIVE_EVALUATION.md) and [report](docs/benchmarks/cognitive-evaluation-report.md)
 - [ADR 0001: semantic, hybrid and temporal memory](docs/adr/0001-semantic-hybrid-temporal-memory.md)
 - [Biological blueprint](docs/BIOLOGICAL_BLUEPRINT.md)
 - [System architecture](docs/ARCHITECTURE.md)
@@ -165,7 +191,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Project status
 
-The project has an executable organism foundation and an integrated, neuroscience-informed cognitive-cycle foundation, including semantic, hybrid, and temporal long-term memory. The next work is to strengthen cognitive-function evaluation, then develop associative memory and memory dynamics before expanding into multimodal perception, affect/homeostasis, action selection, and neural/neuromorphic experiments. It is not yet a complete artificial human, a biologically faithful brain simulation, an autonomous self-repair system, or artificial consciousness. See the [research charter](docs/RESEARCH_CHARTER.md) and [roadmap](docs/ROADMAP.md) for the scientific principles and implementation sequence.
+The project has an executable organism foundation and an integrated, neuroscience-informed cognitive-cycle foundation, including semantic, hybrid, and temporal long-term memory, and a reproducible baseline evaluation of its cognitive subsystems. The evaluation still lacks externally authored data. The next work is to develop associative memory and memory dynamics before expanding into multimodal perception, affect/homeostasis, action selection, and neural/neuromorphic experiments. It is not yet a complete artificial human, a biologically faithful brain simulation, an autonomous self-repair system, or artificial consciousness. See the [research charter](docs/RESEARCH_CHARTER.md) and [roadmap](docs/ROADMAP.md) for the scientific principles and implementation sequence.
 
 ## License
 
