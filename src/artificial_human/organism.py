@@ -33,7 +33,9 @@ class ArtificialOrganism:
         identity_path: str | Path | None = None,
         brain_provider: ChatProvider | None = None,
     ) -> None:
-        self.owner_id: str = (\n            owner_id or os.getenv("ARTIFICIAL_HUMAN_OWNER_ID") or "local-owner"\n        )
+        self.owner_id: str = (
+            owner_id or os.getenv("ARTIFICIAL_HUMAN_OWNER_ID") or "local-owner"
+        )
         self.identity_repository = IdentityRepository(self.owner_id, identity_path)
         self.identity = self.identity_repository.load()
         self.memory = MemoryRepository(database_path)
