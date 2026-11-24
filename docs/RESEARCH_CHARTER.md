@@ -352,12 +352,13 @@ The repository, not a previous conversation, is the authority for project state.
 When resuming work in Claude Code, Codex, ChatGPT, or another engineering assistant:
 
 1. Check the current branch, working tree, and latest commit. Do not discard uncommitted changes.
-2. Read this charter first.
-3. Read [ROADMAP.md](ROADMAP.md), [README.md](../README.md), [BIOLOGICAL_BLUEPRINT.md](BIOLOGICAL_BLUEPRINT.md), [ARCHITECTURE.md](ARCHITECTURE.md), [BRAIN.md](BRAIN.md), and [MEMORY.md](MEMORY.md).
-4. Inspect the latest merged pull requests and CI status; never assume a previously discussed PR is merged.
-5. Identify the current implemented baseline, the next unchecked roadmap item, and any new scientific evidence that changes priorities.
-6. Propose a small, testable implementation phase linked to a research hypothesis.
-7. Do not replace the project vision with a generic chatbot, an agent framework, or an LLM-first design.
+2. Follow the root [AGENTS.md](../AGENTS.md); Claude Code should also follow [CLAUDE.md](../CLAUDE.md).
+3. Read this charter first.
+4. Read [ROADMAP.md](ROADMAP.md), [README.md](../README.md), [BIOLOGICAL_BLUEPRINT.md](BIOLOGICAL_BLUEPRINT.md), [ARCHITECTURE.md](ARCHITECTURE.md), [BRAIN.md](BRAIN.md), and [MEMORY.md](MEMORY.md).
+5. Inspect the latest merged pull requests and CI status; never assume a previously discussed PR is merged.
+6. Identify the current implemented baseline, the next unchecked roadmap item, and any new scientific evidence that changes priorities.
+7. Propose a small, testable implementation phase linked to a research hypothesis.
+8. Do not replace the project vision with a generic chatbot, an agent framework, or an LLM-first design.
 
 ### Reusable project-resumption prompt
 
@@ -366,7 +367,7 @@ You are resuming the Artificial Human project.
 
 The repository is the source of truth, not the chat history.
 
-First inspect git status, branch, latest commits, merged PRs, and CI. Preserve all uncommitted work. Read docs/RESEARCH_CHARTER.md before proposing changes, then read docs/ROADMAP.md, README.md, docs/BIOLOGICAL_BLUEPRINT.md, docs/ARCHITECTURE.md, docs/BRAIN.md, and docs/MEMORY.md.
+First inspect git status, branch, latest commits, merged PRs, and CI. Preserve all uncommitted work. Follow AGENTS.md (and CLAUDE.md in Claude Code). Read docs/RESEARCH_CHARTER.md before proposing changes, then read docs/ROADMAP.md, README.md, docs/BIOLOGICAL_BLUEPRINT.md, docs/ARCHITECTURE.md, docs/BRAIN.md, and docs/MEMORY.md.
 
 Our north star is a computational artificial mind grounded in human neuroscience and cognitive science. We are not building a generic chatbot or merely adding memory to an LLM. The LLM is one component inside a larger cognitive architecture.
 
