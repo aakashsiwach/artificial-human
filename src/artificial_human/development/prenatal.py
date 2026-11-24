@@ -190,11 +190,11 @@ MODALITY_PATHS: Final[dict[PrenatalModality, tuple[str, ...]]] = {
 
 MILESTONES: Final[tuple[DevelopmentalMilestone, ...]] = (
     DevelopmentalMilestone(
-        3, "Neural induction",
-        "The neural plate and early neural patterning begin; timing depends on dating convention.",
+        5, "Neural induction",
+        "The neural plate and early neural patterning begin in obstetric gestational dating.",
     ),
     DevelopmentalMilestone(
-        5, "Neurulation",
+        6, "Neurulation",
         "Neural tube closure and early rostrocaudal patterning occur during early embryonic development.",
     ),
     DevelopmentalMilestone(
