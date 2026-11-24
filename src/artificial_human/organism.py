@@ -12,7 +12,6 @@ from artificial_human.brain.retrieval import MemoryRetriever
 from artificial_human.brain.service import BrainService
 from artificial_human.circulation.scheduler import WorkScheduler
 from artificial_human.core.events import EventBus
-from artificial_human.identity.profile import IdentityProfile
 from artificial_human.identity.repository import IdentityRepository
 from artificial_human.immune.engine import ImmuneSystem
 from artificial_human.learning import LearningSystem
