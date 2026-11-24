@@ -65,6 +65,7 @@ def test_brain_endpoint_uses_consent_memory_and_returns_evidence(tmp_path) -> No
     assert response.json()["model"] == "stub-model"
     assert response.json()["conversation_saved"] is False
     assert response.json()["recalled_memories"][0]["memory_id"] == memory.json()["id"]
+    assert len(response.json()["plan_steps"]) == 4
 
 
 def test_brain_endpoint_returns_service_unavailable_without_provider(tmp_path) -> None:
@@ -102,3 +103,24 @@ def test_revoking_memory_consent_removes_memory_from_brain_context(tmp_path) -> 
     })
     assert response.status_code == 200
     assert response.json()["recalled_memories"] == []
+
+
+def test_style_evaluation_endpoint_returns_reference_metrics_without_saving_chat(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "evaluation.sqlite3",
+        identity_path=tmp_path / "identity.json",
+        brain_provider=StubProvider(),
+    )
+    client = TestClient(create_app(organism))
+    response = client.post("/brain/evaluate-style", json={
+        "message": "Explain this concept in my preferred style.",
+        "reference_response": "I can support that with the available evidence.",
+    })
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "style_clone"
+    assert response.json()["reference_metrics"]["exact_match"] is True
+    assert response.json()["reference_metrics"]["token_f1"] == 1.0
+    assert response.json()["conversation_saved"] is False
+    assert len(response.json()["plan_steps"]) == 4
