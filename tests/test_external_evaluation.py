@@ -280,7 +280,12 @@ def test_digit_span_validation(tmp_path) -> None:
     directory = write_digit_span_fixture(tmp_path / "beh", participants=2)
     target = next(directory.glob("*.tsv"))
     lines = target.read_text(encoding="utf-8").splitlines()
-    lines[1] = lines[1].rsplit("\t", 1)[0] + "\t11111"  # flags no longer match partialScore
+    fields = lines[1].split("\t")
+    # Make the row invalid regardless of which participant's file the filesystem
+    # returns first: every generated row has a positive score, so a zero partial
+    # score must disagree with the per-position correctness flags.
+    fields[7] = "0"
+    lines[1] = "\t".join(fields)
     target.write_text("\n".join(lines) + "\n", encoding="utf-8")
     with pytest.raises(ExternalDatasetError, match="inconsistent"):
         load_digit_span(directory)
