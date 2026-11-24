@@ -103,6 +103,13 @@ class CognitiveArchitecture:
             return []
         return [(item, min(1.0, score / maximum)) for item, score in items]
 
+    @staticmethod
+    def _explicit_salience(metadata: dict[str, Any]) -> float:
+        value = metadata.get("salience", 0.0)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return 0.0
+        return float(value) if 0.0 <= value <= 1.0 else 0.0
+
     def run(
         self,
         *,
@@ -140,7 +147,14 @@ class CognitiveArchitecture:
             if item_id in examples_by_id
         ]
 
-        candidates: list[AttentionCandidate] = []
+        candidates: list[AttentionCandidate] = [
+            AttentionCandidate(
+                reference_id=percept.id,
+                kind="percept",
+                relevance=0.85,
+                salience=prediction.novelty if prediction.comparable else 0.0,
+            )
+        ]
         memory_scores = self._normalise_scores(
             [(item, item.score) for item in retrieved]
         )
@@ -151,6 +165,7 @@ class CognitiveArchitecture:
                     reference_id=match.memory.id,
                     kind="memory",
                     relevance=relevance,
+                    salience=self._explicit_salience(match.memory.metadata),
                 )
             )
         for example, relevance in example_scores:
