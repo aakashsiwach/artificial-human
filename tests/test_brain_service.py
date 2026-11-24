@@ -79,3 +79,7 @@ def test_brain_uses_profile_recalled_memory_and_approved_demonstrations(tmp_path
     assert "RETRIEVED MEMORY EVIDENCE" in provider.messages[1].content
     assert "OWNER-APPROVED STYLE / TASK EXAMPLES" in provider.messages[1].content
     assert response.prompt_tokens == 40
+    assert response.cognitive_trace["perception"]["modality"] == "language"
+    assert response.cognitive_trace["executive_control"]["approval_required"] is True
+    assert "BOUNDED WORKING-MEMORY CONTEXT" in provider.messages[1].content
+    assert response.session_id is None
