@@ -4,7 +4,8 @@ import math
 import re
 from collections import Counter
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from artificial_human.memory.repository import MemoryRecord
 
@@ -65,6 +66,8 @@ def rank_texts(
 class MemoryMatch:
     memory: MemoryRecord
     score: float
+    channels: tuple[str, ...] = ("lexical",)
+    explanation: dict[str, Any] = field(default_factory=dict)
 
 
 class MemoryRetriever:

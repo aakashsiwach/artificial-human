@@ -11,6 +11,7 @@ class AttentionCandidate:
     kind: str
     relevance: float
     salience: float = 0.0
+    channels: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +19,7 @@ class AttendedItem:
     reference_id: str
     kind: str
     weight: float
+    channels: tuple[str, ...] = ()
 
 
 class AttentionSystem:
@@ -52,6 +54,7 @@ class AttentionSystem:
                     reference_id=candidate.reference_id,
                     kind=candidate.kind,
                     weight=round(weight, 4),
+                    channels=candidate.channels,
                 )
             )
         scored.sort(key=lambda item: (-item.weight, item.reference_id))

@@ -13,8 +13,9 @@ Brain functions are distributed across interacting networks. The table below is 
 | Sensory pathways and perception | Perception | Explicit language percepts; multimodal sensing is future work |
 | Selective attention | Attention | Bounded relevance/salience selection |
 | Working-memory networks | Working memory | Capacity-limited volatile workspace |
-| Hippocampal memory formation and recall | Memory | Consent-gated typed memory records and lexical retrieval |
-| Neocortical knowledge representation | Semantic memory | Semantic memory type exists; structured concept learning is future work |
+| Hippocampal memory formation and recall | Memory | Consent-gated typed records; hybrid lexical/semantic/temporal retrieval with explanations |
+| Neocortical knowledge representation | Semantic memory | Meaning-based recall through a frozen pretrained text-embedding model; structured concept learning is future work |
+| Temporal organisation of episodic memory | Temporal memory | Explicit event, recorded and validity times; version links; rule-based temporal cues |
 | Predictive processing | Prediction | Lexical novelty and context-overlap signal |
 | Prefrontal executive functions | Executive control | Deterministic goal planning and approval gates |
 | Language networks | Language interface | Model-backed language understanding and generation |
@@ -71,6 +72,16 @@ Memory types remain distinct because an event, a fact, a skill, a preference, a 
 - **Working:** temporary context for an active cognitive cycle.
 
 Inferred traits must be marked as hypotheses, not facts. The owner must be able to inspect, correct, export, and delete retained information.
+
+### Computational hypotheses for long-term memory (implemented)
+
+Each hypothesis below is a functional analogue, measured in the [memory benchmark](benchmarks/memory-retrieval-report.md). None is a mechanistic model.
+
+1. **Content-addressable recall** (inspired by hippocampal indexing and pattern completion). A dense embedding of a partial or paraphrased cue should retrieve the stored trace better than word overlap. *Measured:* paraphrase and conceptual categories improve over lexical-only. *Leaves out:* learned, owner-specific representations; pattern separation; attractor dynamics.
+2. **Temporal organisation** (inspired by the temporal structure of episodic memory). Explicit event and validity times should let recall answer "now", "previously" and "in January" correctly. *Measured:* temporal and historical categories improve with temporal reasoning enabled. *Leaves out:* drifting temporal context and contiguity effects; the rules are hand-written.
+3. **Source monitoring and belief revision.** Keeping every version with its source, and surfacing conflicts instead of overwriting, should keep historical and contradictory evidence available. *Measured:* both conflicting memories are retrieved, and superseded facts are excluded from "now" queries. *Leaves out:* learned source credibility and reconsolidation-like modification.
+
+The memory model also leaves out consolidation over time, forgetting and interference, retrieval-dependent strengthening, emotional modulation, and multimodal binding. See [Long-term memory §11](MEMORY.md#11-comparison-with-biological-memory).
 
 ## Research requirements before claiming biological fidelity
 

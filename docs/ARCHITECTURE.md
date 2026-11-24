@@ -19,7 +19,7 @@ The model is one component of the cognitive architecture; it does not replace th
 ## Integrated cognitive data flow
 
 1. The perception system converts explicitly supplied language into a `Percept`.
-2. Memory retrieval returns only memories whose `personal_memory` consent remains active.
+2. Memory retrieval runs `HybridMemorySearch` for the requesting owner over memories whose `personal_memory` consent remains active. Lexical, semantic and temporal channels are fused by Reciprocal Rank Fusion. Twice the memory budget is returned so attention can choose among them, and each candidate carries its channels and explanation.
 3. The learning system returns only owner-approved demonstrations under active `personal_learning` consent.
 4. The attention system ranks candidate references and selects a bounded set.
 5. The working-memory system activates selected content in a capacity-limited workspace. No session ID means request-scoped memory; a supplied session ID uses a bounded, owner-scoped process-memory session.
@@ -32,7 +32,9 @@ The model is one component of the cognitive architecture; it does not replace th
 ## Remaining organism modules
 
 - **identity:** owner-authored profile and boundaries.
-- **memory:** SQLite repository enforcing active consent and source provenance.
+- **memory:** SQLite repository enforcing active consent and source provenance, with versioned migrations.
+- **memory.temporal / memory.search / memory.index / memory.embeddings:** temporal model and intent rules, hybrid search with explanations, consent-aware vector indexing, and replaceable embedding backends (local by default; see [ADR 0001](adr/0001-semantic-hybrid-temporal-memory.md)).
+- **memory.benchmark:** synthetic dataset, IR metrics and the reproducible evaluation runner.
 - **sensory:** manual observations only; no ambient device access.
 - **nervous system:** in-process event dispatch.
 - **circulation:** bounded priority queue for internal work.
@@ -43,7 +45,15 @@ The model is one component of the cognitive architecture; it does not replace th
 
 ## Storage and privacy
 
-SQLite is the persistent store. Memory rows retain owner ID, type, content, source, consent grant, timestamp, and metadata. Revoking consent blocks future writes and excludes those records from normal retrieval. Explicit deletion endpoints support removal.
+SQLite is the persistent store. Memory rows retain owner ID, type, content, source, consent grant, recorded time, metadata, and (schema v2) optional event time, validity interval, fact key, epistemic status and correction time. Revoking consent blocks future writes, excludes those records from normal retrieval, and deletes their embeddings. Explicit deletion endpoints support removal.
+
+Schema v2 tables:
+
+- `memory_links` — `supersedes` and `contradicts` relations between an owner's memories, with effective time and note.
+- `memory_embeddings` — one vector per memory and embedding space: model id, version, dimensions, content hash, float32 vector. Deleted with the memory, on consent revocation, or when the model changes and the index is rebuilt.
+- `memory_index_failures` — memory id, space and error class only. Never content.
+
+Migrations are tracked with `PRAGMA user_version`, run in per-version transactions, and never modify existing rows. Semantic indexing is a derived, rebuildable layer. The memory record is always written first and remains the source of truth.
 
 Working memory is separate from persistent memory. Optional working-memory sessions live in process memory, are bounded, owner-scoped, and explicitly clearable. They are never implicitly copied to SQLite.
 
@@ -53,10 +63,11 @@ Working memory is separate from persistent memory. Optional working-memory sessi
 - `GET /brain/cognition/status` reports the active cognitive subsystem implementations.
 - `DELETE /brain/sessions/{session_id}` clears volatile working memory.
 - `GET /brain/status` reports model-provider configuration.
-- Existing identity, consent, memory, learning, immune, regeneration, and sleep endpoints remain available.
+- `POST /memories/search`, `GET /memories/timeline`, `GET|PATCH /memories/{id}`, `POST /memories/{id}/supersede`, `POST /memories/{id}/contradictions`, `GET /memories/index/status` and `POST /memories/index/rebuild` expose long-term memory search, temporal recall, versioning and indexing (see [MEMORY.md](MEMORY.md#8-api-and-cli)).
+- Existing identity, consent, memory, learning, immune, regeneration, and sleep endpoints remain available. Existing memory responses gain fields only.
 
 The API is unauthenticated in this milestone and must remain loopback-only. Do not expose it to a LAN, reverse proxy, or public internet until authentication, authorization, TLS, abuse controls, and audit logging are implemented.
 
 ## Extension points
 
-Future research adapters should implement narrow interfaces for semantic/hybrid retrieval, multimodal sensory processing, affective appraisal, homeostatic drives, action selection, reinforcement learning, temporal/relational memory, neural or spiking-network experiments, host telemetry, test runners, and isolated repair workspaces. Each connector must declare data scopes, network destinations, retention, approval requirements, hypotheses, and evaluation measures.
+Embedding backends already implement the narrow `EmbeddingProvider` interface (`describe`, `embed_documents`, `embed_query`) and declare their locality. Future research adapters should implement similar interfaces for approximate-nearest-neighbour indexing, multimodal sensory processing, affective appraisal, homeostatic drives, action selection, reinforcement learning, relational/associative memory, neural or spiking-network experiments, host telemetry, test runners, and isolated repair workspaces. Each connector must declare data scopes, network destinations, retention, approval requirements, hypotheses, and evaluation measures.

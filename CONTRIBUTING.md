@@ -16,7 +16,17 @@ ruff check .
 mypy src
 pytest --cov=artificial_human --cov-report=term-missing
 artificial-human simulate
+artificial-human memory-eval --backend none   # offline lexical benchmark
 ~~~
+
+The normal test suite never uses the network. Semantic tests use a test-only fake embedding (`tests/conftest.py`). To measure real semantic retrieval, install the optional extra and run the full benchmark. This downloads the model once:
+
+~~~bash
+python -m pip install -e ".[dev,semantic]"
+artificial-human memory-eval --backend fastembed --output-dir docs/benchmarks
+~~~
+
+Commit regenerated benchmark reports only together with the change that explains them. Never tune parameters on the `eval` split.
 
 ## Design rules
 

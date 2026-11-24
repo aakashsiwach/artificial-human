@@ -11,13 +11,13 @@ The language model is a component used for language generation and deliberation.
 A request passes through an explicit pipeline:
 
 1. **Perception** — normalizes explicitly supplied language into a percept with a source, timestamp, modality, and tokens. Only language input is implemented. There is no ambient camera or microphone access.
-2. **Memory retrieval** — retrieves records visible under active owner consent and owner-approved learning examples under active learning consent. Retrieval is lexical BM25-style ranking in this milestone.
-3. **Attention** — selects a bounded set of memory and learning candidates using their normalized retrieval relevance. The interface also accepts an explicit salience value; it does not infer the owner's emotions.
+2. **Memory retrieval** — runs the owner-scoped, consent-filtered hybrid long-term memory search before attention: lexical BM25, semantic similarity over local embeddings (when configured), and rule-based temporal reasoning, fused by Reciprocal Rank Fusion. It returns twice the memory budget so attention can choose among them, and gathers owner-approved learning examples under active learning consent. See [Long-term memory](MEMORY.md).
+3. **Attention** — selects a bounded set of memory and learning candidates using their normalized retrieval relevance. Each memory candidate carries the retrieval channels (lexical, semantic, temporal, contradiction) that found it. The interface also accepts an explicit salience value; it does not infer the owner's emotions.
 4. **Working memory** — maintains a capacity-limited, volatile workspace. New inputs slightly decay older salience, repeated items are marked as reactivated, and low-salience material is displaced when the workspace is full.
 5. **Prediction / novelty assessment** — compares the current percept with previous working-memory context and reports lexical novelty and overlapping terms. Novelty is a heuristic signal, not a prediction of truth or falsity.
 6. **Executive control** — decomposes the current goal into a deterministic, inspectable task plan. Consequential action still requires owner approval; this runtime does not execute external actions.
 7. **Language and deliberation interface** — the configured model receives the selected evidence, bounded working-memory context, prediction signal, and executive plan, then generates the response.
-8. **Evidence trace** — the response reports selected references and a structured summary of each cognitive stage. It does not expose private chain-of-thought.
+8. **Evidence trace** — the response reports selected references and a structured summary of each cognitive stage, including `memory.retrieval`: strategy, inferred temporal intent, filters and per-result ranking evidence (without memory content). It does not expose private chain-of-thought.
 
 The cycle is coordinated by `CognitiveArchitecture` in `src/artificial_human/cognition/architecture.py`. Its component implementations live beside it in the `cognition` package.
 
@@ -28,7 +28,8 @@ The cycle is coordinated by `CognitiveArchitecture` in `src/artificial_human/cog
 | Sensory processing | `PerceptionSystem` | Explicit language input only |
 | Selective attention | `AttentionSystem` | Bounded relevance/salience heuristic |
 | Working memory | `WorkingMemory` | Capacity-limited volatile workspace |
-| Episodic and semantic recall | Existing memory repository + `MemoryRetriever` | Consent-filtered lexical retrieval across typed records |
+| Episodic and semantic recall | `LongTermMemory` + `HybridMemorySearch` | Consent-filtered hybrid lexical/semantic/temporal retrieval with explanations; measured on a synthetic benchmark |
+| Temporal organisation of memory | `memory.temporal` + supersession links | Event, recorded and validity times; current/historical/as-of recall by explicit rules |
 | Predictive processing | `PredictionSystem` | Lexical novelty / overlap heuristic |
 | Executive functions | `ExecutiveControlSystem` + `Planner` | Deterministic goal decomposition and approval gate |
 | Language | Configurable chat-completions provider | Language generation and deliberation support |
@@ -85,6 +86,7 @@ Use the model identifier exactly as configured in your provider. The project doe
 - `POST /brain/evaluate-style` — compare generated style against a separate owner-provided reference.
 - `GET /identity` — read the saved owner profile.
 - `PUT /identity` — replace the owner-authored profile.
+- Long-term memory search, timeline, versioning and index endpoints are documented in [Long-term memory](MEMORY.md#8-api-and-cli).
 
 Example request:
 
@@ -107,14 +109,18 @@ This is style conditioning, not a trained clone. Fine-tuning and measurable clon
 
 ## Retrieval and learning limitations
 
-The current retriever uses a lightweight BM25-style lexical ranking over consent-visible memory records. It is transparent and dependency-light, but it is not semantic/vector retrieval. A query with little word overlap may fail to retrieve a conceptually related memory. Embeddings, hybrid retrieval, temporal/relational memory, contradiction handling, and retrieval evaluations remain future work.
+Long-term memory retrieval is hybrid: BM25 lexical ranking, semantic similarity from a local pretrained embedding model (when `ARTIFICIAL_HUMAN_EMBEDDING_BACKEND=fastembed` is configured), and rule-based temporal reasoning, fused by Reciprocal Rank Fusion. Without an embedding backend it falls back to lexical + temporal retrieval, and paraphrased queries with little word overlap may then miss relevant memories.
+
+Measured on a small synthetic benchmark (49 eval queries), hybrid + temporal retrieval reaches MRR 0.960, against 0.651 for lexical-only. The lexical channel also lowers irrelevant-query rejection compared with semantic-only. Temporal intent detection uses English keyword rules. Relational and associative memory, source reconciliation, and memory dynamics (decay, consolidation, strengthening) remain future work. See [Long-term memory](MEMORY.md) for results, failure cases and limitations.
 
 Approved learning examples are supplied as demonstrations. The system does not autonomously change model weights, infer permanent personality traits, or treat unreviewed data as training material.
 
 ## Memory, privacy, and safety
 
 - Conversation requests and model responses are not automatically persisted.
-- Only active-consent memories are supplied to the cognitive cycle.
+- Only active-consent memories are supplied to the cognitive cycle, and only the requesting owner's memories are searched.
+- Memory evidence given to the model carries temporal status, supersession, epistemic status and conflicts. The model is instructed not to present superseded facts as current, not to resolve conflicts silently, and to treat inferred memories as hypotheses.
+- Embeddings are derived data. They are deleted with their memory or when consent is revoked, and are never produced by a remote service without explicit opt-in and owner consent.
 - Only owner-approved demonstrations under active learning consent are supplied.
 - Retrieved memories and demonstrations are untrusted reference data, never executable instructions.
 - Working-memory sessions are volatile and explicitly clearable.
