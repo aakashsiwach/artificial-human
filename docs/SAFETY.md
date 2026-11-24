@@ -12,6 +12,8 @@
 
 Every memory stores its source and consent ID. A write without active consent is rejected. Revoking consent blocks future writes and excludes those records from standard retrieval. Deletion removes individual records; owner erasure removes all memories and revokes all grants.
 
+Personal clone examples use a separate personal_learning consent grant. New examples are pending review and are excluded from the training corpus until the owner approves them. Rejected examples remain inspectable but are not exported. Revoking the associated consent excludes examples from normal retrieval and export. No model is fine-tuned by this baseline.
+
 This release is a developer baseline, not a certified privacy product. Backups, filesystem permissions, encryption at rest, audit retention, multi-user authorization, and secure key handling require more work before sensitive deployment.
 
 ## Threat model
