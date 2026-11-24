@@ -25,6 +25,8 @@ The project is intentionally incremental. “Artificial human” describes the l
 - [x] Supply owner-approved demonstrations in style-clone drafting mode.
 - [x] Expose brain, identity, and provider status APIs.
 - [x] Return evidence references and keep conversations non-persistent by default.
+- [x] Include a visible task workflow in Brain responses (without exposing hidden chain-of-thought).
+- [x] Add held-out style response evaluation with token F1 and ROUGE-L surface metrics.
 - [ ] Add semantic/vector and hybrid retrieval with measured retrieval evaluations.
 - [ ] Add structured conversation sessions with explicit opt-in persistence.
 

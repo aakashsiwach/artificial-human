@@ -45,6 +45,7 @@ Set ARTIFICIAL_HUMAN_DB_PATH to choose the SQLite database location. The default
 - Consent-filtered lexical retrieval over active personal memories.
 - Owner-approved learning demonstrations supplied as style/task examples.
 - Assistant and style-clone drafting modes with evidence references.
+- Short task plans included in each response and a held-out style evaluation endpoint with lexical metrics.
 - Provider status and bounded request settings; credentials are not exposed by status or errors.
 - Chat requests are not automatically stored.
 

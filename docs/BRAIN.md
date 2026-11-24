@@ -40,6 +40,7 @@ Use the model identifier exactly as configured in your provider. The project doe
 
 - `GET /brain/status` — provider type, model name, configuration status, and whether authentication is configured. It never returns the key.
 - `POST /brain/respond` — request a response in `assistant` or `style_clone` mode.
+- `POST /brain/evaluate-style` — generate a style-clone response and compare it with a separate owner-provided reference.
 - `GET /identity` — read the saved owner profile.
 - `PUT /identity` — replace the owner-authored profile.
 
@@ -52,7 +53,7 @@ Example request:
 }
 ~~~
 
-The response includes the selected model, retrieved memory IDs and sources, approved demonstration IDs, and token usage when provided by the model endpoint.
+The response includes the selected model, a short task plan, retrieved memory IDs and sources, approved demonstration IDs, and token usage when provided by the model endpoint. This plan is an observable task workflow, not private chain-of-thought.
 
 ## Modes
 
@@ -74,3 +75,10 @@ The current retriever uses a lightweight BM25-style lexical ranking over consent
 - The response carries evidence references for owner inspection.
 
 The API remains unauthenticated and must stay bound to loopback. Do not expose it to a LAN or public network.
+
+
+## Clone-style evaluation
+
+`POST /brain/evaluate-style` accepts a task message and a separate reference response written or selected by the owner. The Brain generates a response in `style_clone` mode without receiving that reference in its prompt; the evaluator compares the generated text after generation.
+
+Metrics include normalized exact match, token precision/recall/F1, and ROUGE-L precision/recall/F1. Inputs are capped at 1,000 tokens for the comparison and report whether truncation occurred. These are surface-form metrics only: paraphrases may score poorly, and matching words do not prove semantic accuracy, decision consistency, or personal identity. Keep evaluation references separate from training demonstrations to reduce data leakage. Evaluation requests and outputs are not stored.
