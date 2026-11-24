@@ -50,6 +50,12 @@ def test_brain_uses_profile_recalled_memory_and_approved_demonstrations(tmp_path
         "owner", status="approved"
     )
     assert [item.id for item in approved_examples] == [example.id]
+    ranked_examples = BrainService.retriever_rank_examples(
+        "How should I explain a backend concept?",
+        approved_examples,
+        limit=3,
+    )
+    assert [item.id for item, _ in ranked_examples] == [example.id]
 
     provider = RecordingProvider()
     brain = BrainService(provider, LearningSystem(repository))
