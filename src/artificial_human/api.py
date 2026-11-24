@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
+from datetime import datetime
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
@@ -14,7 +15,15 @@ from artificial_human.brain.providers.base import (
 from artificial_human.brain.service import BrainMode
 from artificial_human.core.models import MemoryKind
 from artificial_human.identity.profile import IdentityProfile
-from artificial_human.memory.repository import ConsentRequiredError
+from artificial_human.memory.index import IndexOutcome
+from artificial_human.memory.repository import (
+    ConsentRequiredError,
+    MemoryNotFoundError,
+    MemoryRecord,
+    MemoryRepository,
+)
+from artificial_human.memory.search import SearchFilters
+from artificial_human.memory.temporal import TimeRange, parse_timestamp
 from artificial_human.organism import ArtificialOrganism
 
 
@@ -28,6 +37,93 @@ class MemoryRequest(BaseModel):
     source: str = Field(min_length=1, max_length=500)
     consent_id: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+    occurred_at: str | None = Field(
+        default=None, description="When the event happened (ISO-8601 with offset)"
+    )
+    valid_from: str | None = Field(default=None, description="When the fact became true")
+    valid_to: str | None = Field(default=None, description="When the fact stopped being true")
+    fact_key: str | None = Field(
+        default=None, max_length=200,
+        description="Stable subject/attribute key, for example owner.employer",
+    )
+    epistemic_status: Literal["asserted", "inferred"] = "asserted"
+
+
+class MemoryCorrectionRequest(BaseModel):
+    content: str | None = Field(default=None, min_length=1, max_length=20_000)
+    metadata: dict[str, Any] | None = None
+    occurred_at: str | None = None
+    valid_from: str | None = None
+    valid_to: str | None = None
+    fact_key: str | None = Field(default=None, max_length=200)
+    epistemic_status: Literal["asserted", "inferred"] | None = None
+
+
+class SupersedeRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=20_000)
+    source: str = Field(min_length=1, max_length=500)
+    consent_id: str
+    kind: MemoryKind | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    occurred_at: str | None = None
+    valid_from: str | None = None
+    valid_to: str | None = None
+    epistemic_status: Literal["asserted", "inferred"] = "asserted"
+    note: str = Field(default="", max_length=2_000)
+
+
+class ContradictionRequest(BaseModel):
+    other_memory_id: str
+    note: str = Field(default="", max_length=2_000)
+
+
+class MemorySearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=4_000)
+    top_k: int = Field(default=5, ge=1, le=100)
+    kinds: list[MemoryKind] = Field(default_factory=list)
+    start: str | None = Field(default=None, description="Time-range start (inclusive)")
+    end: str | None = Field(default=None, description="Time-range end (exclusive)")
+    valid_at: str | None = Field(default=None, description="Only facts valid at this time")
+    known_at: str | None = Field(
+        default=None, description="Only what the system had recorded by this time"
+    )
+    source_prefix: str | None = Field(default=None, max_length=500)
+    fact_key: str | None = Field(default=None, max_length=200)
+    metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
+    include_superseded: bool = True
+    infer_temporal_intent: bool = True
+    include_content: bool = True
+    reference_time: str | None = None
+
+
+class ReindexRequest(BaseModel):
+    full: bool = False
+
+
+def _optional_time(value: str | None) -> datetime | None:
+    return parse_timestamp(value) if value else None
+
+
+def _memory_payload(record: MemoryRecord, *, include_content: bool = True) -> dict[str, Any]:
+    payload = MemoryRepository.record_to_dict(record)
+    payload.pop("owner_id")
+    if not include_content:
+        payload.pop("content")
+    return payload
+
+
+def _index_payload(outcome: IndexOutcome | None) -> dict[str, Any] | None:
+    if outcome is None:
+        return None
+    return {"status": outcome.status, "reason": outcome.reason}
+
+
+def _link_payload(link: Any) -> dict[str, Any]:
+    return {
+        "id": link.id, "relation": link.relation, "from_memory_id": link.from_memory_id,
+        "to_memory_id": link.to_memory_id, "effective_at": link.effective_at,
+        "created_at": link.created_at, "note": link.note,
+    }
 
 
 class TrainingExampleRequest(BaseModel):
@@ -107,12 +203,12 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     def brain_evaluate_style(payload: BrainEvaluationRequest) -> dict[str, Any]:
         organism_ref = get_organism()
         try:
-            memories = organism_ref.memory.list(organism_ref.owner_id, limit=500)
+            # Long-term memory is retrieved inside the cognitive cycle by the
+            # owner-scoped, consent-filtered hybrid search.
             result = organism_ref.cognitive_brain.respond(
                 owner_id=organism_ref.owner_id,
                 query=payload.message,
                 profile=organism_ref.identity,
-                memories=memories,
                 mode="style_clone",
             )
         except ProviderNotConfiguredError as error:
@@ -179,12 +275,12 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     def brain_respond(payload: BrainRequest) -> dict[str, Any]:
         organism_ref = get_organism()
         try:
-            memories = organism_ref.memory.list(organism_ref.owner_id, limit=500)
+            # Long-term memory is retrieved inside the cognitive cycle by the
+            # owner-scoped, consent-filtered hybrid search.
             result = organism_ref.cognitive_brain.respond(
                 owner_id=organism_ref.owner_id,
                 query=payload.message,
                 profile=organism_ref.identity,
-                memories=memories,
                 mode=payload.mode,
                 session_id=payload.session_id,
             )
@@ -232,21 +328,21 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
 
     @app.post("/memories", status_code=201)
     def add_memory(payload: MemoryRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
         try:
-            record = get_organism().memory.add(
-                owner_id=get_organism().owner_id, kind=payload.kind,
+            record, outcome = organism_ref.long_term_memory.add(
+                owner_id=organism_ref.owner_id, kind=payload.kind,
                 content=payload.content, source=payload.source,
                 consent_id=payload.consent_id, metadata=payload.metadata,
+                occurred_at=payload.occurred_at, valid_from=payload.valid_from,
+                valid_to=payload.valid_to, fact_key=payload.fact_key,
+                epistemic_status=payload.epistemic_status,
             )
         except ConsentRequiredError as error:
             raise HTTPException(status_code=403, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
-        return {
-            "id": record.id, "kind": record.kind.value, "content": record.content,
-            "source": record.source, "consent_id": record.consent_id,
-            "created_at": record.created_at, "metadata": record.metadata,
-        }
+        return {**_memory_payload(record), "index": _index_payload(outcome)}
 
     @app.get("/memories")
     def list_memories(limit: int = 100) -> list[dict[str, Any]]:
@@ -254,17 +350,174 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             records = get_organism().memory.list(get_organism().owner_id, limit=limit)
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
-        return [
-            {
-                "id": item.id, "kind": item.kind.value, "content": item.content,
-                "source": item.source, "created_at": item.created_at, "metadata": item.metadata,
-            }
-            for item in records
-        ]
+        return [_memory_payload(item) for item in records]
 
     @app.get("/memories/export")
     def export_memories() -> list[dict[str, Any]]:
         return get_organism().memory.export(get_organism().owner_id)
+
+    @app.post("/memories/search")
+    def search_memories(payload: MemorySearchRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        engine = organism_ref.long_term_memory.search_engine
+        try:
+            start, end = _optional_time(payload.start), _optional_time(payload.end)
+            filters = SearchFilters(
+                kinds=tuple(payload.kinds),
+                time_range=TimeRange(start, end) if start or end else None,
+                valid_at=_optional_time(payload.valid_at),
+                known_at=_optional_time(payload.known_at),
+                source_prefix=payload.source_prefix, fact_key=payload.fact_key,
+                metadata=payload.metadata, include_superseded=payload.include_superseded,
+            )
+            response = engine.search(
+                organism_ref.owner_id, payload.query, top_k=payload.top_k, filters=filters,
+                config=replace(engine.config, use_temporal_intent=payload.infer_temporal_intent),
+                reference_time=_optional_time(payload.reference_time),
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        explanation = response.explain()
+        return {
+            "strategy": response.strategy,
+            "results": [
+                {
+                    "rank": item.rank,
+                    "score": item.score,
+                    "memory": _memory_payload(
+                        item.memory, include_content=payload.include_content
+                    ),
+                    "explanation": item.explanation,
+                }
+                for item in response.results
+            ],
+            "temporal_query": explanation["temporal_query"],
+            "filters": explanation["filters"],
+            "semantic": explanation["semantic"],
+            "reference_time": explanation["reference_time"],
+            "candidate_count": response.candidate_count,
+        }
+
+    @app.get("/memories/timeline")
+    def memory_timeline(
+        start: str | None = None, end: str | None = None, valid_at: str | None = None,
+        known_at: str | None = None, kind: MemoryKind | None = None, limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        organism_ref = get_organism()
+        try:
+            start_time, end_time = _optional_time(start), _optional_time(end)
+            entries = organism_ref.long_term_memory.search_engine.timeline(
+                organism_ref.owner_id,
+                filters=SearchFilters(
+                    kinds=(kind,) if kind else (),
+                    time_range=(
+                        TimeRange(start_time, end_time) if start_time or end_time else None
+                    ),
+                    valid_at=_optional_time(valid_at), known_at=_optional_time(known_at),
+                ),
+                limit=limit,
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return [
+            {"memory": _memory_payload(record), "temporal": profile.as_dict()}
+            for record, profile in entries
+        ]
+
+    @app.get("/memories/index/status")
+    def memory_index_status() -> dict[str, Any]:
+        organism_ref = get_organism()
+        return organism_ref.long_term_memory.status(organism_ref.owner_id)
+
+    @app.post("/memories/index/rebuild")
+    def rebuild_memory_index(payload: ReindexRequest | None = None) -> dict[str, Any]:
+        organism_ref = get_organism()
+        report = organism_ref.long_term_memory.reindex(
+            organism_ref.owner_id, full=bool(payload and payload.full)
+        )
+        return {
+            **report.as_dict(),
+            "status": organism_ref.long_term_memory.status(organism_ref.owner_id),
+        }
+
+    @app.get("/memories/{memory_id}")
+    def inspect_memory(memory_id: str) -> dict[str, Any]:
+        organism_ref = get_organism()
+        repository = organism_ref.memory
+        try:
+            record = repository.get(organism_ref.owner_id, memory_id)
+            chain = repository.version_chain(organism_ref.owner_id, memory_id)
+        except MemoryNotFoundError as error:
+            raise HTTPException(status_code=404, detail="Memory not found") from error
+        info = organism_ref.long_term_memory.index.model_info()
+        indexed = info is not None and memory_id in repository.embeddings(
+            organism_ref.owner_id, info.space, [memory_id]
+        )
+        return {
+            "memory": _memory_payload(record),
+            "versions": [_memory_payload(item) for item in chain],
+            "links": [
+                _link_payload(link) for link in repository.links(organism_ref.owner_id)
+                if memory_id in (link.from_memory_id, link.to_memory_id)
+            ],
+            "semantic_index": {"indexed": indexed, "space": info.space if info else None},
+        }
+
+    @app.patch("/memories/{memory_id}")
+    def correct_memory(memory_id: str, payload: MemoryCorrectionRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        changes = payload.model_dump(exclude_unset=True)
+        for required in ("content", "epistemic_status"):
+            if required in changes and changes[required] is None:
+                raise HTTPException(status_code=400, detail=f"{required} cannot be null")
+        try:
+            record, outcome = organism_ref.long_term_memory.correct(
+                organism_ref.owner_id, memory_id, **changes
+            )
+        except MemoryNotFoundError as error:
+            raise HTTPException(status_code=404, detail="Memory not found") from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
+        return {**_memory_payload(record), "index": _index_payload(outcome)}
+
+    @app.post("/memories/{memory_id}/supersede", status_code=201)
+    def supersede_memory(memory_id: str, payload: SupersedeRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        try:
+            record, link, outcome = organism_ref.long_term_memory.supersede(
+                owner_id=organism_ref.owner_id, memory_id=memory_id, kind=payload.kind,
+                content=payload.content, source=payload.source, consent_id=payload.consent_id,
+                metadata=payload.metadata, occurred_at=payload.occurred_at,
+                valid_from=payload.valid_from, valid_to=payload.valid_to,
+                epistemic_status=payload.epistemic_status, note=payload.note,
+            )
+        except MemoryNotFoundError as error:
+            raise HTTPException(status_code=404, detail="Memory not found") from error
+        except ConsentRequiredError as error:
+            raise HTTPException(status_code=403, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
+        return {
+            "memory": _memory_payload(record),
+            "supersedes": memory_id,
+            "link": _link_payload(link),
+            "index": _index_payload(outcome),
+        }
+
+    @app.post("/memories/{memory_id}/contradictions", status_code=201)
+    def record_contradiction(memory_id: str, payload: ContradictionRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        try:
+            link = organism_ref.memory.link_contradiction(
+                organism_ref.owner_id, memory_id, payload.other_memory_id, note=payload.note
+            )
+        except MemoryNotFoundError as error:
+            raise HTTPException(status_code=404, detail="Memory not found") from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return _link_payload(link)
 
     @app.delete("/memories/{memory_id}")
     def delete_memory(memory_id: str) -> dict[str, bool]:

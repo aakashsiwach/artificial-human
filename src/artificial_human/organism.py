@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from artificial_human import __version__
 from artificial_human.brain.planner import Planner
@@ -11,11 +11,15 @@ from artificial_human.brain.providers.openai_compatible import OpenAICompatibleP
 from artificial_human.brain.retrieval import MemoryRetriever
 from artificial_human.brain.service import BrainService
 from artificial_human.circulation.scheduler import WorkScheduler
+from artificial_human.cognition.architecture import CognitiveArchitecture
 from artificial_human.core.events import EventBus
 from artificial_human.identity.repository import IdentityRepository
 from artificial_human.immune.engine import ImmuneSystem
 from artificial_human.learning import LearningSystem
+from artificial_human.memory.embeddings import EmbeddingProvider, embedding_provider_from_env
 from artificial_human.memory.repository import MemoryRepository
+from artificial_human.memory.search import SearchConfig
+from artificial_human.memory.system import LongTermMemory
 from artificial_human.metabolism.governor import ResourceGovernor
 from artificial_human.regeneration.engine import RepairEngine
 from artificial_human.sensory.manual import ManualSensor
@@ -32,6 +36,8 @@ class ArtificialOrganism:
         database_path: str | Path | None = None,
         identity_path: str | Path | None = None,
         brain_provider: ChatProvider | None = None,
+        embedding_provider: EmbeddingProvider | Literal["env"] | None = "env",
+        search_config: SearchConfig | None = None,
     ) -> None:
         self.owner_id: str = (
             owner_id or os.getenv("ARTIFICIAL_HUMAN_OWNER_ID") or "local-owner"
@@ -40,12 +46,25 @@ class ArtificialOrganism:
         self.identity = self.identity_repository.load()
         self.memory = MemoryRepository(database_path)
         self.learning = LearningSystem(self.memory)
+        # Semantic indexing is off unless explicitly configured; see docs/MEMORY.md.
+        self.embedding_provider = (
+            embedding_provider_from_env() if embedding_provider == "env" else embedding_provider
+        )
+        self.long_term_memory = LongTermMemory(
+            self.memory, self.embedding_provider, search_config or SearchConfig.from_env()
+        )
         self.brain = Planner()
         self.chat_provider = brain_provider or OpenAICompatibleProvider()
+        retriever = MemoryRetriever()
         self.cognitive_brain = BrainService(
             self.chat_provider,
             self.learning,
-            MemoryRetriever(),
+            retriever,
+            architecture=CognitiveArchitecture(
+                retriever=retriever,
+                memory_search=self.long_term_memory.search_engine,
+                learning=self.learning,
+            ),
         )
         self.senses = ManualSensor()
         self.immune = ImmuneSystem()
@@ -75,6 +94,11 @@ class ArtificialOrganism:
                 "brain": "cognitive_cycle_ready" if reasoning["configured"] else "cognitive_cycle_ready_provider_not_configured",
                 "identity": "ready",
                 "memory": "ready_consent_required",
+                "memory_retrieval": (
+                    "hybrid_lexical_semantic_temporal"
+                    if self.embedding_provider is not None
+                    else "lexical_temporal_semantic_not_configured"
+                ),
                 "sensory": "manual_input_only",
                 "immune": "ready",
                 "regeneration": "proposal_only",

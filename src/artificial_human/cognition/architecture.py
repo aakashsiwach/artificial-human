@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 from collections.abc import Sequence
 
@@ -16,6 +16,7 @@ from artificial_human.cognition.working_memory import (
 )
 from artificial_human.learning.system import LearningSystem
 from artificial_human.memory.repository import LearningExample, MemoryRecord
+from artificial_human.memory.search import HybridMemorySearch
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,9 +26,10 @@ class CognitiveCycle:
     demonstrations: tuple[tuple[LearningExample, float], ...]
     executive: ExecutiveState
     prediction: PredictionAssessment
-    attended: tuple[tuple[str, str, float], ...]
+    attended: tuple[tuple[str, str, float, tuple[str, ...]], ...]
     working_memory_state: dict[str, object]
     working_memory_context: tuple[dict[str, str], ...]
+    retrieval: dict[str, Any] = field(default_factory=dict)
 
     @property
     def plan(self) -> GoalPlan:
@@ -49,8 +51,11 @@ class CognitiveCycle:
             "attention": {
                 "selected_count": len(self.attended),
                 "selected": [
-                    {"reference_id": item_id, "kind": kind, "weight": weight}
-                    for item_id, kind, weight in self.attended
+                    {
+                        "reference_id": item_id, "kind": kind, "weight": weight,
+                        "retrieval_channels": list(channels),
+                    }
+                    for item_id, kind, weight, channels in self.attended
                 ],
             },
             "working_memory": self.working_memory_state,
@@ -68,6 +73,7 @@ class CognitiveCycle:
             "memory": {
                 "attended_count": len(self.memories),
                 "memory_ids": [item.memory.id for item in self.memories],
+                "retrieval": self.retrieval,
             },
             "learning": {
                 "attended_demonstration_count": len(self.demonstrations),
@@ -87,6 +93,7 @@ class CognitiveArchitecture:
         prediction: PredictionSystem | None = None,
         executive: ExecutiveControlSystem | None = None,
         retriever: MemoryRetriever | None = None,
+        memory_search: HybridMemorySearch | None = None,
         learning: LearningSystem,
     ) -> None:
         self.perception = perception or PerceptionSystem()
@@ -94,6 +101,7 @@ class CognitiveArchitecture:
         self.prediction = prediction or PredictionSystem()
         self.executive = executive or ExecutiveControlSystem()
         self.retriever = retriever or MemoryRetriever()
+        self.memory_search = memory_search
         self.learning = learning
 
     @staticmethod
@@ -110,7 +118,14 @@ class CognitiveArchitecture:
             "working_memory": "capacity_limited_volatile_workspace",
             "prediction": "lexical_novelty_error_heuristic",
             "executive_control": "goal_decomposition_with_approval_gate",
-            "memory": "consent_filtered_episodic_and_semantic_retrieval",
+            "memory": (
+                "consent_filtered_hybrid_lexical_semantic_temporal_retrieval"
+                if self.memory_search is not None and self.memory_search.index is not None
+                and self.memory_search.index.configured
+                else "consent_filtered_lexical_temporal_retrieval"
+                if self.memory_search is not None
+                else "consent_filtered_lexical_retrieval"
+            ),
             "learning": "owner_approved_demonstrations",
             "language_model": "bounded_generation_and_deliberation_interface",
         }
@@ -122,12 +137,42 @@ class CognitiveArchitecture:
             return 0.0
         return float(value) if 0.0 <= value <= 1.0 else 0.0
 
+    def _retrieve(
+        self,
+        owner_id: str,
+        query: str,
+        memories: Sequence[MemoryRecord] | None,
+        max_memories: int,
+    ) -> tuple[list[MemoryMatch], dict[str, Any]]:
+        """Retrieve long-term memory candidates before attention selection.
+
+        With a configured long-term memory search and no caller-supplied
+        records, the owner-scoped hybrid search runs and returns twice the
+        memory budget so attention can choose among lexical, semantic and
+        temporal candidates. A caller-supplied record list keeps the previous
+        lexical behaviour over exactly those records.
+        """
+        if memories is not None or self.memory_search is None:
+            matches = self.retriever.retrieve(query, memories or (), limit=max_memories)
+            return matches, {"strategy": "lexical_bm25_over_supplied_records"}
+        response = self.memory_search.search(
+            owner_id, query, top_k=min(max(max_memories * 2, 1), 100)
+        )
+        matches = [
+            MemoryMatch(
+                memory=item.memory, score=item.score, channels=item.channels,
+                explanation=item.explanation,
+            )
+            for item in response.results
+        ]
+        return matches, response.explain()
+
     def run(
         self,
         *,
         owner_id: str,
         query: str,
-        memories: Sequence[MemoryRecord],
+        memories: Sequence[MemoryRecord] | None = None,
         workspace: WorkingMemory,
         max_memories: int = 5,
         max_demonstrations: int = 3,
@@ -139,7 +184,7 @@ class CognitiveArchitecture:
             percept, [entry.content for entry in prior_context]
         )
 
-        retrieved = self.retriever.retrieve(query, memories, limit=max_memories)
+        retrieved, retrieval = self._retrieve(owner_id, query, memories, max_memories)
         examples = self.learning.examples(owner_id, status="approved", limit=500)
         ranked_examples = rank_texts(
             query,
@@ -178,6 +223,7 @@ class CognitiveArchitecture:
                     kind="memory",
                     relevance=relevance,
                     salience=self._explicit_salience(match.memory.metadata),
+                    channels=match.channels,
                 )
             )
         for example, relevance in example_scores:
@@ -196,7 +242,7 @@ class CognitiveArchitecture:
         selected_memories = tuple(
             item for item in retrieved
             if (item.memory.id, "memory") in attended_lookup
-        )
+        )[:max_memories]
         selected_demonstrations = tuple(
             item for item in ranked_demonstrations
             if (item[0].id, "learning_example") in attended_lookup
@@ -234,7 +280,7 @@ class CognitiveArchitecture:
 
         executive = self.executive.prepare(query)
         attended_trace = tuple(
-            (item.reference_id, item.kind, item.weight) for item in attended
+            (item.reference_id, item.kind, item.weight, item.channels) for item in attended
         )
         return CognitiveCycle(
             percept=percept,
@@ -244,6 +290,7 @@ class CognitiveArchitecture:
             prediction=prediction,
             attended=attended_trace,
             working_memory_state=workspace.public_state(),
+            retrieval=retrieval,
             working_memory_context=tuple(
                 {
                     "id": item.id,
