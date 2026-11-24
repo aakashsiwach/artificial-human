@@ -171,7 +171,7 @@ The repository also contains identity, consent, learning-review, event-bus, circ
 - Temporal intent is based on English rules and may fail on unusual wording or other languages.
 - There is no affective appraisal, interoceptive body model, homeostatic drive system, or reinforcement-based action selection.
 - There is no spiking neural substrate or neuromorphic hardware integration.
-- The benchmarks are small, synthetic, English-only, and authored within the project. They are regression tools, not evidence of human-like cognition. No externally authored evaluation material has yet been adopted.
+- The benchmarks are small, synthetic, English-only, and authored within the project. They are regression tools, not evidence of human-like cognition. Independently authored data now cover long-term recall (LongMemEval Oracle) and a human digit-span reference, but not attention or prediction.
 - Measured baseline weaknesses (see the cognitive evaluation report): salient distractors defeat the attention formula; per-source normalisation lets weak learning examples take attention slots; working-memory forgetting is decay-driven, recency-only and content-agnostic; lexical novelty treats contradictions and script violations as familiar; retrieval ignores the conversational context held in working memory.
 - The system is not a complete artificial human, a biologically faithful brain simulation, or evidence of consciousness.
 
@@ -253,7 +253,7 @@ The roadmap is maintained in [ROADMAP.md](ROADMAP.md). The following is the acti
 - Add externally authored or independently reviewed evaluation material with suitable licences.
 - Establish multi-turn tasks for retention, interference, context switching, contradiction handling, calibration, and generalisation.
 - Measure end-to-end latency, resource use, failure recovery, and privacy invariants.
-- *Status:* the synthetic baseline (all five areas, multi-turn retention, interference, context switching and contradiction handling, runtime and peak-memory measurement) is implemented. Externally authored material, calibration, generalisation and failure-recovery measures remain open.
+- *Status:* the synthetic baseline (all five areas, multi-turn retention, interference, context switching and contradiction handling, runtime and peak-memory measurement) is implemented. Independently authored data are now used for long-term recall (LongMemEval Oracle, MIT) and as a human working-memory reference (NEMAR on003838 digit span, CC0); see [EXTERNAL_DATASETS.md](benchmarks/EXTERNAL_DATASETS.md). Novelty-score calibration and generalisation tests exist. Still open: external material for attention and prediction, calibration of other scores, cross-language and cross-domain generalisation, and failure-recovery measures. Stage 1 is therefore **not complete**.
 
 ### Stage 2 — associative memory and memory dynamics
 

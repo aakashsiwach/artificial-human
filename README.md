@@ -78,6 +78,13 @@ Selected measured findings:
 
 These are software benchmarks on synthetic data, not measures of human cognition or biological fidelity. See the [cognitive evaluation report](docs/benchmarks/cognitive-evaluation-report.md) and the [research record](docs/COGNITIVE_EVALUATION.md).
 
+**Independent evaluation (opt-in, local data only).** Two independently authored datasets can be evaluated with `--longmemeval-path` and `--digit-span-dir`. Nothing is downloaded automatically, and raw data are never committed; see [EXTERNAL_DATASETS.md](docs/benchmarks/EXTERNAL_DATASETS.md).
+
+- **LongMemEval Oracle** (MIT, 500 held-out questions): turn-level evidence recall@10 is 0.862 lexical and 0.882 hybrid + temporal. Semantic-only is worse than lexical on this data (MRR 0.619 vs 0.685), unlike on the project's synthetic benchmark.
+- **NEMAR digit span** (CC0, 86 participants): humans show strong primacy in serial recall; on the same sequences the software workspace shows pure recency.
+
+See the [external evaluation report](docs/benchmarks/external-evaluation-report.md). The project is still in Stage 1: attention and prediction have no external evaluation data yet.
+
 **Important:** the attention and novelty calculations are transparent engineering heuristics. Language perception is currently text-only. This milestone does not implement spiking neurons, realistic neural networks, emotion, homeostatic drives, reinforcement learning, or the full range of human cognitive abilities.
 
 ## Quick start

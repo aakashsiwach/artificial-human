@@ -1,6 +1,6 @@
 # Cognitive evaluation report
 
-- Generated: 2026-11-24T16:59:03+00:00 · seed `20261124` · Python 3.12.10 (Windows-10)
+- Generated: 2026-11-24T18:24:41+00:00 · seed `20261124` · Python 3.12.10 (Windows-10)
 - Embedding backend: `BAAI/bge-small-en-v1.5` (fastembed, in_process)
 - Suites: attention, working-memory, prediction, memory, integration
 
@@ -149,8 +149,21 @@ Generated tasks use RNG streams derived from (seed, suite, split, condition), so
 
 Consistency: repeat-run identical 1.000, top-k invariant to input order 1.000.
 
+**Generalisation to held-out conditions**
+
+Weight tuned on tuning-split tasks of clean_relevance, salience_informative (20 tasks): relevance weight **0.8**. Tested on eval-split tasks of the unseen conditions salient_distractors, cross_source_normalisation (60 tasks).
+
+| System | In-distribution nDCG@k | Held-out nDCG@k | Gap | Salient distractors selected / task | Weak learning examples selected / task | Highly relevant missed / task |
+| --- | --- | --- | --- | --- | --- | --- |
+| existing_attention | 0.889 | 0.596 | 0.293 | 0.967 | 0.733 | 1.850 |
+| relevance_only | 0.822 | 0.824 | -0.002 | 0.117 | 0.733 | 1.167 |
+| salience_only | 0.620 | 0.205 | 0.414 | 1.383 | 0.467 | 3.200 |
+| input_order | 0.228 | 0.380 | -0.152 | 0.217 | 0.300 | 2.700 |
+| tuned_weight_r0.8 | 0.889 | 0.596 | 0.293 | 0.967 | 0.733 | 1.850 |
+
 **Findings**
 
+- Generalisation (tune on clean + informative salience, test on salient distractors + cross-source): existing 0.889 → 0.596; relevance-only 0.822 → 0.824; weight tuned in-distribution (r=0.8) 0.889 → 0.596.
 - Overall nDCG@k: existing 0.793, relevance-only 0.714, salience-only 0.529, input order 0.298.
 - clean_relevance: existing nDCG@k 0.966 vs relevance-only 0.992.
 - salience_informative: existing nDCG@k 0.812 vs relevance-only 0.652.
@@ -244,6 +257,46 @@ Consistency: repeat-run identical 1.000, top-k invariant to input order 1.000.
 | lru | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
 | salience_no_decay | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
 
+**Generalisation grid**: 216 cells × 3 seeded repetitions (capacity × intervening items × distractor-salience distribution × event ordering). Mean target retention per factor level:
+
+*capacity*
+
+| Policy | 2 | 4 | 7 | 10 |
+| --- | --- | --- | --- | --- |
+| existing_working_memory | 0.385 | 0.654 | 0.776 | 0.837 |
+| fifo | 0.315 | 0.537 | 0.685 | 0.741 |
+| lru | 0.315 | 0.537 | 0.685 | 0.741 |
+| salience_no_decay | 0.372 | 0.658 | 0.813 | 0.870 |
+
+*delay*
+
+| Policy | 0 | 2 | 4 | 8 | 12 | 16 |
+| --- | --- | --- | --- | --- | --- | --- |
+| existing_working_memory | 0.917 | 0.830 | 0.784 | 0.583 | 0.463 | 0.401 |
+| fifo | 0.917 | 0.778 | 0.667 | 0.444 | 0.306 | 0.306 |
+| lru | 0.917 | 0.778 | 0.667 | 0.444 | 0.306 | 0.306 |
+| salience_no_decay | 0.917 | 0.818 | 0.762 | 0.580 | 0.522 | 0.472 |
+
+*distractor salience*
+
+| Policy | low | matched | high |
+| --- | --- | --- | --- |
+| existing_working_memory | 0.833 | 0.611 | 0.545 |
+| fifo | 0.569 | 0.569 | 0.569 |
+| lru | 0.569 | 0.569 | 0.569 |
+| salience_no_decay | 0.917 | 0.744 | 0.375 |
+
+*ordering*
+
+| Policy | targets_first | interleaved | targets_last |
+| --- | --- | --- | --- |
+| existing_working_memory | 0.526 | 0.568 | 0.895 |
+| fifo | 0.375 | 0.417 | 0.917 |
+| lru | 0.375 | 0.417 | 0.917 |
+| salience_no_decay | 0.679 | 0.679 | 0.677 |
+
+In 48 of 216 cells at least one baseline retains more targets than the existing policy.
+
 **Checks**
 
 - PASS: sessions are isolated between owners
@@ -257,6 +310,7 @@ Consistency: repeat-run identical 1.000, top-k invariant to input order 1.000.
 
 **Findings**
 
+- Across a 216-cell grid (capacity × delay × distractor salience × ordering), existing retention by ordering is targets_first 0.526, interleaved 0.568, targets_last 0.895. In 48 cells at least one baseline retains more targets.
 - Retention is content-agnostic: similar and dissimilar distractors give identical retention (difference +0.000). The implementation has no similarity-based interference.
 - With lower-salience distractors, mean retention (capacities 3–9) first drops below 1.0 at 4 intervening items. Multiplicative decay (×0.92 per insertion) eventually pushes older high-salience targets below fresh distractors, so decay rather than content determines forgetting.
 - A low-salience input cannot enter a full workspace: it is evicted on arrival because eviction is applied after insertion.
@@ -289,6 +343,27 @@ Consistency: repeat-run identical 1.000, top-k invariant to input order 1.000.
 | unrelated | unexpected | 1.000 | 1.000 | 1.000 | 0.536 |
 
 Case/punctuation invariance: 1.000. Empty context comparable: no (novelty 0.000).
+
+**Score calibration** (a logistic mapping is fitted on the tuning split, frozen, then applied to the eval split)
+
+| System | Mapping | Brier | ECE | Cal. intercept | Cal. slope | AUROC | False novelty @0.5 | Missed novelty @0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| existing_prediction | uncalibrated | 0.325 | 0.334 | -0.294 | 0.066 | 0.597 | 0.500 | 0.312 |
+| existing_prediction | logistic | 0.240 | 0.051 | 0.086 | 1.144 | 0.597 | 0.200 | 0.750 |
+| existing_prediction | base rate 0.444 | 0.247 | n/a | n/a | n/a | 0.500 | n/a | n/a |
+| content_word_overlap | uncalibrated | 0.347 | 0.371 | -0.255 | 0.017 | 0.575 | 0.500 | 0.250 |
+| content_word_overlap | logistic | 0.241 | 0.188 | 0.064 | 1.209 | 0.575 | 0.400 | 0.750 |
+| content_word_overlap | base rate 0.444 | 0.247 | n/a | n/a | n/a | 0.500 | n/a | n/a |
+| jaccard_distance | uncalibrated | 0.330 | 0.326 | -0.342 | 0.065 | 0.586 | 0.550 | 0.250 |
+| jaccard_distance | logistic | 0.237 | 0.170 | 0.038 | 0.950 | 0.586 | 0.400 | 0.688 |
+| jaccard_distance | base rate 0.444 | 0.247 | n/a | n/a | n/a | 0.500 | n/a | n/a |
+| embedding_distance_reference | uncalibrated | 0.213 | 0.199 | 1.192 | 0.979 | 0.828 | 0.000 | 0.688 |
+| embedding_distance_reference | logistic | 0.179 | 0.202 | -0.387 | 0.969 | 0.828 | 0.350 | 0.250 |
+| embedding_distance_reference | base rate 0.444 | 0.247 | n/a | n/a | n/a | 0.500 | n/a | n/a |
+
+Reliability bins (existing, logistic-calibrated): [0.0, 0.2) n=0; [0.2, 0.4) n=13, predicted 0.34, observed 0.31; [0.4, 0.6) n=23, predicted 0.48, observed 0.52; [0.6, 0.8) n=0; [0.8, 1.0) n=0
+
+Novelty is a score, not a probability. Calibration maps scores to observed frequencies of 'unexpected' labels; it does not make the score a better predictor, and it is unrelated to biological prediction error. With 18 tuning items the fitted mapping is crude.
 
 **Findings**
 
@@ -462,13 +537,13 @@ Memory: the `ablation_*` rows in the memory table remove the lexical or semantic
 
 | Suite | Wall-clock (s) | Peak traced Python memory (KiB) |
 | --- | --- | --- |
-| attention | 1.622 | 1321 |
-| working-memory | 0.616 | 63 |
-| prediction | 2.029 | 101 |
-| memory | 29.113 | 1188 |
-| integration | 0.710 | 131 |
+| attention | 2.231 | 1330 |
+| working-memory | 1.684 | 117 |
+| prediction | 2.748 | 132 |
+| memory | 28.936 | 1199 |
+| integration | 0.745 | 132 |
 
-Total: 34.134 s. Network used by the evaluation: no.
+Total: 36.398 s. Network used by the evaluation: no.
 
 ## 12. Reproducibility
 
