@@ -3,8 +3,8 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from artificial_human.memory.repository import MemoryRecord
 
@@ -32,7 +32,7 @@ def rank_texts(
     tokenized = [(document_id, tokenize(text)) for document_id, text in documents]
     document_frequency = Counter(
         term for term in query_terms
-        for document_id, terms in tokenized
+        for _, terms in tokenized
         if term in set(terms)
     )
     total = len(tokenized)
@@ -49,15 +49,11 @@ def rank_texts(
             if frequency == 0:
                 continue
             df = document_frequency[term]
-            inverse_frequency = math.log(
-                1 + (total - df + 0.5) / (df + 0.5)
-            )
+            inverse_frequency = math.log(1 + (total - df + 0.5) / (df + 0.5))
             denominator = frequency + k1 * (
                 1 - b + b * len(terms) / max(average_length, 1.0)
             )
-            score += inverse_frequency * (
-                frequency * (k1 + 1) / denominator
-            )
+            score += inverse_frequency * (frequency * (k1 + 1) / denominator)
         if score > 0:
             ranked.append((document_id, score))
 
@@ -83,10 +79,7 @@ class MemoryRetriever:
     ) -> list[MemoryMatch]:
         ranked = rank_texts(
             query,
-            [
-                (item.id, f"{item.kind.value} {item.content}")
-                for item in memories
-            ],
+            [(item.id, f"{item.kind.value} {item.content}") for item in memories],
             limit=limit,
         )
         by_id = {item.id: item for item in memories}

@@ -4,6 +4,7 @@ import json
 import os
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any
 
 from artificial_human.identity.profile import IdentityProfile
 
@@ -23,9 +24,14 @@ class IdentityRepository:
         if not self.path.exists():
             return IdentityProfile(owner_id=self.owner_id)
         try:
-            data = json.loads(self.path.read_text(encoding="utf-8"))
+            data: Any = json.loads(self.path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("Identity profile must contain a JSON object.")
             if data.get("owner_id") != self.owner_id:
                 raise ValueError("Identity file belongs to a different owner.")
+            preferences = data.get("communication_preferences", {})
+            if not isinstance(preferences, dict):
+                raise ValueError("communication_preferences must be an object.")
             return IdentityProfile(
                 owner_id=self.owner_id,
                 display_name=str(data.get("display_name", "Owner")),
@@ -33,8 +39,7 @@ class IdentityRepository:
                 principles=tuple(str(item) for item in data.get("principles", [])),
                 boundaries=tuple(str(item) for item in data.get("boundaries", [])),
                 communication_preferences={
-                    str(key): str(value)
-                    for key, value in data.get("communication_preferences", {}).items()
+                    str(key): str(value) for key, value in preferences.items()
                 },
             )
         except (OSError, json.JSONDecodeError, TypeError, AttributeError) as error:

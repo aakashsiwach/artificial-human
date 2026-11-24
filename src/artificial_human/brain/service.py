@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any, Literal, Sequence
+from typing import Any, Literal
+from collections.abc import Sequence
 
 from artificial_human.brain.providers.base import ChatMessage, ChatProvider
-from artificial_human.brain.retrieval import MemoryMatch, MemoryRetriever
+from artificial_human.brain.retrieval import MemoryRetriever
 from artificial_human.identity.profile import IdentityProfile
 from artificial_human.learning.system import LearningSystem
 from artificial_human.memory.repository import MemoryRecord
@@ -26,7 +27,7 @@ class BrainResponse:
 
 
 class BrainService:
-    """Retrieval-augmented reasoning with owner-defined identity and explicit provenance."""
+    """Retrieval-augmented reasoning with owner-defined identity and provenance."""
 
     def __init__(
         self,
@@ -85,9 +86,7 @@ class BrainService:
         if not query.strip():
             raise ValueError("A message is required")
         matches = self.retriever.retrieve(query, memories, limit=max_memories)
-        approved_examples = self.learning.examples(
-            owner_id, status="approved", limit=500
-        )
+        approved_examples = self.learning.examples(owner_id, status="approved", limit=500)
         ranked_examples = self.retriever_rank_examples(
             query, approved_examples, limit=max_demonstrations
         )
@@ -111,7 +110,7 @@ class BrainService:
                 "owner_target": item.target_text[:2000],
                 "source": item.source,
             }
-            for item, score in ranked_examples
+            for item, _ in ranked_examples
         ]
         context = (
             "CURRENT REQUEST:\n"
@@ -149,7 +148,7 @@ class BrainService:
                     "task_category": item.task_category,
                     "source": item.source,
                 }
-                for item, score in ranked_examples
+                for item, _ in ranked_examples
             ),
             prompt_tokens=generation.prompt_tokens,
             completion_tokens=generation.completion_tokens,
