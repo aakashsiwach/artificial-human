@@ -2,6 +2,8 @@
 
 ## Runtime
 
+The [Research Charter](RESEARCH_CHARTER.md) defines the project north star, scientific method, technology-selection criteria, staged roadmap, and context-recovery process. It is the required starting point for substantial architecture changes.
+
 The project is a Python 3.12+ modular monolith with a local SQLite store and a loopback-only FastAPI interface. Modules communicate through explicit calls and a small synchronous event bus. The human brain is the research reference; software modules are transparent computational approximations, not literal biological organs.
 
 ## Cognitive module boundaries
@@ -30,6 +32,12 @@ The model is one component of the cognitive architecture; it does not replace th
 10. The owner can clear a volatile session. Process restart also clears all volatile sessions.
 
 ## Remaining organism modules
+
+## Target cognitive architecture
+
+The current runtime is a text-driven cycle. The long-term target is a closed-loop system that connects sensory and interoceptive input, perceptual state estimation, associative memory, attention, predictive world modelling, affective appraisal, homeostatic state, goal/action selection, environment feedback, learning, and consolidation. Language models remain replaceable components inside the architecture, not the architecture itself.
+
+These are research directions, not implemented runtime modules. Every future component must have a defined hypothesis, input/output contract, measurable task, baseline, ablation, limitations, privacy scope, and safety boundary. See [Research Charter](RESEARCH_CHARTER.md).
 
 - **identity:** owner-authored profile and boundaries.
 - **memory:** SQLite repository enforcing active consent and source provenance, with versioned migrations.
