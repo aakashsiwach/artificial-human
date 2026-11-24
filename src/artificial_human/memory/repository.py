@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 from uuid import uuid4
 
 from artificial_human.core.models import MemoryKind
@@ -101,7 +102,7 @@ class MemoryRepository:
 
     @staticmethod
     def _now() -> str:
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
 
     def grant_consent(self, owner_id: str, purpose: str = "personal_memory") -> ConsentGrant:
         if not owner_id.strip() or not purpose.strip():
@@ -112,7 +113,8 @@ class MemoryRepository:
         )
         with self._connect() as connection:
             connection.execute(
-                "INSERT INTO consents(id, owner_id, purpose, active, created_at) VALUES (?, ?, ?, 1, ?)",
+                """INSERT INTO consents(id, owner_id, purpose, active, created_at)
+                   VALUES (?, ?, ?, 1, ?)""",
                 (grant.id, grant.owner_id, grant.purpose, grant.created_at),
             )
         return grant
