@@ -30,3 +30,12 @@ def test_local_api_consent_memory_and_immune_flow(tmp_path) -> None:
 
     assert client.delete(f"/consents/{grant['id']}").status_code == 200
     assert client.get("/memories").json() == []
+
+def test_root_endpoint_explains_where_to_find_api_docs(tmp_path) -> None:
+    organism = ArtificialOrganism(owner_id="root-test", database_path=tmp_path / "root.sqlite3")
+    response = TestClient(create_app(organism)).get("/")
+
+    assert response.status_code == 200
+    assert response.json()["service"] == "Artificial Human"
+    assert response.json()["docs"] == "/docs"
+    assert response.json()["health"] == "/health"
