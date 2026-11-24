@@ -84,6 +84,7 @@ class ArtificialOrganism:
                 "nervous_system": "in_process",
             },
             "reasoning_provider": reasoning,
+            "cognitive_systems": self.cognitive_brain.architecture.status(),
             "immune_cells": [
                 "dendritic", "neutrophil", "macrophage", "b_cell_memory", "t_cell_verifier"
             ],
