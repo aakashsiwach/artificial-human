@@ -164,6 +164,175 @@ def _table(rows: Mapping[str, Mapping[str, Any]], columns: list[str]) -> list[st
     return lines
 
 
+def _attention_generalisation(data: Mapping[str, Any] | None) -> list[str]:
+    if not data:
+        return []
+    lines = [
+        "**Generalisation to held-out conditions**", "",
+        f"Weight tuned on tuning-split tasks of {', '.join(data['train_conditions'])} "
+        f"({data['tuning_tasks']} tasks): relevance weight **{data['tuned_relevance_weight']}**. "
+        f"Tested on eval-split tasks of the unseen conditions {', '.join(data['held_out_conditions'])} "
+        f"({data['held_out_eval_tasks']} tasks).", "",
+        "| System | In-distribution nDCG@k | Held-out nDCG@k | Gap | Salient distractors selected / task "
+        "| Weak learning examples selected / task | Highly relevant missed / task |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for name, values in data["systems"].items():
+        failures = values["held_out_failure_categories_per_task"]
+        lines.append(
+            f"| {name} | {_fmt(values['in_distribution_ndcg@k'])} | {_fmt(values['held_out_ndcg@k'])} "
+            f"| {_fmt(values['generalisation_gap'])} | {_fmt(failures['salient_distractor_selected'])} "
+            f"| {_fmt(failures['weak_learning_example_selected'])} "
+            f"| {_fmt(failures['highly_relevant_missed'])} |"
+        )
+    return lines + [""]
+
+
+def _wm_generalisation(data: Mapping[str, Any] | None) -> list[str]:
+    if not data:
+        return []
+    lines = [
+        f"**Generalisation grid**: {data['cells']} cells × {data['repetitions_per_cell']} seeded "
+        "repetitions (capacity × intervening items × distractor-salience distribution × event "
+        "ordering). Mean target retention per factor level:", "",
+    ]
+    for factor, levels in data["factors"].items():
+        lines += [f"*{factor.replace('_', ' ')}*", "",
+                  "| Policy | " + " | ".join(levels) + " |",
+                  "| --- | " + " | ".join("---" for _ in levels) + " |"]
+        for policy, by_factor in data["mean_retention_by_factor"].items():
+            lines.append(f"| {policy} | " + " | ".join(
+                _fmt(by_factor[factor][level]) for level in levels) + " |")
+        lines.append("")
+    return lines + [
+        f"In {data['cells_where_a_baseline_retains_more']} of {data['cells']} cells at least one "
+        "baseline retains more targets than the existing policy.", "",
+    ]
+
+
+def _calibration(data: Mapping[str, Any] | None, note: str | None) -> list[str]:
+    if not data:
+        return []
+    lines = [
+        "**Score calibration** (a logistic mapping is fitted on the tuning split, frozen, then "
+        "applied to the eval split)", "",
+        "| System | Mapping | Brier | ECE | Cal. intercept | Cal. slope | AUROC | False novelty @0.5 "
+        "| Missed novelty @0.5 |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for name, values in data.items():
+        for label, key in (("uncalibrated", "uncalibrated_score_as_probability"),
+                           ("logistic", "logistic_calibrated")):
+            if key not in values:
+                continue
+            item = values[key]
+            lines.append(
+                f"| {name} | {label} | {_fmt(item['brier_score'])} | "
+                f"{_fmt(item['expected_calibration_error'])} | {_fmt(item['calibration_intercept'])} "
+                f"| {_fmt(item['calibration_slope'])} | {_fmt(item['auroc'])} "
+                f"| {_fmt(item['false_novelty_rate_at_0.5'])} | {_fmt(item['missed_novelty_rate_at_0.5'])} |"
+            )
+        base = values["base_rate_reference"]
+        lines.append(f"| {name} | base rate {base['probability']:.3f} | {_fmt(base['brier_score'])} "
+                     "| n/a | n/a | n/a | 0.500 | n/a | n/a |")
+    existing = data.get("existing_prediction", {})
+    bins = existing.get("logistic_calibrated", {}).get("reliability_bins", [])
+    if bins:
+        lines += ["", "Reliability bins (existing, logistic-calibrated): " + "; ".join(
+            f"[{item['lower']:.1f}, {item['upper']:.1f}) n={item['count']}"
+            + (f", predicted {item['mean_predicted']:.2f}, observed {item['observed_rate']:.2f}"
+               if item["count"] else "")
+            for item in bins)]
+    return lines + (["", note] if note else []) + [""]
+
+
+def _external_section(suite: Mapping[str, Any]) -> list[str]:
+    lines = [f"### {suite['title']}", "", f"*Evidence category: {suite['evidence_category']}.*", ""]
+    extra = suite["extra"]
+    if suite["suite"] == "longmemeval":
+        meta = extra["dataset"]
+        lines += [
+            f"Source file `{meta['file']}` (sha256 `{meta['sha256']}`, {meta['bytes']} bytes); "
+            f"{meta['questions_evaluated']} of {meta['questions_in_file']} questions evaluated; "
+            f"{meta['sessions']} sessions, {meta['turns']} turns. All questions are held out; "
+            "nothing was tuned on them.", "",
+            "**Turn-level evidence retrieval** (non-abstention questions with labelled turns)", "",
+        ]
+        summary = extra["summary"]
+        columns = ["questions", "turn_recall@1", "turn_recall@5", "turn_recall@10",
+                   "turn_recall@20", "turn_precision@5", "turn_ndcg@10", "turn_mrr"]
+        lines += _table({name: entry["overall"] for name, entry in summary["variants"].items()},
+                        columns) + [""]
+        for grouping in ("by_category", "by_history_sessions", "by_history_turns",
+                         "by_evidence_position", "by_evidence_sessions",
+                         "by_days_since_latest_evidence"):
+            lines += [f"**Turn MRR / recall@10 {grouping.replace('_', ' ')}**", ""]
+            variants = list(summary["variants"])
+            groups = sorted({key for entry in summary["variants"].values() for key in entry[grouping]})
+            lines += ["| Group | n | " + " | ".join(variants) + " |",
+                      "| --- | --- | " + " | ".join("---" for _ in variants) + " |"]
+            for group in groups:
+                first = summary["variants"][variants[0]][grouping].get(group, {})
+                cells = []
+                for variant in variants:
+                    values = summary["variants"][variant][grouping].get(group, {})
+                    cells.append(f"{_fmt(values.get('turn_mrr'))} / {_fmt(values.get('turn_recall@10'))}")
+                lines.append(f"| {group} | {first.get('questions', 0)} | " + " | ".join(cells) + " |")
+            lines.append("")
+        depth = summary["variants"][extra["primary_variant"]]["turn_recall_by_depth"]
+        lines += [f"**Turn recall by retrieval depth ({extra['primary_variant']})**: " + ", ".join(
+            f"@{k} {_fmt(v)}" for k, v in depth.items() if int(k) in (1, 2, 3, 5, 10, 15, 20)), ""]
+        lines += ["**Session level and abstention**", "",
+                  "| Variant | Session recall@1 | Session recall@5 | Session precision@1 | Abstention questions | Rejection rate | Mean results returned |",
+                  "| --- | --- | --- | --- | --- | --- | --- |"]
+        for name, entry in summary["variants"].items():
+            session, abstention = entry["session_level"], entry["abstention"]
+            lines.append(f"| {name} | {_fmt(session.get('session_recall@1'))} | "
+                         f"{_fmt(session.get('session_recall@5'))} | {_fmt(session.get('session_precision@1'))} "
+                         f"| {abstention['questions']} | {_fmt(abstention['rejection_rate'])} "
+                         f"| {_fmt(abstention['mean_results_returned'])} |")
+        lines += ["", f"Owner leaks: {summary['owner_leaks']}; isolation-probe results: "
+                  f"{summary['isolation_probe_results']}; questions without turn labels: "
+                  f"{summary['questions_without_turn_labels']}.", ""]
+    elif suite["suite"] == "digit-span":
+        meta = extra["dataset"]
+        lines += [
+            f"{meta['files']} behavioural files (manifest sha256 `{meta['manifest_sha256']}`), "
+            f"{meta['participants']} participants, {meta['trials']} trials, loads {meta['loads']}, "
+            f"{meta['missing_responses']} empty responses. Participant-level split: "
+            f"{meta['tuning_participants']} tuning / {meta['eval_participants']} eval participants. "
+            "Only aggregates are reported.", "",
+            "| Load | Humans: mean (SD) | Humans p10 / median / p90 | Humans first / middle / last third "
+            "| Software: mean | Software first / middle / last third |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+        humans = extra["human_reference_eval_participants"]
+        software = extra["software_on_identical_sequences"]
+        for load, values in humans.items():
+            shape, soft = values["curve_shape"], software[load]
+            lines.append(
+                f"| {load} | {_fmt(values['mean_proportion_correct'])} ({_fmt(values['sd_across_participants'])}) "
+                f"| {_fmt(values['p10'])} / {_fmt(values['median'])} / {_fmt(values['p90'])} "
+                f"| {_fmt(shape['first_third'])} / {_fmt(shape['middle'])} / {_fmt(shape['last_third'])} "
+                f"| {_fmt(soft['mean_proportion_correct'])} | {_fmt(soft['curve_shape']['first_third'])} / "
+                f"{_fmt(soft['curve_shape']['middle'])} / {_fmt(soft['curve_shape']['last_third'])} |"
+            )
+        lines += ["", "**Held-out human serial-position curves** (mean proportion correct by position)", ""]
+        for load, values in humans.items():
+            lines.append(f"- Load {load}: humans " + ", ".join(_fmt(v) for v in values["serial_position_curve"])
+                         + "; software " + ", ".join(_fmt(v) for v in software[load]["serial_position_curve"]))
+        lines += ["", "**Serial-position RMSE against held-out participants** (lower = closer)", ""]
+        lines += _table({name: {"rmse": value} for name, value in
+                         extra["serial_position_rmse_vs_held_out_humans"].items()}, ["rmse"]) + [""]
+    if suite["checks"]:
+        lines += ["**Checks**", ""] + [
+            f"- {'PASS' if item['passed'] else 'FAIL'}: {item['name']}" for item in suite["checks"]
+        ] + [""]
+    if suite["findings"]:
+        lines += ["**Findings**", ""] + [f"- {finding}" for finding in suite["findings"]] + [""]
+    return lines
+
+
 def _suite_section(suite: Mapping[str, Any]) -> list[str]:
     lines = [f"### {suite['title']}", "", f"*Evidence category: {suite['evidence_category']}.*", ""]
     if suite["systems"]:
@@ -187,6 +356,7 @@ def _suite_section(suite: Mapping[str, Any]) -> list[str]:
         consistency = suite["extra"]["consistency"]
         lines += ["", f"Consistency: repeat-run identical {_fmt(consistency['repeat_run_identical'])}, "
                   f"top-k invariant to input order {_fmt(consistency['topk_permutation_invariance'])}.", ""]
+        lines += _attention_generalisation(suite["extra"].get("generalisation"))
     elif name == "working-memory":
         curves = suite["extra"]["delayed_retention_curves"]
         delays = list(next(iter(curves.values()))["retention_by_intervening_items"])
@@ -216,6 +386,7 @@ def _suite_section(suite: Mapping[str, Any]) -> list[str]:
         for policy, values in positions.items():
             lines.append(f"| {policy} | " + " | ".join(_fmt(values[p]) for p in order) + " |")
         lines.append("")
+        lines += _wm_generalisation(suite["extra"].get("generalisation_grid"))
     elif name == "prediction":
         systems = list(suite["systems"])
         lines += ["**Mean novelty by category**", "",
@@ -229,6 +400,7 @@ def _suite_section(suite: Mapping[str, Any]) -> list[str]:
         lines += ["", f"Case/punctuation invariance: {_fmt(extra['case_and_punctuation_invariance'])}. "
                   f"Empty context comparable: {_fmt(extra['empty_context_comparable'])} "
                   f"(novelty {_fmt(extra['empty_context_novelty'])}).", ""]
+        lines += _calibration(extra.get("calibration"), extra.get("calibration_note"))
     elif name == "memory":
         extra = suite["extra"]
         model = extra["embedding_model"]
@@ -326,6 +498,8 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "prediction": "novelty threshold per system (balanced accuracy)",
         "memory": "semantic similarity threshold",
         "integration": "none (fixed scenarios)",
+        "longmemeval": "none: every external question is held out",
+        "digit-span": "fitting human reference models only (participant-level split)",
     }
     for name, suite in suites.items():
         lines.append(f"| {name} | {suite['splits'].get('tuning', 0)} | "
@@ -382,4 +556,20 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "## 13. Limitations", "", _LIMITATIONS, "",
         "## 14. Research questions for the next phase", "", _QUESTIONS, "",
     ]
+    external = [name for name in ("longmemeval", "digit-span") if name in suites]
+    if external:
+        lines += [
+            "## 15. Independently authored datasets (opt-in)", "",
+            "These suites read locally downloaded external data (see "
+            "[EXTERNAL_DATASETS.md](EXTERNAL_DATASETS.md)). Raw data are never committed, and "
+            "outputs contain no conversation text, question text, or participant identifiers.", "",
+            "```",
+            "artificial-human cognition-eval --suite longmemeval --suite digit-span \\",
+            "  --longmemeval-path external-data/longmemeval/longmemeval_oracle.json \\",
+            "  --digit-span-dir external-data/nemar/on003838/beh --report-stem external-evaluation \\",
+            "  --output-dir docs/benchmarks",
+            "```", "",
+        ]
+        for name in external:
+            lines += _external_section(suites[name])
     return "\n".join(lines)

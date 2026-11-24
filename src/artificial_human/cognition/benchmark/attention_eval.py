@@ -118,6 +118,79 @@ def _failure(task: AttentionTask, ranking: list[str]) -> dict[str, Any] | None:
             "selected_irrelevant": describe[0], "excluded_highly_relevant": describe[1]}
 
 
+TRAIN_CONDITIONS: tuple[str, ...] = ("clean_relevance", "salience_informative")
+HELD_OUT_CONDITIONS: tuple[str, ...] = ("salient_distractors", "cross_source_normalisation")
+WEIGHT_GRID: tuple[float, ...] = tuple(round(0.1 * step, 1) for step in range(10, -1, -1))
+
+
+def _failure_categories(tasks: Sequence[AttentionTask], ranker: Ranker) -> dict[str, float]:
+    """Mean count per task of each failure type in the selected top-k."""
+    counts = {"salient_distractor_selected": 0, "weak_learning_example_selected": 0,
+              "other_irrelevant_selected": 0, "highly_relevant_missed": 0}
+    for task in tasks:
+        ranking = ranker(task.candidates)
+        chosen = set(ranking[: task.k])
+        for candidate in task.candidates:
+            grade = task.grades[candidate.reference_id]
+            if candidate.reference_id in chosen and grade == 0:
+                if candidate.salience >= 0.9:
+                    counts["salient_distractor_selected"] += 1
+                elif candidate.kind == "learning_example":
+                    counts["weak_learning_example_selected"] += 1
+                else:
+                    counts["other_irrelevant_selected"] += 1
+            elif candidate.reference_id not in chosen and grade == 2:
+                counts["highly_relevant_missed"] += 1
+    return {key: round(value / len(tasks), 4) if tasks else 0.0 for key, value in counts.items()}
+
+
+def attention_generalisation(tasks: Sequence[AttentionTask]) -> dict[str, Any]:
+    """Tune on two conditions (tuning split), test on two unseen conditions (eval split).
+
+    Only the weight of the documented formula is tuned, and only on tuning-split
+    tasks of the training conditions. Held-out conditions never influence it.
+    """
+    tune = [t for t in tasks if t.split == "tuning" and t.condition in TRAIN_CONDITIONS]
+    in_distribution = [t for t in tasks if t.split == "eval" and t.condition in TRAIN_CONDITIONS]
+    held_out = [t for t in tasks if t.split == "eval" and t.condition in HELD_OUT_CONDITIONS]
+
+    def mean_ndcg(ranker: Ranker, subset: Sequence[AttentionTask]) -> float:
+        return mean([_score(task, ranker(task.candidates))["ndcg@k"] for task in subset])
+
+    scores = {weight: mean_ndcg(_weighted(weight), tune) for weight in WEIGHT_GRID}
+    tuned_weight = max(WEIGHT_GRID, key=lambda weight: (round(scores[weight], 9), weight))
+    systems: dict[str, Ranker] = {
+        **SYSTEMS, f"tuned_weight_r{tuned_weight}": _weighted(tuned_weight),
+    }
+    report: dict[str, Any] = {
+        "train_conditions": list(TRAIN_CONDITIONS),
+        "held_out_conditions": list(HELD_OUT_CONDITIONS),
+        "tuning_tasks": len(tune), "in_distribution_eval_tasks": len(in_distribution),
+        "held_out_eval_tasks": len(held_out),
+        "tuned_relevance_weight": tuned_weight,
+        "tuning_ndcg_by_weight": {str(weight): round(value, 4) for weight, value in scores.items()},
+        "systems": {},
+    }
+    for name, ranker in systems.items():
+        in_score = mean_ndcg(ranker, in_distribution)
+        by_condition = {
+            condition: _aggregate([
+                _score(task, ranker(task.candidates))
+                for task in held_out if task.condition == condition
+            ])
+            for condition in HELD_OUT_CONDITIONS
+        }
+        held_score = mean([values["ndcg@k"] for values in by_condition.values()])
+        report["systems"][name] = {
+            "in_distribution_ndcg@k": round(in_score, 4),
+            "held_out_ndcg@k": round(held_score, 4),
+            "generalisation_gap": round(in_score - held_score, 4),
+            "held_out_by_condition": by_condition,
+            "held_out_failure_categories_per_task": _failure_categories(held_out, ranker),
+        }
+    return report
+
+
 def run_attention_suite(seed: int) -> SuiteResult:
     tasks = generate_attention_tasks(seed)
     evaluation = [task for task in tasks if task.split == "eval"]
@@ -178,8 +251,19 @@ def run_attention_suite(seed: int) -> SuiteResult:
         for item in [f for f in failures if f["condition"] == condition][:2]
     ]
 
+    generalisation = attention_generalisation(tasks)
+    result.extra["generalisation"] = generalisation
     existing, relevance = result.systems["existing_attention"], result.systems["relevance_only"]
+    gen = generalisation["systems"]
+    tuned_name = f"tuned_weight_r{generalisation['tuned_relevance_weight']}"
     result.findings = [
+        "Generalisation (tune on clean + informative salience, test on salient distractors "
+        f"+ cross-source): existing {gen['existing_attention']['in_distribution_ndcg@k']:.3f} → "
+        f"{gen['existing_attention']['held_out_ndcg@k']:.3f}; relevance-only "
+        f"{gen['relevance_only']['in_distribution_ndcg@k']:.3f} → "
+        f"{gen['relevance_only']['held_out_ndcg@k']:.3f}; weight tuned in-distribution "
+        f"(r={generalisation['tuned_relevance_weight']}) "
+        f"{gen[tuned_name]['in_distribution_ndcg@k']:.3f} → {gen[tuned_name]['held_out_ndcg@k']:.3f}.",
         f"Overall nDCG@k: existing {existing['ndcg@k']:.3f}, relevance-only "
         f"{relevance['ndcg@k']:.3f}, salience-only {result.systems['salience_only']['ndcg@k']:.3f}, "
         f"input order {result.systems['input_order']['ndcg@k']:.3f}.",

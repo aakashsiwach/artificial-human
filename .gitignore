@@ -19,3 +19,6 @@ data/
 *.db
 .DS_Store
 benchmark-output/
+
+# Locally downloaded external evaluation datasets (never commit raw data)
+external-data/

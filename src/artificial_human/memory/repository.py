@@ -312,6 +312,16 @@ class MemoryRepository:
         finally:
             connection.close()
 
+    def close(self) -> None:
+        """Release an in-memory database so its contents are discarded.
+
+        File-backed repositories hold no persistent connection, so this has no
+        effect on them. A closed in-memory repository must not be used again.
+        """
+        if self._keeper is not None:
+            self._keeper.close()
+            self._keeper = None
+
     def schema_version(self) -> int:
         with self._connect() as connection:
             return int(connection.execute("PRAGMA user_version").fetchone()[0])
