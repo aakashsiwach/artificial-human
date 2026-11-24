@@ -28,8 +28,14 @@ The long-term goal is a computational artificial mind whose architecture is grou
 - [x] Orchestrate the systems through a cognitive architecture before model generation.
 - [x] Return inspectable cognitive traces and subsystem status.
 - [x] Keep long-term memory and learning consent-gated.
-- [ ] Add semantic/vector/hybrid and temporal memory with measured retrieval evaluations.
-- [ ] Build held-out benchmarks for attention, working-memory retention, recall, and prediction.
+- [x] Add semantic/vector/hybrid and temporal memory with measured retrieval evaluations ([docs](MEMORY.md), [ADR 0001](adr/0001-semantic-hybrid-temporal-memory.md), [report](benchmarks/memory-retrieval-report.md)).
+  - [x] Replaceable embedding interface with a local in-process backend (fastembed/ONNX); remote backends need operator opt-in, HTTPS and owner consent.
+  - [x] Consent-aware incremental indexing, re-indexing on model change, failure isolation, and deletion/revocation of vectors.
+  - [x] Unified hybrid search (BM25 + embeddings + temporal channel, Reciprocal Rank Fusion) with filters and per-result explanations.
+  - [x] Bitemporal records (event, recorded, validity times), supersession links, `known_at`/`valid_at` queries, contradiction preservation.
+  - [x] Integration before attention in the cognitive cycle, with retrieval channels in the trace.
+  - [x] Reproducible synthetic benchmark with tuning/eval split, baselines and ablations (Recall@K, Precision@K, MRR, nDCG@K).
+- [ ] Build held-out benchmarks for attention, working-memory retention, recall, and prediction. (A synthetic long-term recall benchmark exists; it is not externally authored and does not cover attention, working memory, or prediction.)
 - [ ] Add multimodal perception behind permission-scoped sensory interfaces.
 
 ## Milestone 2 — deeper biological and cognitive mechanisms
@@ -37,7 +43,9 @@ The long-term goal is a computational artificial mind whose architecture is grou
 - [ ] Research and specify affective appraisal and salience without unsupported emotion inference.
 - [ ] Implement homeostatic drives and motivation with bounded, inspectable state.
 - [ ] Implement action selection and reinforcement learning with approval constraints.
-- [ ] Add associative and relational memory, source reconciliation, and contradiction handling.
+- [ ] Add associative and relational memory, source reconciliation, and contradiction handling. (Contradictions are now preserved, linked and surfaced; reconciliation, source credibility and associative graphs are not implemented.)
+- [ ] Add memory dynamics: retrieval-dependent strengthening, decay/interference, and contiguity-based temporal cueing, each evaluated against the current static retrieval.
+- [ ] Replace English keyword temporal-intent rules with an evaluated parser; extend the memory benchmark with externally authored, larger held-out data.
 - [ ] Investigate sleep-stage-inspired replay and owner-reviewed memory consolidation.
 - [ ] Compare symbolic, predictive-processing, global-workspace, and neural-network approaches.
 - [ ] Evaluate each mechanism against baselines and held-out cognitive tasks.

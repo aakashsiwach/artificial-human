@@ -32,7 +32,7 @@ These are functional research mappings, not one-to-one anatomical equivalents. B
 The Brain now runs an explicit cognitive cycle before calling the language model:
 
 1. Perception normalizes explicit language input.
-2. Memory retrieval gathers consent-visible memories and owner-approved learning examples.
+2. Memory retrieval runs an owner-scoped, consent-filtered hybrid search (lexical BM25 + optional semantic embeddings + temporal reasoning, fused with Reciprocal Rank Fusion) and gathers owner-approved learning examples.
 3. Attention selects a bounded set of relevant items.
 4. Working memory maintains a capacity-limited, volatile workspace.
 5. Prediction calculates a lexical novelty signal against active context.
@@ -41,6 +41,16 @@ The Brain now runs an explicit cognitive cycle before calling the language model
 8. A cognitive trace reports which software systems operated.
 
 Implemented modules live under `src/artificial_human/cognition/`. The details, endpoint examples, research limitations, and future mechanisms are documented in [Brain and intelligence](docs/BRAIN.md).
+
+## Long-term memory: semantic, hybrid and temporal
+
+Long-term memory can retrieve by meaning as well as by keywords. "What is the boiling point of H2O?" finds "Water boils at approximately 100 degrees Celsius…". It also distinguishes when an event happened, when the system learned it, and when a fact was valid. Changed facts are stored as new versions linked to the old ones, contradictions are kept and flagged, and every result explains why it was retrieved.
+
+- Semantic embeddings come from a **local** model (`fastembed`/ONNX, `BAAI/bge-small-en-v1.5`), installed with `pip install -e ".[semantic]"` and enabled with `ARTIFICIAL_HUMAN_EMBEDDING_BACKEND=fastembed`. Without it, retrieval is lexical + temporal. Remote embedding services need an operator opt-in, HTTPS, and owner `external_embedding` consent.
+- Deleting a memory or revoking consent removes its vectors in the same transaction.
+- A reproducible benchmark compares lexical, semantic, hybrid, and hybrid + temporal retrieval: `artificial-human memory-eval --output-dir docs/benchmarks`. On the synthetic eval split, MRR is 0.651 lexical, 0.807 semantic, 0.833 hybrid, and 0.960 hybrid + temporal. Adding the lexical channel lowers irrelevant-query rejection, from 0.857 to 0.714. See the [report](docs/benchmarks/memory-retrieval-report.md).
+
+Full details, configuration, limitations and the comparison with biological memory are in [Long-term memory](docs/MEMORY.md). The design rationale is in [ADR 0001](docs/adr/0001-semantic-hybrid-temporal-memory.md).
 
 **Important:** the attention and novelty calculations are transparent engineering heuristics. Language perception is currently text-only. This milestone does not implement spiking neurons, realistic neural networks, emotion, homeostatic drives, reinforcement learning, or the full range of human cognitive abilities.
 
@@ -92,13 +102,26 @@ Example:
 
 Without a session ID, working memory is request-scoped. With one, it is retained only in bounded process memory and remains separate from persistent memory. It is not written to SQLite and is lost on process restart.
 
+## Memory API
+
+- `POST /memories/search` — hybrid search with type, time-range, `valid_at`, `known_at`, source and metadata filters; returns provenance and ranking explanations.
+- `GET /memories/timeline` — chronological recall.
+- `GET /memories/{id}` — inspect a memory, its version history, links and index state.
+- `PATCH /memories/{id}` — correct a record. `POST /memories/{id}/supersede` — record a changed fact as a new version.
+- `POST /memories/{id}/contradictions` — link conflicting memories.
+- `GET /memories/index/status`, `POST /memories/index/rebuild` — semantic index status and re-indexing.
+
+CLI equivalents: `artificial-human memory-search`, `memory-index status|rebuild`, `memory-eval`.
+
 ## Implemented organism foundation
 
 - Modular Python runtime and explicit subsystem boundaries.
 - Owner-authored identity profile and explicit observation intake.
 - Local SQLite memory for episodic, semantic, procedural, preference, decision, and working data.
 - Purpose-specific consent for personal memory writes; source provenance retained.
-- Consent revocation, deletion, owner erasure, and export.
+- Consent revocation, deletion, owner erasure, and export (including derived embeddings).
+- Versioned, transactional SQLite schema migrations that preserve existing records.
+- Semantic, hybrid and temporal long-term memory retrieval with a measured benchmark.
 - Internal event bus, priority queue, and declared resource budgets.
 - Health signal policies and anomaly-to-incident flow.
 - Reviewable repair proposals and sleep/consolidation previews.
@@ -126,6 +149,9 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Documentation
 
+- [Long-term memory](docs/MEMORY.md)
+- [Memory retrieval benchmark report](docs/benchmarks/memory-retrieval-report.md)
+- [ADR 0001: semantic, hybrid and temporal memory](docs/adr/0001-semantic-hybrid-temporal-memory.md)
 - [Biological blueprint](docs/BIOLOGICAL_BLUEPRINT.md)
 - [System architecture](docs/ARCHITECTURE.md)
 - [Safety and privacy](docs/SAFETY.md)
