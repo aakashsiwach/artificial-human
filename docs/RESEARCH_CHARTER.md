@@ -392,10 +392,13 @@ This list is a starting point, not an exhaustive review of neuroscience. Revisit
 2. **NIH BRAIN Initiative — research areas.** Data science, human neuroscience, neural recording/modulation, neuroimaging, systems neuroscience, neuroethics, and brain cell/circuit technologies.  
    https://www.nih.gov/brain/research
 
-3. **NIH, 12 November 2026 — For the first time, researchers map out the brain’s behavioral gatekeeper.** A BRAIN Initiative-supported basal-ganglia atlas reports cellular identities, activity, and locations across development. Treat this as an evolving research resource, not a ready-made software architecture.  
-   https://www.nih.gov/news-events/news-releases/first-time-researchers-map-out-brains-behavioral-gatekeeper
+3. **NIH BRAIN Initiative / BRAIN Initiative Cell Atlas Network (BICAN), 12 November 2026 — basal-ganglia atlas release.** NIH reports a cross-species cellular atlas describing cell identities, activities, and locations across basal-ganglia development. The release accompanies a 27-paper package. It is directly relevant to future action-selection and learning research, but it is an anatomical and cellular evidence resource—not a prescription for a one-to-one software module.  
+   https://www.nih.gov/news-events/news-releases/first-time-researchers-map-out-brains-behavioral-gatekeeper  
+   Related Cell papers include **“Toward an integrated framework for a human and mammalian brain cell atlas”** (DOI: 10.1016/j.cell.2026.10.031) and **“Harmonized brain ontology and 3D atlases for human, macaque, and marmoset basal ganglia”** (DOI: 10.1016/j.cell.2026.10.033).  
+   https://doi.org/10.1016/j.cell.2026.10.031  
+   https://doi.org/10.1016/j.cell.2026.10.033
 
-4. **Allen Institute — Human brain taxonomy of cell types.** The Siletti et al. human whole-brain taxonomy describes more than three million nuclei sampled across 100 locations, providing a molecular cell-type resource. Species, sampling, and assay limitations must be respected.  
+4. **Allen Institute — Human brain taxonomy of cell types.** The Siletti et al. human whole-brain taxonomy describes more than three million nuclei sampled across 100 locations, providing a molecular cell-type resource. The dataset metadata is shared under CC BY-NC 4.0; review the licence before reuse and do not assume commercial use is permitted. Species, sampling, and assay limitations must be respected.  
    https://alleninstitute.github.io/abc_atlas_access/descriptions/WHB-taxonomy.html
 
 5. **EBRAINS / Human Brain Project — brain atlases and modelling infrastructure.** An infrastructure for brain atlases, multiscale data, modelling, simulation, and analysis.  
