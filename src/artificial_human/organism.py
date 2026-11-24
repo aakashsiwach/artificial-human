@@ -20,7 +20,9 @@ from artificial_human.sleep.consolidation import SleepSystem
 class ArtificialOrganism:
     """Composition root for the first local artificial-organism runtime."""
 
-    def __init__(self, *, owner_id: str | None = None, database_path: str | Path | None = None) -> None:
+    def __init__(
+        self, *, owner_id: str | None = None, database_path: str | Path | None = None
+    ) -> None:
         self.owner_id = owner_id or os.getenv("ARTIFICIAL_HUMAN_OWNER_ID", "local-owner")
         self.identity = IdentityProfile(owner_id=self.owner_id)
         self.memory = MemoryRepository(database_path)
@@ -51,6 +53,9 @@ class ArtificialOrganism:
                 "metabolism": "bounded_declared_work",
                 "nervous_system": "in_process",
             },
+            "immune_cells": [
+                "dendritic", "neutrophil", "macrophage", "b_cell_memory", "t_cell_verifier"
+            ],
             "work_queue_depth": self.circulation.depth(),
             "open_incidents": len(self.immune.incidents()),
             "repair_proposals": len(self.regeneration.list()),
@@ -59,6 +64,7 @@ class ArtificialOrganism:
     def evaluate_health(self, name: str, value: float, source: str = "manual") -> dict[str, Any]:
         signal, incident = self.immune.evaluate(name, value, source=source)
         if incident is not None:
+            containment = self.immune.neutrophil.recommend_containment(incident)
             self.nervous_system.publish("immune.incident_detected", incident)
             proposal = self.regeneration.propose(incident)
             self.nervous_system.publish("regeneration.proposal_created", proposal)
@@ -68,6 +74,14 @@ class ArtificialOrganism:
                     "id": incident.id,
                     "severity": incident.severity.value,
                     "summary": incident.summary,
+                },
+                "immune_response": {
+                    "dendritic_classification": self.immune.dendritic.classify(signal),
+                    "neutrophil_plan": {
+                        "actions": containment.actions,
+                        "requires_operator_approval": containment.requires_operator_approval,
+                        "auto_executable": containment.auto_executable,
+                    },
                 },
                 "repair_proposal": {
                     "id": proposal.id,
