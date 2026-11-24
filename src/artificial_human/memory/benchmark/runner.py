@@ -63,6 +63,7 @@ VARIANTS: dict[str, dict[str, Any]] = {
     },
 }
 MAIN_VARIANTS = ("lexical", "semantic", "hybrid", "hybrid_temporal")
+TEMPORAL_CATEGORIES = frozenset({"temporal_chronological", "historical_fact"})
 
 
 def load_dataset(path: Path | None = None) -> dict[str, Any]:
@@ -90,6 +91,10 @@ def _validate_dataset(dataset: Mapping[str, Any]) -> None:
         for key in [*query["relevant"], *query.get("forbidden", [])]:
             if key not in known:
                 raise ValueError(f"Query {query['id']} references unknown memory {key!r}")
+        if "expected_source" in query:
+            sources = {item["key"]: item["source"] for item in dataset["memories"]}
+            if query["expected_source"] not in {sources[key] for key in query["relevant"]}:
+                raise ValueError(f"Query {query['id']} expects a source no relevant memory has")
     if texts["tuning"] & texts["eval"]:
         raise ValueError("Tuning and eval splits share query text")
 
@@ -161,7 +166,13 @@ def _run_query(
         "temporal_intent": response.temporal_query.intent.value,
         "strategy": response.strategy,
     }
+    top = response.results[0].memory if response.results else None
+    if "expected_source" in query:
+        outcome["source_correct"] = top is not None and top.source == query["expected_source"]
     if relevant:
+        outcome["top1_is_best"] = bool(ranked) and relevant.get(ranked[0], 0) == max(
+            relevant.values()
+        )
         for k in K_VALUES:
             outcome[f"recall@{k}"] = recall_at_k(ranked, relevant, k)
             outcome[f"precision@{k}"] = precision_at_k(ranked, relevant, k)
@@ -187,6 +198,20 @@ def _aggregate(outcomes: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     )
     summary["owner_leaks"] = sum(item["owner_leaks"] for item in outcomes)
     summary["forbidden_returned"] = sum(len(item["forbidden_returned"]) for item in outcomes)
+
+    def share(values: Sequence[bool]) -> float | None:
+        return round(mean([1.0 if value else 0.0 for value in values]), 4) if values else None
+
+    # Task-level accuracies derived from the same ranked outcomes.
+    summary["temporal_answer_accuracy"] = share([
+        item["top1_is_best"] for item in scored if item["category"] in TEMPORAL_CATEGORIES
+    ])
+    summary["source_attribution_accuracy"] = share([
+        item["source_correct"] for item in outcomes if "source_correct" in item
+    ])
+    summary["contradiction_recall@5"] = share([
+        item["recall@5"] == 1.0 for item in scored if item["category"] == "contradiction"
+    ])
     return summary
 
 
@@ -343,6 +368,25 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         lines += ["", "Skipped: " + ", ".join(
             f"`{name}` ({reason})" for name, reason in report["skipped_variants"].items()
         )]
+    lines += [
+        "",
+        "## Task-level accuracy (eval split)",
+        "",
+        "Temporal answer accuracy: the top result is a best-graded answer for temporal or "
+        "historical questions. Source attribution: the top result comes from the expected "
+        "source. Contradiction recall: every conflicting memory appears in the top 5.",
+        "",
+        "| Variant | Temporal answer accuracy | Source attribution accuracy "
+        "| Contradiction recall@5 |",
+        "| --- | --- | --- | --- |",
+    ]
+    for name, result in variants.items():
+        overall = result["overall"]
+        lines.append(
+            f"| {name} | {_fmt(overall.get('temporal_answer_accuracy'))} "
+            f"| {_fmt(overall.get('source_attribution_accuracy'))} "
+            f"| {_fmt(overall.get('contradiction_recall@5'))} |"
+        )
     categories = sorted({
         category for result in variants.values() for category in result["by_category"]
     })
@@ -440,10 +484,41 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def compact_report(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Aggregates plus per-query rows only for failures of each variant.
+
+    Full per-query rankings for every variant are available in memory from
+    ``run_benchmark`` but are not written to disk, to keep committed files small.
+    """
+    compact = dict(report)
+    variants: dict[str, Any] = {}
+    for name, result in report["variants"].items():
+        failures = [
+            {key: item[key] for key in ("id", "category", "ranked", "relevant") if key in item}
+            for item in result["queries"]
+            if (item["relevant"] and item.get("recall@5", 0.0) < 1.0)
+            or (not item["relevant"] and not item.get("rejected", True))
+            or item["owner_leaks"] or item["forbidden_returned"]
+        ]
+        for failure in failures:
+            failure["ranked"] = failure["ranked"][:PRIMARY_K]
+        variants[name] = {
+            "overall": result["overall"], "by_category": result["by_category"],
+            "config": result.get("config"), "failures": failures,
+        }
+    compact["variants"] = variants
+    tuning = dict(report["threshold_tuning"])
+    tuning.pop("table", None)
+    compact["threshold_tuning"] = tuning
+    return compact
+
+
 def write_reports(report: Mapping[str, Any], output_dir: Path) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     json_path = output_dir / "memory-retrieval-results.json"
     markdown_path = output_dir / "memory-retrieval-report.md"
-    json_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps(compact_report(report), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     markdown_path.write_text(render_markdown(report), encoding="utf-8")
     return json_path, markdown_path

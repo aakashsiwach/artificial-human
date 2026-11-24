@@ -1,0 +1,2453 @@
+{
+ "schema_version": "1.0",
+ "generated_at": "2026-11-24T16:59:03+00:00",
+ "seed": 20261124,
+ "suites_run": [
+  "attention",
+  "working-memory",
+  "prediction",
+  "memory",
+  "integration"
+ ],
+ "environment": {
+  "python": "3.12.10",
+  "implementation": "CPython",
+  "platform": "Windows-10",
+  "byteorder": "little"
+ },
+ "embedding_model": {
+  "backend": "fastembed",
+  "model_id": "BAAI/bge-small-en-v1.5",
+  "dimensions": 384,
+  "version": "fastembed-0.9.1",
+  "locality": "in_process",
+  "space": "fastembed:BAAI/bge-small-en-v1.5:384"
+ },
+ "network_used_by_evaluation": false,
+ "total_runtime_seconds": 34.134,
+ "suites": {
+  "attention": {
+   "suite": "attention",
+   "title": "Attention: bounded selection among competing candidates",
+   "evidence_category": "computational capability benchmark (synthetic inputs)",
+   "splits": {
+    "tuning": 50,
+    "eval": 150
+   },
+   "systems": {
+    "existing_attention": {
+     "precision@k": 0.728,
+     "recall@k": 0.5171,
+     "ndcg@k": 0.7932,
+     "mrr": 0.8738,
+     "pairwise_accuracy": 0.8911,
+     "tasks": 150
+    },
+    "relevance_only": {
+     "precision@k": 0.6693,
+     "recall@k": 0.4636,
+     "ndcg@k": 0.7143,
+     "mrr": 0.8546,
+     "pairwise_accuracy": 0.8154,
+     "tasks": 150
+    },
+    "salience_only": {
+     "precision@k": 0.5257,
+     "recall@k": 0.367,
+     "ndcg@k": 0.529,
+     "mrr": 0.6821,
+     "pairwise_accuracy": 0.6618,
+     "tasks": 150
+    },
+    "input_order": {
+     "precision@k": 0.354,
+     "recall@k": 0.2444,
+     "ndcg@k": 0.2976,
+     "mrr": 0.5872,
+     "pairwise_accuracy": 0.5168,
+     "tasks": 150
+    }
+   },
+   "by_condition": {
+    "clean_relevance": {
+     "existing_attention": {
+      "precision@k": 0.8917,
+      "recall@k": 0.5934,
+      "ndcg@k": 0.966,
+      "mrr": 0.9833,
+      "pairwise_accuracy": 0.9695,
+      "tasks": 30
+     },
+     "relevance_only": {
+      "precision@k": 0.8917,
+      "recall@k": 0.5934,
+      "ndcg@k": 0.9915,
+      "mrr": 1.0,
+      "pairwise_accuracy": 0.9925,
+      "tasks": 30
+     },
+     "salience_only": {
+      "precision@k": 0.3333,
+      "recall@k": 0.1642,
+      "ndcg@k": 0.2457,
+      "mrr": 0.585,
+      "pairwise_accuracy": 0.4932,
+      "tasks": 30
+     },
+     "input_order": {
+      "precision@k": 0.3367,
+      "recall@k": 0.2061,
+      "ndcg@k": 0.2286,
+      "mrr": 0.5206,
+      "pairwise_accuracy": 0.4462,
+      "tasks": 30
+     },
+     "weights_r0.6_s0.4": {
+      "precision@k": 0.8433,
+      "recall@k": 0.5281,
+      "ndcg@k": 0.8498,
+      "mrr": 0.9611,
+      "pairwise_accuracy": 0.8917,
+      "tasks": 30
+     },
+     "weights_r0.5_s0.5": {
+      "precision@k": 0.7733,
+      "recall@k": 0.4635,
+      "ndcg@k": 0.731,
+      "mrr": 0.9194,
+      "pairwise_accuracy": 0.802,
+      "tasks": 30
+     }
+    },
+    "salience_informative": {
+     "existing_attention": {
+      "precision@k": 0.8417,
+      "recall@k": 0.5284,
+      "ndcg@k": 0.8117,
+      "mrr": 0.9278,
+      "pairwise_accuracy": 0.8542,
+      "tasks": 30
+     },
+     "relevance_only": {
+      "precision@k": 0.6833,
+      "recall@k": 0.4351,
+      "ndcg@k": 0.6525,
+      "mrr": 0.875,
+      "pairwise_accuracy": 0.7632,
+      "tasks": 30
+     },
+     "salience_only": {
+      "precision@k": 0.95,
+      "recall@k": 0.6126,
+      "ndcg@k": 0.9934,
+      "mrr": 1.0,
+      "pairwise_accuracy": 0.9986,
+      "tasks": 30
+     },
+     "input_order": {
+      "precision@k": 0.3217,
+      "recall@k": 0.1524,
+      "ndcg@k": 0.2274,
+      "mrr": 0.5201,
+      "pairwise_accuracy": 0.4294,
+      "tasks": 30
+     },
+     "weights_r0.6_s0.4": {
+      "precision@k": 0.9267,
+      "recall@k": 0.5935,
+      "ndcg@k": 0.9338,
+      "mrr": 0.9833,
+      "pairwise_accuracy": 0.9366,
+      "tasks": 30
+     },
+     "weights_r0.5_s0.5": {
+      "precision@k": 0.9333,
+      "recall@k": 0.5959,
+      "ndcg@k": 0.9545,
+      "mrr": 0.9833,
+      "pairwise_accuracy": 0.9505,
+      "tasks": 30
+     }
+    },
+    "salient_distractors": {
+     "existing_attention": {
+      "precision@k": 0.4533,
+      "recall@k": 0.3479,
+      "ndcg@k": 0.5179,
+      "mrr": 0.6581,
+      "pairwise_accuracy": 0.7944,
+      "tasks": 30
+     },
+     "relevance_only": {
+      "precision@k": 0.8783,
+      "recall@k": 0.5765,
+      "ndcg@k": 0.9726,
+      "mrr": 1.0,
+      "pairwise_accuracy": 0.9693,
+      "tasks": 30
+     },
+     "salience_only": {
+      "precision@k": 0.075,
+      "recall@k": 0.0537,
+      "ndcg@k": 0.0701,
+      "mrr": 0.1986,
+      "pairwise_accuracy": 0.264,
+      "tasks": 30
+     },
+     "input_order": {
+      "precision@k": 0.39,
+      "recall@k": 0.2552,
+      "ndcg@k": 0.3321,
+      "mrr": 0.637,
+      "pairwise_accuracy": 0.5424,
+      "tasks": 30
+     },
+     "weights_r0.6_s0.4": {
+      "precision@k": 0.2533,
+      "recall@k": 0.2557,
+      "ndcg@k": 0.2903,
+      "mrr": 0.3824,
+      "pairwise_accuracy": 0.7562,
+      "tasks": 30
+     },
+     "weights_r0.5_s0.5": {
+      "precision@k": 0.2533,
+      "recall@k": 0.2557,
+      "ndcg@k": 0.2903,
+      "mrr": 0.3824,
+      "pairwise_accuracy": 0.7509,
+      "tasks": 30
+     }
+    },
+    "tied_relevance": {
+     "existing_attention": {
+      "precision@k": 0.8833,
+      "recall@k": 0.6532,
+      "ndcg@k": 0.9957,
+      "mrr": 1.0,
+      "pairwise_accuracy": 0.999,
+      "tasks": 30
+     },
+     "relevance_only": {
+      "precision@k": 0.3233,
+      "recall@k": 0.25,
+      "ndcg@k": 0.28,
+      "mrr": 0.5978,
+      "pairwise_accuracy": 0.5137,
+      "tasks": 30
+     },
+     "salience_only": {
+      "precision@k": 0.8833,
+      "recall@k": 0.6532,
+      "ndcg@k": 0.9957,
+      "mrr": 1.0,
+      "pairwise_accuracy": 0.999,
+      "tasks": 30
+     },
+     "input_order": {
+      "precision@k": 0.32,
+      "recall@k": 0.248,
+      "ndcg@k": 0.2713,
+      "mrr": 0.5803,
+      "pairwise_accuracy": 0.5227,
+      "tasks": 30
+     },
+     "weights_r0.6_s0.4": {
+      "precision@k": 0.8833,
+      "recall@k": 0.6532,
+      "ndcg@k": 0.9957,
+      "mrr": 1.0,
+      "pairwise_accuracy": 0.999,
+      "tasks": 30
+     },
+     "weights_r0.5_s0.5": {
+      "precision@k": 0.8833,
+      "recall@k": 0.6532,
+      "ndcg@k": 0.9957,
+      "mrr": 1.0,
+      "pairwise_accuracy": 0.999,
+      "tasks": 30
+     }
+    },
+    "cross_source_normalisation": {
+     "existing_attention": {
+      "precision@k": 0.57,
+      "recall@k": 0.4628,
+      "ndcg@k": 0.6747,
+      "mrr": 0.8,
+      "pairwise_accuracy": 0.8382,
+      "tasks": 30
+     },
+     "relevance_only": {
+      "precision@k": 0.57,
+      "recall@k": 0.4628,
+      "ndcg@k": 0.6747,
+      "mrr": 0.8,
+      "pairwise_accuracy": 0.8382,
+      "tasks": 30
+     },
+     "salience_only": {
+      "precision@k": 0.3867,
+      "recall@k": 0.3514,
+      "ndcg@k": 0.34,
+      "mrr": 0.6269,
+      "pairwise_accuracy": 0.5542,
+      "tasks": 30
+     },
+     "input_order": {
+      "precision@k": 0.4017,
+      "recall@k": 0.3602,
+      "ndcg@k": 0.4287,
+      "mrr": 0.6781,
+      "pairwise_accuracy": 0.6433,
+      "tasks": 30
+     },
+     "weights_r0.6_s0.4": {
+      "precision@k": 0.57,
+      "recall@k": 0.4628,
+      "ndcg@k": 0.6747,
+      "mrr": 0.8,
+      "pairwise_accuracy": 0.8382,
+      "tasks": 30
+     },
+     "weights_r0.5_s0.5": {
+      "precision@k": 0.57,
+      "recall@k": 0.4628,
+      "ndcg@k": 0.6747,
+      "mrr": 0.8,
+      "pairwise_accuracy": 0.8382,
+      "tasks": 30
+     }
+    }
+   },
+   "checks": [],
+   "failures": [
+    {
+     "task": "attention-eval-salience_informative-32-0",
+     "condition": "salience_informative",
+     "k": 5,
+     "selected_irrelevant": {
+      "id": "c008",
+      "grade": 0,
+      "kind": "memory",
+      "relevance": 0.5532,
+      "salience": 0.2059
+     },
+     "excluded_highly_relevant": {
+      "id": "c019",
+      "grade": 2,
+      "kind": "memory",
+      "relevance": 0.3432,
+      "salience": 0.8881
+     }
+    },
+    {
+     "task": "attention-eval-salience_informative-32-1",
+     "condition": "salience_informative",
+     "k": 5,
+     "selected_irrelevant": {
+      "id": "c009",
+      "grade": 0,
+      "kind": "memory",
+      "relevance": 0.749,
+      "salience": 0.1891
+     },
+     "excluded_highly_relevant": {
+      "id": "c002",
+      "grade": 2,
+      "kind": "memory",
+      "relevance": 0.4759,
+      "salience": 0.9
+     }
+    },
+    {
+     "task": "attention-eval-salient_distractors-8-0",
+     "condition": "salient_distractors",
+     "k": 2,
+     "selected_irrelevant": {
+      "id": "c001",
+      "grade": 0,
+      "kind": "memory",
+      "relevance": 0.5803,
+      "salience": 0.9942
+     },
+     "excluded_highly_relevant": {
+      "id": "c000",
+      "grade": 2,
+      "kind": "memory",
+      "relevance": 0.7507,
+      "salience": 0.1447
+     }
+    },
+    {
+     "task": "attention-eval-salient_distractors-8-1",
+     "condition": "salient_distractors",
+     "k": 2,
+     "selected_irrelevant": {
+      "id": "c000",
+      "grade": 0,
+      "kind": "memory",
+      "relevance": 0.6054,
+      "salience": 0.9619
+     },
+     "excluded_highly_relevant": {
+      "id": "c004",
+      "grade": 2,
+      "kind": "memory",
+      "relevance": 0.7189,
+      "salience": 0.1712
+     }
+    },
+    {
+     "task": "attention-eval-cross_source_normalisation-4-0",
+     "condition": "cross_source_normalisation",
+     "k": 2,
+     "selected_irrelevant": {
+      "id": "c000",
+      "grade": 0,
+      "kind": "learning_example",
+      "relevance": 1.0,
+      "salience": 0.0
+     },
+     "excluded_highly_relevant": {
+      "id": "c002",
+      "grade": 2,
+      "kind": "memory",
+      "relevance": 0.9218,
+      "salience": 0.0
+     }
+    },
+    {
+     "task": "attention-eval-cross_source_normalisation-4-2",
+     "condition": "cross_source_normalisation",
+     "k": 2,
+     "selected_irrelevant": {
+      "id": "c002",
+      "grade": 0,
+      "kind": "learning_example",
+      "relevance": 1.0,
+      "salience": 0.0
+     },
+     "excluded_highly_relevant": {
+      "id": "c001",
+      "grade": 2,
+      "kind": "memory",
+      "relevance": 0.8489,
+      "salience": 0.0
+     }
+    }
+   ],
+   "findings": [
+    "Overall nDCG@k: existing 0.793, relevance-only 0.714, salience-only 0.529, input order 0.298.",
+    "clean_relevance: existing nDCG@k 0.966 vs relevance-only 0.992.",
+    "salience_informative: existing nDCG@k 0.812 vs relevance-only 0.652.",
+    "salient_distractors: existing nDCG@k 0.518 vs relevance-only 0.973.",
+    "tied_relevance: existing nDCG@k 0.996 vs relevance-only 0.280.",
+    "cross_source_normalisation: existing nDCG@k 0.675 vs relevance-only 0.675.",
+    "In the cross-source condition, 43.0% of selected slots went to grade-0 learning examples (25% of candidates), because each source is max-normalised separately before attention.",
+    "Overall averages depend on the author-chosen mix of conditions (salience is informative in two of five). Read the per-condition results, not the overall average, to judge the formula.",
+    "38 of 150 eval tasks selected an irrelevant candidate while excluding a highly relevant one."
+   ],
+   "extra": {
+    "ablations": {
+     "weights_r0.6_s0.4": {
+      "precision@k": 0.6953,
+      "recall@k": 0.4987,
+      "ndcg@k": 0.7489,
+      "mrr": 0.8254,
+      "pairwise_accuracy": 0.8843,
+      "tasks": 150
+     },
+     "weights_r0.5_s0.5": {
+      "precision@k": 0.6827,
+      "recall@k": 0.4862,
+      "ndcg@k": 0.7292,
+      "mrr": 0.817,
+      "pairwise_accuracy": 0.8681,
+      "tasks": 150
+     }
+    },
+    "ndcg_by_set_size": {
+     "existing_attention": {
+      "4": 0.8533,
+      "8": 0.7614,
+      "16": 0.8216,
+      "32": 0.7443,
+      "64": 0.7854
+     },
+     "relevance_only": {
+      "4": 0.7476,
+      "8": 0.7138,
+      "16": 0.7297,
+      "32": 0.6753,
+      "64": 0.705
+     },
+     "salience_only": {
+      "4": 0.6335,
+      "8": 0.5156,
+      "16": 0.543,
+      "32": 0.5003,
+      "64": 0.4525
+     },
+     "input_order": {
+      "4": 0.4342,
+      "8": 0.2824,
+      "16": 0.2588,
+      "32": 0.2496,
+      "64": 0.2632
+     }
+    },
+    "cross_source_selected_learning_example_share": 0.43,
+    "consistency": {
+     "repeat_run_identical": 1.0,
+     "topk_permutation_invariance": 1.0
+    },
+    "failure_count": 38,
+    "failure_count_by_condition": {
+     "clean_relevance": 0,
+     "salience_informative": 6,
+     "salient_distractors": 19,
+     "tied_relevance": 0,
+     "cross_source_normalisation": 13
+    }
+   },
+   "runtime_seconds": 1.6218,
+   "peak_memory_kib": 1321.1
+  },
+  "working-memory": {
+   "suite": "working-memory",
+   "title": "Working memory: retention, interference, reactivation and eviction",
+   "evidence_category": "software behaviour + computational capability benchmark",
+   "splits": {
+    "tuning": 10,
+    "eval": 40
+   },
+   "systems": {
+    "existing_working_memory": {
+     "delayed_retention_lower_salience_distractors": 0.6859,
+     "delayed_retention_equal_salience": 0.3846,
+     "delayed_retention_salient_distractors": 0.3846,
+     "updated_content_recall": 0.9048,
+     "capacity_violations": 0
+    },
+    "fifo": {
+     "delayed_retention_lower_salience_distractors": 0.3846,
+     "delayed_retention_equal_salience": 0.3846,
+     "delayed_retention_salient_distractors": 0.3846,
+     "updated_content_recall": 0.6667,
+     "capacity_violations": 0
+    },
+    "lru": {
+     "delayed_retention_lower_salience_distractors": 0.3846,
+     "delayed_retention_equal_salience": 0.3846,
+     "delayed_retention_salient_distractors": 0.3846,
+     "updated_content_recall": 0.8095,
+     "capacity_violations": 0
+    },
+    "salience_no_decay": {
+     "delayed_retention_lower_salience_distractors": 1.0,
+     "delayed_retention_equal_salience": 0.3846,
+     "delayed_retention_salient_distractors": 0.3846,
+     "updated_content_recall": 1.0,
+     "capacity_violations": 0
+    }
+   },
+   "by_condition": {
+    "delayed_retention_by_distractor_salience": {
+     "existing_working_memory": {
+      "lower": 0.6859,
+      "equal": 0.3846,
+      "higher": 0.3846
+     },
+     "fifo": {
+      "lower": 0.3846,
+      "equal": 0.3846,
+      "higher": 0.3846
+     },
+     "lru": {
+      "lower": 0.3846,
+      "equal": 0.3846,
+      "higher": 0.3846
+     },
+     "salience_no_decay": {
+      "lower": 1.0,
+      "equal": 0.3846,
+      "higher": 0.3846
+     }
+    },
+    "similarity_interference": {
+     "existing_working_memory": {
+      "similar_distractors": 0.6859,
+      "dissimilar_distractors": 0.6859,
+      "difference": 0.0
+     },
+     "fifo": {
+      "similar_distractors": 0.3846,
+      "dissimilar_distractors": 0.3846,
+      "difference": 0.0
+     },
+     "lru": {
+      "similar_distractors": 0.3846,
+      "dissimilar_distractors": 0.3846,
+      "difference": 0.0
+     },
+     "salience_no_decay": {
+      "similar_distractors": 1.0,
+      "dissimilar_distractors": 1.0,
+      "difference": 0.0
+     }
+    },
+    "reactivation": {
+     "existing_working_memory": {
+      "reactivated_item_retention": 0.9048,
+      "non_reactivated_retention": 0.119,
+      "updated_content_recall": 0.9048
+     },
+     "fifo": {
+      "reactivated_item_retention": 0.6667,
+      "non_reactivated_retention": 0.119,
+      "updated_content_recall": 0.6667
+     },
+     "lru": {
+      "reactivated_item_retention": 0.8095,
+      "non_reactivated_retention": 0.0714,
+      "updated_content_recall": 0.8095
+     },
+     "salience_no_decay": {
+      "reactivated_item_retention": 1.0,
+      "non_reactivated_retention": 1.0,
+      "updated_content_recall": 1.0
+     }
+    },
+    "capacity_pressure": {
+     "existing_working_memory": {
+      "overlap_with_highest_initial_salience": 0.7508,
+      "overlap_with_most_recent": 0.6229,
+      "capacity_violations": 0
+     },
+     "fifo": {
+      "overlap_with_highest_initial_salience": 0.4037,
+      "overlap_with_most_recent": 1.0,
+      "capacity_violations": 0
+     },
+     "lru": {
+      "overlap_with_highest_initial_salience": 0.4037,
+      "overlap_with_most_recent": 1.0,
+      "capacity_violations": 0
+     },
+     "salience_no_decay": {
+      "overlap_with_highest_initial_salience": 1.0,
+      "overlap_with_most_recent": 0.4037,
+      "capacity_violations": 0
+     }
+    },
+    "serial_order": {
+     "existing_working_memory": {
+      "kendall_tau_no_reactivation": 1.0,
+      "kendall_tau_after_reactivation": 0.4667
+     },
+     "fifo": {
+      "kendall_tau_no_reactivation": 1.0,
+      "kendall_tau_after_reactivation": 1.0
+     },
+     "lru": {
+      "kendall_tau_no_reactivation": 1.0,
+      "kendall_tau_after_reactivation": 0.4667
+     },
+     "salience_no_decay": {
+      "kendall_tau_no_reactivation": 1.0,
+      "kendall_tau_after_reactivation": 0.4667
+     }
+    },
+    "newcomer_admission_full_capacity_7": {
+     "existing_working_memory": {
+      "salience_0.1": 0.0,
+      "salience_0.3": 0.0,
+      "salience_0.5": 0.0,
+      "salience_0.7": 1.0
+     },
+     "fifo": {
+      "salience_0.1": 1.0,
+      "salience_0.3": 1.0,
+      "salience_0.5": 1.0,
+      "salience_0.7": 1.0
+     },
+     "lru": {
+      "salience_0.1": 1.0,
+      "salience_0.3": 1.0,
+      "salience_0.5": 1.0,
+      "salience_0.7": 1.0
+     },
+     "salience_no_decay": {
+      "salience_0.1": 0.0,
+      "salience_0.3": 0.0,
+      "salience_0.5": 0.0,
+      "salience_0.7": 0.0
+     }
+    }
+   },
+   "checks": [
+    {
+     "name": "sessions are isolated between owners",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "name": "the same owner and session id returns the same workspace",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "name": "clearing a session empties it",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "name": "session registry is bounded (LRU)",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "name": "clear_owner removes every session of that owner",
+     "passed": true,
+     "detail": "",
+     "removed": 2
+    },
+    {
+     "name": "session capacity is applied",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "name": "reactivation increments access_count",
+     "passed": true,
+     "detail": "",
+     "access_count": 1
+    },
+    {
+     "name": "reactivated item moves to most-recent position",
+     "passed": true,
+     "detail": "",
+     "order": [
+      "b",
+      "a"
+     ]
+    }
+   ],
+   "failures": [
+    {
+     "case": "weak newcomer dropped on arrival",
+     "detail": "With seven items at salience 0.9, a new item at salience 0.1 is evicted immediately"
+    },
+    {
+     "case": "weak newcomer dropped on arrival",
+     "detail": "With seven items at salience 0.9, a new item at salience 0.3 is evicted immediately"
+    },
+    {
+     "case": "weak newcomer dropped on arrival",
+     "detail": "With seven items at salience 0.9, a new item at salience 0.5 is evicted immediately"
+    }
+   ],
+   "findings": [
+    "Retention is content-agnostic: similar and dissimilar distractors give identical retention (difference +0.000). The implementation has no similarity-based interference.",
+    "With lower-salience distractors, mean retention (capacities 3–9) first drops below 1.0 at 4 intervening items. Multiplicative decay (×0.92 per insertion) eventually pushes older high-salience targets below fresh distractors, so decay rather than content determines forgetting.",
+    "A low-salience input cannot enter a full workspace: it is evicted on arrival because eviction is applied after insertion.",
+    "Serial-position retention is purely recency-based ({'1': 0.0, '2': 0.0, '3': 0.0, '4': 0.0, '5': 0.0, '6': 1.0, '7': 1.0, '8': 1.0, '9': 1.0, '10': 1.0, '11': 1.0, '12': 1.0}); there is no primacy effect.",
+    "Capacity is never exceeded (0 violations)."
+   ],
+   "extra": {
+    "delayed_retention_curves": {
+     "existing_working_memory": {
+      "retention_by_intervening_items": {
+       "0": 1.0,
+       "1": 1.0,
+       "2": 1.0,
+       "3": 1.0,
+       "4": 0.9167,
+       "5": 0.9167,
+       "6": 0.75,
+       "7": 0.75,
+       "8": 0.5,
+       "9": 0.5,
+       "10": 0.25,
+       "11": 0.25,
+       "12": 0.0833
+      },
+      "retention_by_capacity": {
+       "3": 0.4615,
+       "5": 0.6154,
+       "7": 0.7692,
+       "9": 0.8974
+      }
+     },
+     "fifo": {
+      "retention_by_intervening_items": {
+       "0": 1.0,
+       "1": 0.9167,
+       "2": 0.8333,
+       "3": 0.6667,
+       "4": 0.5833,
+       "5": 0.4167,
+       "6": 0.3333,
+       "7": 0.1667,
+       "8": 0.0833,
+       "9": 0.0,
+       "10": 0.0,
+       "11": 0.0,
+       "12": 0.0
+      },
+      "retention_by_capacity": {
+       "3": 0.1538,
+       "5": 0.3077,
+       "7": 0.4615,
+       "9": 0.6154
+      }
+     },
+     "lru": {
+      "retention_by_intervening_items": {
+       "0": 1.0,
+       "1": 0.9167,
+       "2": 0.8333,
+       "3": 0.6667,
+       "4": 0.5833,
+       "5": 0.4167,
+       "6": 0.3333,
+       "7": 0.1667,
+       "8": 0.0833,
+       "9": 0.0,
+       "10": 0.0,
+       "11": 0.0,
+       "12": 0.0
+      },
+      "retention_by_capacity": {
+       "3": 0.1538,
+       "5": 0.3077,
+       "7": 0.4615,
+       "9": 0.6154
+      }
+     },
+     "salience_no_decay": {
+      "retention_by_intervening_items": {
+       "0": 1.0,
+       "1": 1.0,
+       "2": 1.0,
+       "3": 1.0,
+       "4": 1.0,
+       "5": 1.0,
+       "6": 1.0,
+       "7": 1.0,
+       "8": 1.0,
+       "9": 1.0,
+       "10": 1.0,
+       "11": 1.0,
+       "12": 1.0
+      },
+      "retention_by_capacity": {
+       "3": 1.0,
+       "5": 1.0,
+       "7": 1.0,
+       "9": 1.0
+      }
+     }
+    },
+    "serial_position_retention_capacity_7": {
+     "existing_working_memory": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0,
+      "6": 1.0,
+      "7": 1.0,
+      "8": 1.0,
+      "9": 1.0,
+      "10": 1.0,
+      "11": 1.0,
+      "12": 1.0
+     },
+     "fifo": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0,
+      "6": 1.0,
+      "7": 1.0,
+      "8": 1.0,
+      "9": 1.0,
+      "10": 1.0,
+      "11": 1.0,
+      "12": 1.0
+     },
+     "lru": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0,
+      "6": 1.0,
+      "7": 1.0,
+      "8": 1.0,
+      "9": 1.0,
+      "10": 1.0,
+      "11": 1.0,
+      "12": 1.0
+     },
+     "salience_no_decay": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0,
+      "6": 1.0,
+      "7": 1.0,
+      "8": 1.0,
+      "9": 1.0,
+      "10": 1.0,
+      "11": 1.0,
+      "12": 1.0
+     }
+    },
+    "delayed_retention_tasks_per_policy": 156
+   },
+   "runtime_seconds": 0.6159,
+   "peak_memory_kib": 63.0
+  },
+  "prediction": {
+   "suite": "prediction",
+   "title": "Prediction/novelty: lexical novelty against active context",
+   "evidence_category": "computational capability benchmark (authored labels)",
+   "splits": {
+    "tuning": 18,
+    "eval": 36
+   },
+   "systems": {
+    "existing_prediction": {
+     "auroc": 0.5969,
+     "threshold_from_tuning_split": 0.3143,
+     "false_novelty_rate": 0.65,
+     "missed_novelty_rate": 0.25,
+     "balanced_accuracy": 0.55,
+     "mean_novelty_unexpected": 0.6124,
+     "mean_novelty_expected": 0.4843,
+     "novelty_separation": 0.128,
+     "correlation_with_lexical_jaccard_distance": 0.9783,
+     "repeat_run_identical": true
+    },
+    "content_word_overlap": {
+     "auroc": 0.575,
+     "threshold_from_tuning_split": 0.125,
+     "false_novelty_rate": 0.7,
+     "missed_novelty_rate": 0.0625,
+     "balanced_accuracy": 0.6188,
+     "mean_novelty_unexpected": 0.6323,
+     "mean_novelty_expected": 0.5021,
+     "novelty_separation": 0.1301,
+     "correlation_with_lexical_jaccard_distance": 0.955,
+     "repeat_run_identical": true
+    },
+    "jaccard_distance": {
+     "auroc": 0.5859,
+     "threshold_from_tuning_split": 0.22619,
+     "false_novelty_rate": 0.7,
+     "missed_novelty_rate": 0.0625,
+     "balanced_accuracy": 0.6188,
+     "mean_novelty_unexpected": 0.707,
+     "mean_novelty_expected": 0.5511,
+     "novelty_separation": 0.1559,
+     "correlation_with_lexical_jaccard_distance": 1.0,
+     "repeat_run_identical": true
+    },
+    "embedding_distance_reference": {
+     "auroc": 0.8281,
+     "threshold_from_tuning_split": 0.066561,
+     "false_novelty_rate": 0.5,
+     "missed_novelty_rate": 0.0,
+     "balanced_accuracy": 0.75,
+     "mean_novelty_unexpected": 0.3702,
+     "mean_novelty_expected": 0.1489,
+     "novelty_separation": 0.2213,
+     "correlation_with_lexical_jaccard_distance": 0.8363,
+     "repeat_run_identical": true
+    }
+   },
+   "by_condition": {
+    "contextually_expected": {
+     "existing_prediction": {
+      "label": "expected",
+      "mean_novelty": 0.85
+     },
+     "content_word_overlap": {
+      "label": "expected",
+      "mean_novelty": 1.0
+     },
+     "jaccard_distance": {
+      "label": "expected",
+      "mean_novelty": 0.9386
+     },
+     "embedding_distance_reference": {
+      "label": "expected",
+      "mean_novelty": 0.3246
+     }
+    },
+    "contextually_unexpected": {
+     "existing_prediction": {
+      "label": "unexpected",
+      "mean_novelty": 0.5595
+     },
+     "content_word_overlap": {
+      "label": "unexpected",
+      "mean_novelty": 0.5917
+     },
+     "jaccard_distance": {
+      "label": "unexpected",
+      "mean_novelty": 0.7154
+     },
+     "embedding_distance_reference": {
+      "label": "unexpected",
+      "mean_novelty": 0.3136
+     }
+    },
+    "contradiction": {
+     "existing_prediction": {
+      "label": "unexpected",
+      "mean_novelty": 0.1608
+     },
+     "content_word_overlap": {
+      "label": "unexpected",
+      "mean_novelty": 0.2167
+     },
+     "jaccard_distance": {
+      "label": "unexpected",
+      "mean_novelty": 0.2723
+     },
+     "embedding_distance_reference": {
+      "label": "unexpected",
+      "mean_novelty": 0.1306
+     }
+    },
+    "exact_repetition": {
+     "existing_prediction": {
+      "label": "expected",
+      "mean_novelty": 0.0
+     },
+     "content_word_overlap": {
+      "label": "expected",
+      "mean_novelty": 0.0
+     },
+     "jaccard_distance": {
+      "label": "expected",
+      "mean_novelty": 0.0
+     },
+     "embedding_distance_reference": {
+      "label": "expected",
+      "mean_novelty": 0.0
+     }
+    },
+    "low_overlap_related": {
+     "existing_prediction": {
+      "label": "expected",
+      "mean_novelty": 0.9643
+     },
+     "content_word_overlap": {
+      "label": "expected",
+      "mean_novelty": 1.0
+     },
+     "jaccard_distance": {
+      "label": "expected",
+      "mean_novelty": 0.9773
+     },
+     "embedding_distance_reference": {
+      "label": "expected",
+      "mean_novelty": 0.3185
+     }
+    },
+    "near_repetition": {
+     "existing_prediction": {
+      "label": "expected",
+      "mean_novelty": 0.125
+     },
+     "content_word_overlap": {
+      "label": "expected",
+      "mean_novelty": 0.1
+     },
+     "jaccard_distance": {
+      "label": "expected",
+      "mean_novelty": 0.2083
+     },
+     "embedding_distance_reference": {
+      "label": "expected",
+      "mean_novelty": 0.0159
+     }
+    },
+    "paraphrase": {
+     "existing_prediction": {
+      "label": "expected",
+      "mean_novelty": 0.4824
+     },
+     "content_word_overlap": {
+      "label": "expected",
+      "mean_novelty": 0.4107
+     },
+     "jaccard_distance": {
+      "label": "expected",
+      "mean_novelty": 0.6312
+     },
+     "embedding_distance_reference": {
+      "label": "expected",
+      "mean_novelty": 0.0856
+     }
+    },
+    "shared_vocabulary_unrelated": {
+     "existing_prediction": {
+      "label": "unexpected",
+      "mean_novelty": 0.7292
+     },
+     "content_word_overlap": {
+      "label": "unexpected",
+      "mean_novelty": 0.7208
+     },
+     "jaccard_distance": {
+      "label": "unexpected",
+      "mean_novelty": 0.8402
+     },
+     "embedding_distance_reference": {
+      "label": "unexpected",
+      "mean_novelty": 0.5005
+     }
+    },
+    "unrelated": {
+     "existing_prediction": {
+      "label": "unexpected",
+      "mean_novelty": 1.0
+     },
+     "content_word_overlap": {
+      "label": "unexpected",
+      "mean_novelty": 1.0
+     },
+     "jaccard_distance": {
+      "label": "unexpected",
+      "mean_novelty": 1.0
+     },
+     "embedding_distance_reference": {
+      "label": "unexpected",
+      "mean_novelty": 0.5362
+     }
+    }
+   },
+   "checks": [],
+   "failures": [
+    {
+     "item": "prediction-near_repetition-6",
+     "category": "near_repetition",
+     "error": "false novelty",
+     "novelty": 0.3333,
+     "threshold": 0.3143,
+     "context": "Insulin lowers blood glucose.",
+     "input": "Insulin lowers the blood glucose level."
+    },
+    {
+     "item": "prediction-paraphrase-3",
+     "category": "paraphrase",
+     "error": "false novelty",
+     "novelty": 0.4,
+     "threshold": 0.3143,
+     "context": "The meeting starts at nine tomorrow.",
+     "input": "Tomorrow's meeting begins at 9 o'clock."
+    },
+    {
+     "item": "prediction-paraphrase-4",
+     "category": "paraphrase",
+     "error": "false novelty",
+     "novelty": 0.3333,
+     "threshold": 0.3143,
+     "context": "Water boils at one hundred degrees Celsius.",
+     "input": "At one hundred degrees Celsius, water starts to boil."
+    },
+    {
+     "item": "prediction-paraphrase-5",
+     "category": "paraphrase",
+     "error": "false novelty",
+     "novelty": 0.625,
+     "threshold": 0.3143,
+     "context": "The car would not start this morning.",
+     "input": "This morning the engine refused to turn over."
+    },
+    {
+     "item": "prediction-paraphrase-6",
+     "category": "paraphrase",
+     "error": "false novelty",
+     "novelty": 0.5714,
+     "threshold": 0.3143,
+     "context": "She finished the marathon in under four hours.",
+     "input": "Her marathon time was below four hours."
+    },
+    {
+     "item": "prediction-low_overlap_related-3",
+     "category": "low_overlap_related",
+     "error": "false novelty",
+     "novelty": 1.0,
+     "threshold": 0.3143,
+     "context": "The orchestra tuned their violins.",
+     "input": "A concert is about to begin."
+    },
+    {
+     "item": "prediction-low_overlap_related-4",
+     "category": "low_overlap_related",
+     "error": "false novelty",
+     "novelty": 1.0,
+     "threshold": 0.3143,
+     "context": "It has rained heavily for three days.",
+     "input": "The rivers are flooding."
+    },
+    {
+     "item": "prediction-low_overlap_related-5",
+     "category": "low_overlap_related",
+     "error": "false novelty",
+     "novelty": 1.0,
+     "threshold": 0.3143,
+     "context": "I booked a flight to Tokyo.",
+     "input": "Japan travel plans are confirmed."
+    },
+    {
+     "item": "prediction-low_overlap_related-6",
+     "category": "low_overlap_related",
+     "error": "false novelty",
+     "novelty": 0.8571,
+     "threshold": 0.3143,
+     "context": "The chef sharpened her knives.",
+     "input": "Dinner preparation is underway in the kitchen."
+    },
+    {
+     "item": "prediction-contradiction-3",
+     "category": "contradiction",
+     "error": "missed novelty",
+     "novelty": 0.1667,
+     "threshold": 0.3143,
+     "context": "Water boils at one hundred degrees Celsius.",
+     "input": "Water boils at fifty degrees Celsius."
+    },
+    {
+     "item": "prediction-contradiction-4",
+     "category": "contradiction",
+     "error": "missed novelty",
+     "novelty": 0.1667,
+     "threshold": 0.3143,
+     "context": "The shop is open on Sundays.",
+     "input": "The shop is closed on Sundays."
+    },
+    {
+     "item": "prediction-contradiction-5",
+     "category": "contradiction",
+     "error": "missed novelty",
+     "novelty": 0.1429,
+     "threshold": 0.3143,
+     "context": "The user is allergic to peanuts.",
+     "input": "The user is not allergic to peanuts."
+    },
+    {
+     "item": "prediction-contradiction-6",
+     "category": "contradiction",
+     "error": "missed novelty",
+     "novelty": 0.1667,
+     "threshold": 0.3143,
+     "context": "The project deadline is in March.",
+     "input": "The project deadline is in June."
+    },
+    {
+     "item": "prediction-contextually_expected-3",
+     "category": "contextually_expected",
+     "error": "false novelty",
+     "novelty": 0.8,
+     "threshold": 0.3143,
+     "context": "The surgeon washed her hands. The patient was anaesthetised.",
+     "input": "She made the first incision."
+    },
+    {
+     "item": "prediction-contextually_expected-4",
+     "category": "contextually_expected",
+     "error": "false novelty",
+     "novelty": 1.0,
+     "threshold": 0.3143,
+     "context": "The students entered the exam hall. Invigilators handed out papers.",
+     "input": "Everyone began writing answers."
+    },
+    {
+     "item": "prediction-contextually_expected-5",
+     "category": "contextually_expected",
+     "error": "false novelty",
+     "novelty": 0.8,
+     "threshold": 0.3143,
+     "context": "I opened the laptop. I logged into the build server.",
+     "input": "The test suite started running."
+    },
+    {
+     "item": "prediction-contextually_expected-6",
+     "category": "contextually_expected",
+     "error": "false novelty",
+     "novelty": 0.8,
+     "threshold": 0.3143,
+     "context": "We pitched the tent by the lake. The sun began to set.",
+     "input": "We lit a campfire for dinner."
+    }
+   ],
+   "findings": [
+    "Existing novelty AUROC on the eval split is 0.597. False novelty rate 0.650, missed novelty rate 0.250 at the tuning-split threshold 0.3143.",
+    "Contradictions look familiar: mean novelty 0.161, against 1.000 for unrelated input. Negation or a changed value barely changes token overlap.",
+    "Paraphrases and semantically related inputs with little word overlap look novel (0.964), because the signal is lexical.",
+    "Script violations score lower novelty than typical continuations (0.559 vs 0.850), the opposite of the intended signal, because violating sentences reuse context words.",
+    "The score is a deterministic function of token overlap (correlation with lexical Jaccard distance 0.9783). It does not represent meaning, expectation, or future events; its above-chance separation comes from surface word differences.",
+    "The optional local-embedding reference reaches AUROC 0.828 but also scores contradictions as familiar (0.131). Semantic similarity is not contradiction detection."
+   ],
+   "extra": {
+    "case_and_punctuation_invariance": 1.0,
+    "empty_context_comparable": false,
+    "empty_context_novelty": 0.0
+   },
+   "runtime_seconds": 2.0292,
+   "peak_memory_kib": 101.1
+  },
+  "memory": {
+   "suite": "memory",
+   "title": "Long-term memory recall (synthetic retrieval benchmark)",
+   "evidence_category": "computational capability benchmark (synthetic, project-authored)",
+   "splits": {
+    "tuning": 13,
+    "eval": 53
+   },
+   "systems": {
+    "lexical": {
+     "recall@5": 0.6902,
+     "precision@5": 0.1609,
+     "mrr": 0.6812,
+     "ndcg@5": 0.6811,
+     "rejection_rate": 0.7143,
+     "temporal_answer_accuracy": 0.2727,
+     "source_attribution_accuracy": 1.0,
+     "contradiction_recall@5": 1.0,
+     "owner_leaks": 0
+    },
+    "semantic": {
+     "recall@5": 0.8859,
+     "precision@5": 0.2,
+     "mrr": 0.8243,
+     "ndcg@5": 0.8375,
+     "rejection_rate": 0.8571,
+     "temporal_answer_accuracy": 0.2727,
+     "source_attribution_accuracy": 1.0,
+     "contradiction_recall@5": 1.0,
+     "owner_leaks": 0
+    },
+    "hybrid": {
+     "recall@5": 0.9076,
+     "precision@5": 0.2043,
+     "mrr": 0.8478,
+     "ndcg@5": 0.8606,
+     "rejection_rate": 0.7143,
+     "temporal_answer_accuracy": 0.3636,
+     "source_attribution_accuracy": 1.0,
+     "contradiction_recall@5": 1.0,
+     "owner_leaks": 0
+    },
+    "hybrid_temporal": {
+     "recall@5": 0.9946,
+     "precision@5": 0.2391,
+     "mrr": 0.9638,
+     "ndcg@5": 0.9686,
+     "rejection_rate": 0.7143,
+     "temporal_answer_accuracy": 0.9091,
+     "source_attribution_accuracy": 1.0,
+     "contradiction_recall@5": 1.0,
+     "owner_leaks": 0
+    },
+    "ablation_lexical_temporal": {
+     "recall@5": 0.7772,
+     "precision@5": 0.1957,
+     "mrr": 0.7717,
+     "ndcg@5": 0.7701,
+     "rejection_rate": 0.7143,
+     "temporal_answer_accuracy": 0.6364,
+     "source_attribution_accuracy": 1.0,
+     "contradiction_recall@5": 1.0,
+     "owner_leaks": 0
+    },
+    "ablation_semantic_temporal": {
+     "recall@5": 0.9728,
+     "precision@5": 0.2348,
+     "mrr": 0.9529,
+     "ndcg@5": 0.9549,
+     "rejection_rate": 0.8571,
+     "temporal_answer_accuracy": 0.9091,
+     "source_attribution_accuracy": 1.0,
+     "contradiction_recall@5": 1.0,
+     "owner_leaks": 0
+    },
+    "ablation_hybrid_temporal_no_similarity_threshold": {
+     "recall@5": 0.9728,
+     "precision@5": 0.2348,
+     "mrr": 0.9312,
+     "ndcg@5": 0.9387,
+     "rejection_rate": 0.0,
+     "temporal_answer_accuracy": 0.7273,
+     "source_attribution_accuracy": 1.0,
+     "contradiction_recall@5": 1.0,
+     "owner_leaks": 0
+    },
+    "ablation_hybrid_temporal_no_contradiction_expansion": {
+     "recall@5": 0.9946,
+     "precision@5": 0.2391,
+     "mrr": 0.9674,
+     "ndcg@5": 0.9715,
+     "rejection_rate": 0.7143,
+     "temporal_answer_accuracy": 0.9091,
+     "source_attribution_accuracy": 1.0,
+     "contradiction_recall@5": 1.0,
+     "owner_leaks": 0
+    }
+   },
+   "by_condition": {
+    "conceptual": {
+     "lexical": {
+      "mrr": 0.2,
+      "rejection_rate": null
+     },
+     "semantic": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     },
+     "hybrid_temporal": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 0.2,
+      "rejection_rate": null
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     }
+    },
+    "contradiction": {
+     "lexical": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "semantic": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     }
+    },
+    "episodic": {
+     "lexical": {
+      "mrr": 0.6,
+      "rejection_rate": null
+     },
+     "semantic": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     },
+     "hybrid": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     },
+     "hybrid_temporal": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 0.6,
+      "rejection_rate": null
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     }
+    },
+    "exact_keyword": {
+     "lexical": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "semantic": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     }
+    },
+    "historical_fact": {
+     "lexical": {
+      "mrr": 0.5,
+      "rejection_rate": null
+     },
+     "semantic": {
+      "mrr": 0.5694,
+      "rejection_rate": null
+     },
+     "hybrid": {
+      "mrr": 0.6667,
+      "rejection_rate": null
+     },
+     "hybrid_temporal": {
+      "mrr": 0.8889,
+      "rejection_rate": null
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 0.5,
+      "rejection_rate": null
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 0.8889,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 0.8056,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 0.9167,
+      "rejection_rate": null
+     }
+    },
+    "irrelevant": {
+     "lexical": {
+      "mrr": null,
+      "rejection_rate": 0.8
+     },
+     "semantic": {
+      "mrr": null,
+      "rejection_rate": 0.8
+     },
+     "hybrid": {
+      "mrr": null,
+      "rejection_rate": 0.8
+     },
+     "hybrid_temporal": {
+      "mrr": null,
+      "rejection_rate": 0.8
+     },
+     "ablation_lexical_temporal": {
+      "mrr": null,
+      "rejection_rate": 0.8
+     },
+     "ablation_semantic_temporal": {
+      "mrr": null,
+      "rejection_rate": 0.8
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": null,
+      "rejection_rate": 0.0
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": null,
+      "rejection_rate": 0.8
+     }
+    },
+    "owner_isolation": {
+     "lexical": {
+      "mrr": 1.0,
+      "rejection_rate": 0.5
+     },
+     "semantic": {
+      "mrr": 1.0,
+      "rejection_rate": 1.0
+     },
+     "hybrid": {
+      "mrr": 1.0,
+      "rejection_rate": 0.5
+     },
+     "hybrid_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": 0.5
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": 0.5
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": 1.0
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 1.0,
+      "rejection_rate": 0.0
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 1.0,
+      "rejection_rate": 0.5
+     }
+    },
+    "paraphrase": {
+     "lexical": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "semantic": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     }
+    },
+    "source_attribution": {
+     "lexical": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "semantic": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     }
+    },
+    "temporal_chronological": {
+     "lexical": {
+      "mrr": 0.0667,
+      "rejection_rate": null
+     },
+     "semantic": {
+      "mrr": 0.2,
+      "rejection_rate": null
+     },
+     "hybrid": {
+      "mrr": 0.2,
+      "rejection_rate": null
+     },
+     "hybrid_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 0.9,
+      "rejection_rate": null
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 0.8,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     }
+    },
+    "type_filter": {
+     "lexical": {
+      "mrr": 0.75,
+      "rejection_rate": null
+     },
+     "semantic": {
+      "mrr": 0.75,
+      "rejection_rate": null
+     },
+     "hybrid": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "hybrid_temporal": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_lexical_temporal": {
+      "mrr": 0.75,
+      "rejection_rate": null
+     },
+     "ablation_semantic_temporal": {
+      "mrr": 0.75,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_similarity_threshold": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     },
+     "ablation_hybrid_temporal_no_contradiction_expansion": {
+      "mrr": 1.0,
+      "rejection_rate": null
+     }
+    }
+   },
+   "checks": [
+    {
+     "name": "no cross-owner leakage in any variant",
+     "passed": true,
+     "detail": "",
+     "leaks": 0
+    }
+   ],
+   "failures": [
+    {
+     "variant": "hybrid_temporal",
+     "query": "eval-type-01",
+     "category": "type_filter",
+     "expected": [
+      "ep_lisbon_arrive",
+      "ep_lisbon_tram",
+      "ep_lisbon_pasteis",
+      "ep_lisbon_depart"
+     ],
+     "top_results": [
+      "ep_lisbon_tram",
+      "ep_lisbon_depart",
+      "ep_lisbon_arrive"
+     ]
+    },
+    {
+     "variant": "hybrid_temporal",
+     "query": "eval-irr-02",
+     "category": "irrelevant",
+     "expected": [],
+     "top_results": [
+      "tides",
+      "night_owl"
+     ]
+    },
+    {
+     "variant": "hybrid_temporal",
+     "query": "eval-own-04",
+     "category": "owner_isolation",
+     "expected": [],
+     "top_results": [
+      "b_pref"
+     ]
+    }
+   ],
+   "findings": [
+    "lexical: MRR 0.681, rejection 0.714, temporal answer accuracy 0.273, source attribution 1.000.",
+    "semantic: MRR 0.824, rejection 0.857, temporal answer accuracy 0.273, source attribution 1.000.",
+    "hybrid: MRR 0.848, rejection 0.714, temporal answer accuracy 0.364, source attribution 1.000.",
+    "hybrid_temporal: MRR 0.964, rejection 0.714, temporal answer accuracy 0.909, source attribution 1.000.",
+    "The benchmark is synthetic, English-only and project-authored. It is a regression signal, not independent validation. Multi-turn recall and context switching are measured through the full cognitive cycle in the integration suite."
+   ],
+   "extra": {
+    "dataset": {
+     "name": "artificial-human-synthetic-memory-retrieval",
+     "version": "1.1.0",
+     "sha256": "eb46c69b081968f284854e94a252d51d010ca4db25a254c2d6715d2d37c8b4f2"
+    },
+    "embedding_model": {
+     "backend": "fastembed",
+     "model_id": "BAAI/bge-small-en-v1.5",
+     "dimensions": 384,
+     "version": "fastembed-0.9.1",
+     "locality": "in_process",
+     "space": "fastembed:BAAI/bge-small-en-v1.5:384"
+    },
+    "semantic_threshold": 0.57,
+    "threshold_tuned_on": "tuning",
+    "skipped_variants": {}
+   },
+   "runtime_seconds": 29.1133,
+   "peak_memory_kib": 1188.4
+  },
+  "integration": {
+   "suite": "integration",
+   "title": "Integrated multi-turn cognitive-cycle scenarios",
+   "evidence_category": "software behaviour in end-to-end scenarios (deterministic, no LLM)",
+   "splits": {
+    "eval": 6
+   },
+   "systems": {
+    "lexical_temporal": {
+     "checks_passed": 22,
+     "checks_total": 29,
+     "pass_rate": 0.7586
+    },
+    "hybrid_temporal": {
+     "checks_passed": 26,
+     "checks_total": 29,
+     "pass_rate": 0.8966
+    }
+   },
+   "by_condition": {
+    "A_retain_and_recall": {
+     "lexical_temporal": {
+      "description": "Retain and recall across distraction",
+      "passed": 3,
+      "checks": 5
+     },
+     "hybrid_temporal": {
+      "description": "Retain and recall across distraction",
+      "passed": 4,
+      "checks": 5
+     }
+    },
+    "B_temporal_knowledge": {
+     "lexical_temporal": {
+      "description": "Current, previous and earlier-known facts",
+      "passed": 6,
+      "checks": 6
+     },
+     "hybrid_temporal": {
+      "description": "Current, previous and earlier-known facts",
+      "passed": 6,
+      "checks": 6
+     }
+    },
+    "C_attention_under_distraction": {
+     "lexical_temporal": {
+      "description": "Attention with high-salience distractors",
+      "passed": 2,
+      "checks": 4
+     },
+     "hybrid_temporal": {
+      "description": "Attention with high-salience distractors",
+      "passed": 4,
+      "checks": 4
+     }
+    },
+    "D_working_memory_interference": {
+     "lexical_temporal": {
+      "description": "Working-memory interference over turns",
+      "passed": 4,
+      "checks": 5
+     },
+     "hybrid_temporal": {
+      "description": "Working-memory interference over turns",
+      "passed": 4,
+      "checks": 5
+     }
+    },
+    "E_contradiction_awareness": {
+     "lexical_temporal": {
+      "description": "Contradictions preserved through to the model",
+      "passed": 5,
+      "checks": 5
+     },
+     "hybrid_temporal": {
+      "description": "Contradictions preserved through to the model",
+      "passed": 5,
+      "checks": 5
+     }
+    },
+    "F_context_switching_multi_turn": {
+     "lexical_temporal": {
+      "description": "Session switching and elliptical follow-up",
+      "passed": 2,
+      "checks": 4
+     },
+     "hybrid_temporal": {
+      "description": "Session switching and elliptical follow-up",
+      "passed": 3,
+      "checks": 4
+     }
+    }
+   },
+   "checks": [
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "lexical_temporal",
+     "name": "paraphrased question selects the stored fact",
+     "passed": true,
+     "detail": "",
+     "rank": 2
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "lexical_temporal",
+     "name": "paraphrased question ranks the stored fact first",
+     "passed": false,
+     "detail": ""
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "lexical_temporal",
+     "name": "keyword question selects the stored fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "lexical_temporal",
+     "name": "turn-1 input is still in working memory after 3 turns",
+     "passed": false,
+     "detail": ""
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "lexical_temporal",
+     "name": "conversation turns were not written to long-term memory",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "lexical_temporal",
+     "name": "'now' selects the current fact first",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "lexical_temporal",
+     "name": "'now' excludes the superseded fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "lexical_temporal",
+     "name": "'previously' selects the superseded fact first",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "lexical_temporal",
+     "name": "known_at before the update returns only the old fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "lexical_temporal",
+     "name": "valid_at 2024 returns only the old fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "lexical_temporal",
+     "name": "both versions keep their own provenance",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "lexical_temporal",
+     "name": "highest-weighted memory is relevant",
+     "passed": false,
+     "detail": ""
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "lexical_temporal",
+     "name": "all relevant memories are selected",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "lexical_temporal",
+     "name": "no high-salience distractor outweighs a relevant memory",
+     "passed": false,
+     "detail": ""
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "lexical_temporal",
+     "name": "selected memory precision",
+     "passed": true,
+     "detail": "",
+     "precision": 0.6667,
+     "selected": 3
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "lexical_temporal",
+     "name": "capacity is never exceeded",
+     "passed": true,
+     "detail": "",
+     "items": 7
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "lexical_temporal",
+     "name": "final question retrieves the stored fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "lexical_temporal",
+     "name": "re-retrieved stored fact is reactivated (access_count > 0)",
+     "passed": true,
+     "detail": "",
+     "access_count": 1
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "lexical_temporal",
+     "name": "an identical repeated input reactivates its earlier entry",
+     "passed": false,
+     "detail": "percept identifiers are unique per turn"
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "lexical_temporal",
+     "name": "displacement is recency-ordered (retained turns are the most recent ones)",
+     "passed": true,
+     "detail": "",
+     "retained_turn_indices": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "memory_slots": 1
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "lexical_temporal",
+     "name": "both conflicting memories reach the language component",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "lexical_temporal",
+     "name": "evidence marks the conflict",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "lexical_temporal",
+     "name": "sources of both claims are preserved",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "lexical_temporal",
+     "name": "no claim was promoted, rewritten, or added",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "lexical_temporal",
+     "name": "model is told not to resolve conflicts silently",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "lexical_temporal",
+     "name": "sessions do not share working memory",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "lexical_temporal",
+     "name": "switching back keeps the earlier session context",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "lexical_temporal",
+     "name": "elliptical follow-up ranks the sister's city first",
+     "passed": false,
+     "detail": "",
+     "selected": 0
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "lexical_temporal",
+     "name": "the preceding turn changes what is retrieved (conversational context is used)",
+     "passed": false,
+     "detail": "retrieval receives only the current turn"
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "hybrid_temporal",
+     "name": "paraphrased question selects the stored fact",
+     "passed": true,
+     "detail": "",
+     "rank": 1
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "hybrid_temporal",
+     "name": "paraphrased question ranks the stored fact first",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "hybrid_temporal",
+     "name": "keyword question selects the stored fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "hybrid_temporal",
+     "name": "turn-1 input is still in working memory after 3 turns",
+     "passed": false,
+     "detail": ""
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "hybrid_temporal",
+     "name": "conversation turns were not written to long-term memory",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "hybrid_temporal",
+     "name": "'now' selects the current fact first",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "hybrid_temporal",
+     "name": "'now' excludes the superseded fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "hybrid_temporal",
+     "name": "'previously' selects the superseded fact first",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "hybrid_temporal",
+     "name": "known_at before the update returns only the old fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "hybrid_temporal",
+     "name": "valid_at 2024 returns only the old fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "B_temporal_knowledge",
+     "config": "hybrid_temporal",
+     "name": "both versions keep their own provenance",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "hybrid_temporal",
+     "name": "highest-weighted memory is relevant",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "hybrid_temporal",
+     "name": "all relevant memories are selected",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "hybrid_temporal",
+     "name": "no high-salience distractor outweighs a relevant memory",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "hybrid_temporal",
+     "name": "selected memory precision",
+     "passed": true,
+     "detail": "",
+     "precision": 0.6667,
+     "selected": 3
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "hybrid_temporal",
+     "name": "capacity is never exceeded",
+     "passed": true,
+     "detail": "",
+     "items": 7
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "hybrid_temporal",
+     "name": "final question retrieves the stored fact",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "hybrid_temporal",
+     "name": "re-retrieved stored fact is reactivated (access_count > 0)",
+     "passed": true,
+     "detail": "",
+     "access_count": 1
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "hybrid_temporal",
+     "name": "an identical repeated input reactivates its earlier entry",
+     "passed": false,
+     "detail": "percept identifiers are unique per turn"
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "hybrid_temporal",
+     "name": "displacement is recency-ordered (retained turns are the most recent ones)",
+     "passed": true,
+     "detail": "",
+     "retained_turn_indices": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "memory_slots": 1
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "hybrid_temporal",
+     "name": "both conflicting memories reach the language component",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "hybrid_temporal",
+     "name": "evidence marks the conflict",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "hybrid_temporal",
+     "name": "sources of both claims are preserved",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "hybrid_temporal",
+     "name": "no claim was promoted, rewritten, or added",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "E_contradiction_awareness",
+     "config": "hybrid_temporal",
+     "name": "model is told not to resolve conflicts silently",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "hybrid_temporal",
+     "name": "sessions do not share working memory",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "hybrid_temporal",
+     "name": "switching back keeps the earlier session context",
+     "passed": true,
+     "detail": ""
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "hybrid_temporal",
+     "name": "elliptical follow-up ranks the sister's city first",
+     "passed": true,
+     "detail": "",
+     "selected": 2
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "hybrid_temporal",
+     "name": "the preceding turn changes what is retrieved (conversational context is used)",
+     "passed": false,
+     "detail": "retrieval receives only the current turn"
+    }
+   ],
+   "failures": [
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "lexical_temporal",
+     "check": "paraphrased question ranks the stored fact first"
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "lexical_temporal",
+     "check": "turn-1 input is still in working memory after 3 turns"
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "lexical_temporal",
+     "check": "highest-weighted memory is relevant"
+    },
+    {
+     "scenario": "C_attention_under_distraction",
+     "config": "lexical_temporal",
+     "check": "no high-salience distractor outweighs a relevant memory"
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "lexical_temporal",
+     "check": "an identical repeated input reactivates its earlier entry"
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "lexical_temporal",
+     "check": "elliptical follow-up ranks the sister's city first"
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "lexical_temporal",
+     "check": "the preceding turn changes what is retrieved (conversational context is used)"
+    },
+    {
+     "scenario": "A_retain_and_recall",
+     "config": "hybrid_temporal",
+     "check": "turn-1 input is still in working memory after 3 turns"
+    },
+    {
+     "scenario": "D_working_memory_interference",
+     "config": "hybrid_temporal",
+     "check": "an identical repeated input reactivates its earlier entry"
+    },
+    {
+     "scenario": "F_context_switching_multi_turn",
+     "config": "hybrid_temporal",
+     "check": "the preceding turn changes what is retrieved (conversational context is used)"
+    }
+   ],
+   "findings": [
+    "lexical_temporal: 22/29 behavioural checks passed.",
+    "hybrid_temporal: 26/29 behavioural checks passed.",
+    "Each cycle retrieves with the current turn only, so elliptical follow-ups cannot use the conversational context held in working memory.",
+    "A repeated input creates a new percept entry instead of reactivating the earlier one, because percept identifiers are unique per turn.",
+    "Retrieved memories compete with percepts for the same seven workspace slots, so the turn-1 input is displaced after a few turns that retrieve several memories.",
+    "Lexical retrieval found nothing for 'Where does she live?' because the light stemmer maps 'lives' to 'liv' but 'live' to 'live'. This is recorded as a measured limitation and has not been changed in this phase."
+   ],
+   "extra": {},
+   "runtime_seconds": 0.7104,
+   "peak_memory_kib": 131.1
+  }
+ }
+}

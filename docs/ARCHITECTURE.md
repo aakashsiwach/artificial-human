@@ -15,6 +15,7 @@ The project is a Python 3.12+ modular monolith with a local SQLite store and a l
 - **cognition.executive:** decompose a goal into inspectable steps with an approval boundary.
 - **cognition.architecture:** orchestrate the cognitive cycle and create an inspectable trace.
 - **brain.service:** pass selected context to a configurable language model and return its answer with the cognitive trace.
+- **cognition.benchmark:** reproducible evaluation of the subsystems above (seeded synthetic datasets → execution against the real classes → shared metrics → JSON/Markdown reports). It reuses `memory.benchmark` for long-term recall, makes no network calls by default, and never writes to the organism's database. CLI: `artificial-human cognition-eval`.
 
 The model is one component of the cognitive architecture; it does not replace the surrounding systems.
 

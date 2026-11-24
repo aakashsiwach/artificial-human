@@ -231,33 +231,37 @@ artificial-human memory-eval --backend fastembed --output-dir docs/benchmarks
 artificial-human memory-eval --backend none        # offline, lexical variants only (used in CI tests)
 ```
 
-Outputs: `docs/benchmarks/memory-retrieval-results.json` (machine-readable, per-query rankings) and `docs/benchmarks/memory-retrieval-report.md`.
+Outputs: `docs/benchmarks/memory-retrieval-results.json` (machine-readable: aggregates, per-category results, and failing queries with their top 5) and `docs/benchmarks/memory-retrieval-report.md`. Full per-query rankings for every variant are available in memory from `run_benchmark`, but are not written to disk.
 
-**Dataset.** `src/artificial_human/memory/benchmark/dataset.json` contains 46 synthetic memories for two synthetic owners and 62 queries: 13 *tuning* and 49 *eval*. It covers exact keyword, paraphrase, conceptual similarity, episodic recall, temporal/chronological recall, historical facts, contradictions, memory-type filters, irrelevant queries and owner isolation. It contains no personal data. Memories are ingested with a deterministic clock and a fixed reference time.
+**Dataset.** `src/artificial_human/memory/benchmark/dataset.json` (v1.1.0) contains 46 synthetic memories for two synthetic owners and 66 queries: 13 *tuning* and 53 *eval*. It covers exact keyword, paraphrase, conceptual similarity, episodic recall, temporal/chronological recall, historical facts, contradictions, source attribution, memory-type filters, irrelevant queries and owner isolation. Version 1.1.0 added four source-attribution queries to the eval split only, so the tuned threshold is unchanged. It contains no personal data. Memories are ingested with a deterministic clock and a fixed reference time.
 
-**Protocol.** The semantic threshold is chosen by grid search (0.40–0.85, step 0.01) maximising MRR + rejection rate **on the tuning split only**, then frozen for the eval split. RRF k = 60 and the channel weights were fixed before evaluation, not tuned. Graded relevance (0–2) is used for nDCG with exponential gain. Precision@K uses the standard denominator K.
+**Protocol.** The semantic threshold is chosen by grid search (0.40–0.85, step 0.01) maximising MRR + rejection rate **on the tuning split only**, then frozen for the eval split. RRF k = 60 and the channel weights were fixed before evaluation, not tuned. Graded relevance (0–2) is used for nDCG with exponential gain. Precision@K uses the standard denominator K. Task-level metrics: *temporal answer accuracy* (top result is a best-graded answer for temporal and historical questions), *source attribution accuracy* (top result comes from the expected source), and *contradiction recall@5* (all conflicting memories appear in the top 5).
 
-**Results (eval split, `BAAI/bge-small-en-v1.5`, threshold 0.57, Python 3.12):**
+**Results (eval split, dataset v1.1.0, `BAAI/bge-small-en-v1.5`, threshold 0.57, Python 3.12):**
 
-| Variant | Recall@5 | Precision@1 | MRR | nDCG@5 | Rejection | Owner leaks |
-| --- | --- | --- | --- | --- | --- | --- |
-| lexical | 0.661 | 0.643 | 0.651 | 0.651 | 0.714 | 0 |
-| semantic | 0.875 | 0.762 | 0.807 | 0.822 | 0.857 | 0 |
-| hybrid | 0.899 | 0.786 | 0.833 | 0.847 | 0.714 | 0 |
-| hybrid + temporal | 0.994 | 0.929 | 0.960 | 0.966 | 0.714 | 0 |
+| Variant | Recall@5 | Precision@1 | MRR | nDCG@5 | Rejection | Temporal answer acc. | Owner leaks |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| lexical | 0.690 | 0.674 | 0.681 | 0.681 | 0.714 | 0.273 | 0 |
+| semantic | 0.886 | 0.783 | 0.824 | 0.838 | 0.857 | 0.273 | 0 |
+| hybrid | 0.908 | 0.804 | 0.848 | 0.861 | 0.714 | 0.364 | 0 |
+| hybrid + temporal | 0.995 | 0.935 | 0.964 | 0.969 | 0.714 | 0.909 | 0 |
 
-Ablations of the full system: removing the lexical channel gives MRR 0.948 and rejection 0.857; removing the semantic channel gives MRR 0.750; removing the similarity threshold gives MRR 0.925 and rejection 0.000; removing contradiction expansion gives MRR 0.964. The full report is in [docs/benchmarks/memory-retrieval-report.md](benchmarks/memory-retrieval-report.md).
+Source attribution accuracy and contradiction recall@5 are 1.000 for every variant. These queries name their topic explicitly, so they do not discriminate between variants.
+
+Ablations of the full system: removing the lexical channel gives MRR 0.953 and rejection 0.857; removing the semantic channel gives MRR 0.772; removing the similarity threshold gives MRR 0.931 and rejection 0.000; removing contradiction expansion gives MRR 0.967. The full report is in [docs/benchmarks/memory-retrieval-report.md](benchmarks/memory-retrieval-report.md).
 
 **What the measurements support, and what they do not:**
 
-- On this dataset, hybrid ranking beats both single channels on MRR and nDCG@5. The gain over semantic-only is small (+0.026 MRR); most of the improvement over lexical comes from the embedding channel.
+- On this dataset, hybrid ranking beats both single channels on MRR and nDCG@5. The gain over semantic-only is small (+0.023 MRR); most of the improvement over lexical comes from the embedding channel.
 - Temporal reasoning accounts for the largest gain on temporal and historical categories: temporal/chronological MRR rises from 0.200 to 1.000, and historical facts from 0.667 to 0.889.
 - Adding the lexical channel **lowers** irrelevant-query rejection compared with semantic-only (0.714 vs 0.857). Lexical false positives such as "moons" → "Moon" in a tides fact, or "prefer" matching another preference, pass through fusion.
 - Without the similarity threshold the embedding channel returns something for every query (rejection 0.000), so the threshold is necessary.
-- Contradiction expansion does not improve ranking metrics here (MRR −0.004) because relevant conflicting memories were usually already retrieved. It is kept for transparency, so conflicting evidence appears beside a retrieved claim. That is a safety property, not a ranking gain.
-- The dataset is small (49 eval queries), synthetic, English-only and authored by the same project that built the system. The numbers are a regression signal, not evidence of general retrieval quality. The tuning split is only 13 queries.
+- Contradiction expansion does not improve ranking metrics here (MRR −0.003) because relevant conflicting memories were usually already retrieved. It is kept for transparency, so conflicting evidence appears beside a retrieved claim. That is a safety property, not a ranking gain.
+- The dataset is small (53 eval queries), synthetic, English-only and authored by the same project that built the system. The numbers are a regression signal, not evidence of general retrieval quality. The tuning split is only 13 queries.
 
 **Known failure cases (hybrid + temporal):** a type-filtered "Lisbon" query misses the Belém event, which never names Lisbon; "How many moons does Neptune have?" retrieves the tides fact through the stem "moon"; one owner-isolation query, which asks owner B for an editor preference B never stated, returns B's unrelated explanation preference. No result from another owner was ever returned.
+
+The broader [cognitive evaluation](COGNITIVE_EVALUATION.md) runs this benchmark as its `memory` suite. It also measures multi-turn recall and context switching through the full cognitive cycle.
 
 ## 11. Comparison with biological memory
 

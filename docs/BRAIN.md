@@ -121,7 +121,7 @@ This is style conditioning, not a trained clone. Fine-tuning and measurable clon
 
 Long-term memory retrieval is hybrid: BM25 lexical ranking, semantic similarity from a local pretrained embedding model (when `ARTIFICIAL_HUMAN_EMBEDDING_BACKEND=fastembed` is configured), and rule-based temporal reasoning, fused by Reciprocal Rank Fusion. Without an embedding backend it falls back to lexical + temporal retrieval, and paraphrased queries with little word overlap may then miss relevant memories.
 
-Measured on a small synthetic benchmark (49 eval queries), hybrid + temporal retrieval reaches MRR 0.960, against 0.651 for lexical-only. The lexical channel also lowers irrelevant-query rejection compared with semantic-only. Temporal intent detection uses English keyword rules. Relational and associative memory, source reconciliation, and memory dynamics (decay, consolidation, strengthening) remain future work. See [Long-term memory](MEMORY.md) for results, failure cases and limitations.
+Measured on a small synthetic benchmark (53 eval queries, dataset v1.1.0), hybrid + temporal retrieval reaches MRR 0.964, against 0.681 for lexical-only. The lexical channel also lowers irrelevant-query rejection compared with semantic-only. Temporal intent detection uses English keyword rules. Relational and associative memory, source reconciliation, and memory dynamics (decay, consolidation, strengthening) remain future work. See [Long-term memory](MEMORY.md) for results, failure cases and limitations.
 
 Approved learning examples are supplied as demonstrations. The system does not autonomously change model weights, infer permanent personality traits, or treat unreviewed data as training material.
 
@@ -142,6 +142,17 @@ Approved learning examples are supplied as demonstrations. The system does not a
 `POST /brain/evaluate-style` accepts a task message and a separate reference response written or selected by the owner. The Brain generates a response in `style_clone` mode without receiving that reference in its prompt; the evaluator compares the generated text after generation.
 
 Metrics include normalized exact match, token precision/recall/F1, and ROUGE-L precision/recall/F1. Inputs are capped at 1,000 tokens for the comparison and report whether truncation occurred. These are surface-form metrics only: paraphrases may score poorly, and matching words do not prove semantic accuracy, decision consistency, or personal identity. Keep evaluation references separate from training demonstrations to reduce data leakage. Evaluation requests and outputs are not stored.
+
+## Cognitive evaluation baseline
+
+`artificial-human cognition-eval` measures each implemented cognitive subsystem against simple baselines on synthetic, held-out tasks. It runs offline, needs no language model, and is deterministic. See the [research record](COGNITIVE_EVALUATION.md) and [report](benchmarks/cognitive-evaluation-report.md). Measured behaviour of the current heuristics:
+
+- **Attention:** the 0.8/0.2 relevance/salience formula helps when salience is informative, but high-salience distractors defeat it (nDCG@k 0.518 vs 0.973 for relevance-only). Separate max-normalisation per source let weak learning examples take 43% of selected slots in the cross-source condition.
+- **Working memory:** capacity is never exceeded and sessions are isolated. Forgetting is driven by multiplicative decay: retention is recency-only, unaffected by content similarity, and a low-salience input cannot enter a full workspace.
+- **Prediction/novelty:** eval AUROC 0.597. Contradictions and script violations look familiar, and paraphrases look novel, as expected of a lexical overlap signal.
+- **Integrated cycle (offline, lexical + temporal):** 22/29 behavioural checks pass (26/29 with the local embedding model). Retrieval uses only the current turn, not conversational context, and repeated inputs create new percepts rather than reactivating old ones.
+
+These results are a baseline for future mechanisms. No algorithm was changed to improve them.
 
 ## What is not implemented yet
 

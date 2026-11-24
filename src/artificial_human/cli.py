@@ -7,6 +7,8 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
+from artificial_human.cognition.benchmark.common import DEFAULT_SEED
+from artificial_human.cognition.benchmark.runner import SUITES as COGNITIVE_SUITES
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.embeddings import (
     DEFAULT_FASTEMBED_MODEL,
@@ -140,7 +142,69 @@ def build_parser() -> argparse.ArgumentParser:
         "--threshold", type=float, help="Fixed similarity threshold (skips tuning)"
     )
     evaluate.add_argument("--output-dir", help="Write JSON and Markdown reports here")
+
+    cognition = commands.add_parser(
+        "cognition-eval",
+        help="Evaluate attention, working memory, prediction, memory and the integrated cycle",
+        description=(
+            "Runs offline by default. Exit status: 0 = evaluation completed (whatever the "
+            "scores), 1 = execution error, 3 = a safety invariant (owner isolation) failed."
+        ),
+    )
+    cognition.add_argument(
+        "--suite", action="append", choices=("all", *COGNITIVE_SUITES),
+        help="Suite to run (repeatable; default: all)",
+    )
+    cognition.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    cognition.add_argument("--output-dir", help="Write report files here (default: stdout)")
+    cognition.add_argument(
+        "--format", action="append", choices=("json", "markdown"),
+        help="Output format (repeatable; default: both with --output-dir, markdown on stdout)",
+    )
+    cognition.add_argument(
+        "--embedding-backend", choices=("none", "fastembed"), default="none",
+        help="Optional local embedding model for semantic variants (default: none, offline)",
+    )
+    cognition.add_argument("--model", default=DEFAULT_FASTEMBED_MODEL)
+    cognition.add_argument("--cache-dir", default=".artificial-human/models")
+    cognition.add_argument("--offline", action="store_true", help="Use only a cached model")
     return parser
+
+
+def _cognition_eval(args: argparse.Namespace) -> int:
+    from artificial_human.cognition.benchmark.report import render_markdown
+    from artificial_human.cognition.benchmark.runner import (
+        InvariantViolation,
+        run_cognitive_evaluation,
+        write_reports,
+    )
+
+    provider: EmbeddingProvider | None = None
+    if args.embedding_backend == "fastembed":
+        provider = FastEmbedProvider(args.model, cache_dir=args.cache_dir, offline=args.offline)
+    try:
+        report = run_cognitive_evaluation(
+            args.suite or ["all"], seed=args.seed, provider=provider,
+            progress=lambda message: print(f"[cognition-eval] {message}", file=sys.stderr),
+        )
+    except InvariantViolation as error:
+        print(f"[cognition-eval] safety invariant failed: {error}", file=sys.stderr)
+        return 3
+    except Exception as error:  # report execution errors without a traceback dump
+        print(f"[cognition-eval] execution error: {type(error).__name__}: {error}",
+              file=sys.stderr)
+        return 1
+    formats = args.format or (["json", "markdown"] if args.output_dir else ["markdown"])
+    if args.output_dir:
+        for path in write_reports(report, Path(args.output_dir), formats):
+            print(f"[cognition-eval] wrote {path}", file=sys.stderr)
+    elif "json" in formats:
+        print(json.dumps(report, indent=1, ensure_ascii=False))
+    else:
+        print(render_markdown(report))
+    for name, suite in report["suites"].items():
+        print(f"[cognition-eval] {name}: {suite['runtime_seconds']:.2f}s", file=sys.stderr)
+    return 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -158,6 +222,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _memory_index(args)
     elif args.command == "memory-eval":
         return _memory_eval(args)
+    elif args.command == "cognition-eval":
+        return _cognition_eval(args)
     return 0
 
 

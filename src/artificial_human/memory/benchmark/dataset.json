@@ -1,8 +1,8 @@
 {
   "name": "artificial-human-synthetic-memory-retrieval",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "license": "Apache-2.0. Entirely synthetic text authored for this project; contains no personal data.",
-  "description": "Controlled long-term memory retrieval benchmark covering keyword, paraphrase, conceptual, episodic, temporal, historical, contradiction, type-filter, irrelevant-query and owner-isolation cases. Query splits: 'tuning' may be used to choose parameters; 'eval' must only be used for reporting.",
+  "description": "Controlled long-term memory retrieval benchmark covering keyword, paraphrase, conceptual, episodic, temporal, historical, contradiction, source-attribution, type-filter, irrelevant-query and owner-isolation cases. Query splits: 'tuning' may be used to choose parameters; 'eval' must only be used for reporting.",
   "reference_time": "2026-06-15T12:00:00+00:00",
   "owners": {
     "a": "bench-owner-a",
@@ -135,6 +135,11 @@
     {"id": "eval-own-01", "split": "eval", "category": "owner_isolation", "owner": "b", "text": "Where does the user work?", "relevant": {"b_job": 2}, "forbidden": ["job_a", "job_b"]},
     {"id": "eval-own-02", "split": "eval", "category": "owner_isolation", "owner": "a", "text": "Tell me about my trip to Tokyo.", "relevant": {}, "forbidden": ["b_tokyo"]},
     {"id": "eval-own-03", "split": "eval", "category": "owner_isolation", "owner": "b", "text": "How does altitude affect the boiling point of water?", "relevant": {"b_altitude": 2}, "forbidden": ["water_boiling"]},
+    {"id": "eval-src-01", "split": "eval", "category": "source_attribution", "owner": "a", "text": "What does the medical form say the user is allergic to?", "relevant": {"allergy_a": 2}, "expected_source": "synthetic:medical-form-2024"},
+    {"id": "eval-src-02", "split": "eval", "category": "source_attribution", "owner": "a", "text": "What did the friend's message suggest about the birthday?", "relevant": {"birthday_b": 2}, "expected_source": "synthetic:friend-message"},
+    {"id": "eval-src-03", "split": "eval", "category": "source_attribution", "owner": "a", "text": "Which runbook step comes before applying the Kubernetes manifest?", "relevant": {"proc_deploy": 2}, "expected_source": "synthetic:runbook"},
+    {"id": "eval-src-04", "split": "eval", "category": "source_attribution", "owner": "a", "text": "What does the decision log record about the billing service database?", "relevant": {"dec_postgres": 2}, "expected_source": "synthetic:decision-log"},
+
     {"id": "eval-own-04", "split": "eval", "category": "owner_isolation", "owner": "b", "text": "What is my preferred code editor?", "relevant": {}, "forbidden": ["pref_editor"]}
   ]
 }
