@@ -36,6 +36,13 @@ jobs:
         run: artificial-human simulate
       - name: Memory retrieval benchmark (offline, lexical variants)
         run: artificial-human memory-eval --backend none --output-dir benchmark-output
+      - name: Cognitive evaluation (offline, deterministic, no LLM or model download)
+        run: artificial-human cognition-eval --suite all --output-dir benchmark-output
+      - name: Upload offline benchmark reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-benchmarks-py${{ matrix.python-version }}
+          path: benchmark-output/
 
   # Real semantic retrieval benchmark. It downloads the open embedding model
   # weights once (cached) and is separate from the network-free test suite.
@@ -61,6 +68,8 @@ jobs:
         run: pytest -q
       - name: Full memory retrieval benchmark
         run: artificial-human memory-eval --backend fastembed --output-dir benchmark-output
+      - name: Cognitive evaluation with semantic variants (local model)
+        run: artificial-human cognition-eval --suite all --embedding-backend fastembed --output-dir benchmark-output
       - name: Upload benchmark reports
         uses: actions/upload-artifact@v4
         with:
