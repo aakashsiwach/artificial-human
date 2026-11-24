@@ -66,6 +66,7 @@ class IdentityUpdateRequest(BaseModel):
 class BrainRequest(BaseModel):
     message: str = Field(min_length=1, max_length=20_000)
     mode: BrainMode = "assistant"
+    session_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class BrainEvaluationRequest(BaseModel):
@@ -159,9 +160,20 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         organism_ref.identity = profile
         return asdict(profile)
 
+    @app.get("/brain/cognition/status")
+    def brain_cognition_status() -> dict[str, str]:
+        return get_organism().cognitive_brain.architecture.status()
+
     @app.get("/brain/status")
     def brain_status() -> dict[str, object]:
         return get_organism().reasoning_status()
+
+    @app.delete("/brain/sessions/{session_id}")
+    def clear_brain_session(session_id: str) -> dict[str, bool]:
+        cleared = get_organism().cognitive_brain.clear_session(
+            get_organism().owner_id, session_id
+        )
+        return {"cleared": cleared}
 
     @app.post("/brain/respond")
     def brain_respond(payload: BrainRequest) -> dict[str, Any]:
@@ -174,6 +186,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
                 profile=organism_ref.identity,
                 memories=memories,
                 mode=payload.mode,
+                session_id=payload.session_id,
             )
         except ProviderNotConfiguredError as error:
             raise HTTPException(status_code=503, detail=str(error)) from error
@@ -188,6 +201,9 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             "recalled_memories": result.recalled_memories,
             "approved_demonstrations": result.demonstrations,
             "plan_steps": result.plan_steps,
+            "cognitive_trace": result.cognitive_trace,
+            "working_memory_session": result.session_id,
+            "working_memory_persisted": False,
             "usage": {
                 "prompt_tokens": result.prompt_tokens,
                 "completion_tokens": result.completion_tokens,
