@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -21,11 +22,26 @@ class ProviderSettings:
     timeout_seconds: float = 45.0
     max_output_tokens: int = 1200
 
+    def __post_init__(self) -> None:
+        parsed = urlsplit(self.base_url)
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            raise ValueError("Provider base_url must be an absolute HTTP or HTTPS URL.")
+        if parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError("Provider base_url cannot contain credentials, query, or fragment.")
+        local_hosts = {"localhost", "127.0.0.1", "::1", "host.docker.internal"}
+        if parsed.scheme == "http" and parsed.hostname not in local_hosts:
+            raise ValueError("Remote reasoning providers must use HTTPS.")
+        if self.timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be positive")
+        if self.max_output_tokens < 1:
+            raise ValueError("max_output_tokens must be positive")
+
     @classmethod
     def from_env(cls) -> ProviderSettings:
         return cls(
-            base_url=os.getenv(
-                "ARTIFICIAL_HUMAN_LLM_BASE_URL", "http://127.0.0.1:11434/v1"
+            base_url=(
+                os.getenv("ARTIFICIAL_HUMAN_LLM_BASE_URL", "").strip()
+                or "http://127.0.0.1:11434/v1"
             ).rstrip("/"),
             model=os.getenv("ARTIFICIAL_HUMAN_LLM_MODEL", "").strip(),
             api_key=os.getenv("ARTIFICIAL_HUMAN_LLM_API_KEY", ""),
@@ -63,10 +79,6 @@ class OpenAICompatibleProvider:
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.settings = settings or ProviderSettings.from_env()
-        if self.settings.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive")
-        if self.settings.max_output_tokens < 1:
-            raise ValueError("max_output_tokens must be positive")
         self._client = httpx.Client(
             timeout=self.settings.timeout_seconds,
             transport=transport,
