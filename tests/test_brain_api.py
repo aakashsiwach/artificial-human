@@ -124,3 +124,33 @@ def test_style_evaluation_endpoint_returns_reference_metrics_without_saving_chat
     assert response.json()["reference_metrics"]["token_f1"] == 1.0
     assert response.json()["conversation_saved"] is False
     assert len(response.json()["plan_steps"]) == 4
+
+
+
+def test_brain_session_retains_only_volatile_working_memory_and_can_be_cleared(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "session.sqlite3",
+        identity_path=tmp_path / "identity.json",
+        brain_provider=StubProvider(),
+    )
+    client = TestClient(create_app(organism))
+    first = client.post("/brain/respond", json={
+        "message": "The hippocampus is involved in episodic memory.",
+        "session_id": "research-session",
+    })
+    assert first.status_code == 200
+    assert first.json()["working_memory_session"] == "research-session"
+    assert first.json()["working_memory_persisted"] is False
+
+    second = client.post("/brain/respond", json={
+        "message": "What was the brain structure I just mentioned?",
+        "session_id": "research-session",
+    })
+    assert second.status_code == 200
+    assert second.json()["cognitive_trace"]["working_memory"]["item_count"] >= 1
+
+    cleared = client.delete("/brain/sessions/research-session")
+    assert cleared.status_code == 200
+    assert cleared.json()["cleared"] is True
+    assert client.delete("/brain/sessions/research-session").json()["cleared"] is False
