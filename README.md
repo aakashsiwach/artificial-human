@@ -62,6 +62,18 @@ Personal memory is **off until the owner explicitly grants consent**.
 
 Do not store passwords, API keys, authentication tokens, or other secrets in personal memory.
 
+### Train a personal clone (owner-supervised dataset)
+
+Memory and training consent are separate. To contribute examples for clone-style learning:
+
+1. Create a second consent grant with purpose `personal_learning`.
+2. Submit owner demonstrations to `POST /training/examples` with a task category, input, target response, source, and consent ID.
+3. Review each example at `GET /training/examples?status=pending_review`.
+4. Approve or reject each example through `POST /training/examples/{id}/review`.
+5. Export only reviewed examples from `GET /training/corpus`.
+
+The exported corpus is supervised training data. This release does **not** fine-tune a model, infer your personality automatically, or claim the result is a complete clone. It creates a traceable, owner-curated dataset for later evaluation and model adaptation. Revoking the learning consent hides those examples from normal retrieval and corpus export; deleting an example or using owner erasure removes the stored record.
+
 ## Safety boundaries
 
 - No ambient microphone, camera, browser, filesystem crawl, or account access is enabled.
