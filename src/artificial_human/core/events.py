@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from collections import defaultdict
+from collections.abc import Callable
 from threading import RLock
 from typing import Any
 
