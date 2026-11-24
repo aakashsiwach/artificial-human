@@ -99,7 +99,7 @@ def test_prediction_assesses_novelty_against_existing_context() -> None:
         expected,
         ["The hippocampus supports episodic memory."],
     )
-    novel = predictor.assess(expected, ["The heart circulates blood."])
+    novel = predictor.assess(expected, ["heart circulates blood."])
     empty = predictor.assess(expected, [])
     assert matching.comparable is True
     assert matching.novelty == 0
