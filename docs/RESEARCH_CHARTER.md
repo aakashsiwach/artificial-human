@@ -457,3 +457,12 @@ The primary sources motivating the attention, working-memory, prediction and rec
 **Build the artificial mind from testable cognitive mechanisms informed by the human brain. Use modern technologies as implementation tools. Keep the science honest, the architecture modular, the evidence measurable, and the long-term vision stable.**
 
 When in doubt, return to this charter and the roadmap before changing direction.
+
+
+## 12. Initial prenatal developmental-substrate prototype
+
+The first in-memory developmental prototype now lives under `src/artificial_human/development/prenatal.py` and is documented in [Prenatal development](PRENATAL_DEVELOPMENT.md). It defines seven abstract populations and ten fixed directed projections, advances a coarse 280-day obstetric gestational clock, updates maturity/activity, and allows explicit scalar sensory cues to change bounded connection efficacy through a Hebbian-style engineering rule.
+
+This is intentionally a **scaffold experiment**, not a simulated fetus. It does not model cells, layers, radial migration, neurotransmitters, glia, real sensory waveforms, or biological synapses. Exposure payloads are discarded; only evolving network state and aggregate counters remain in memory. No exposure is persisted to SQLite. The scaffold's topology is an engineering invariant, while its efficacy values and activity state are allowed to adapt.
+
+The first acceptance tests cover deterministic development, gestational gates, unchanged topology, bounded plasticity, no retained stimulus history, and CLI reproduction. Behavioural and biological validation remain open. The prototype must not be described as evidence of fetal-level learning, a human brain, consciousness, or sentience.
