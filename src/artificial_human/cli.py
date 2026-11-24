@@ -58,6 +58,23 @@ def _memory_demo(organism: ArtificialOrganism) -> dict[str, object]:
     return answers
 
 
+def _emit(text: str) -> None:
+    """Write report text to stdout as UTF-8 regardless of the console code page.
+
+    Reports contain non-ASCII characters (for example en dashes and minus signs);
+    printing them through a cp1252 console or pipe raised UnicodeEncodeError.
+    """
+    stream = sys.stdout
+    buffer = getattr(stream, "buffer", None)
+    line = text + "\n"
+    if buffer is None:
+        stream.write(line)
+        return
+    stream.flush()
+    buffer.write(line.encode("utf-8"))
+    buffer.flush()
+
+
 def _provider_from_args(args: argparse.Namespace) -> EmbeddingProvider | None:
     if args.backend == "none":
         return None
@@ -81,7 +98,7 @@ def _memory_eval(args: argparse.Namespace) -> int:
         json_path, markdown_path = write_reports(report, Path(args.output_dir))
         print(f"[memory-eval] wrote {json_path} and {markdown_path}", file=sys.stderr)
     else:
-        print(render_markdown(report))
+        _emit(render_markdown(report))
     leaks = sum(item["overall"]["owner_leaks"] for item in report["variants"].values())
     if leaks:
         print(f"[memory-eval] owner isolation violated: {leaks} leaked results", file=sys.stderr)
@@ -199,9 +216,9 @@ def _cognition_eval(args: argparse.Namespace) -> int:
         for path in write_reports(report, Path(args.output_dir), formats):
             print(f"[cognition-eval] wrote {path}", file=sys.stderr)
     elif "json" in formats:
-        print(json.dumps(report, indent=1, ensure_ascii=False))
+        _emit(json.dumps(report, indent=1, ensure_ascii=False))
     else:
-        print(render_markdown(report))
+        _emit(render_markdown(report))
     for name, suite in report["suites"].items():
         print(f"[cognition-eval] {name}: {suite['runtime_seconds']:.2f}s", file=sys.stderr)
     return 0
