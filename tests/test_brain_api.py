@@ -1,0 +1,105 @@
+from fastapi.testclient import TestClient
+
+from artificial_human.brain.providers.base import ChatMessage, Generation
+from artificial_human.api import create_app
+from artificial_human.core.models import MemoryKind
+from artificial_human.organism import ArtificialOrganism
+
+
+class StubProvider:
+    def generate(
+        self, messages: list[ChatMessage], *, temperature: float = 0.2,
+        max_tokens: int = 1200,
+    ) -> Generation:
+        return Generation(
+            content="I can support that with the available evidence.",
+            model="stub-model",
+        )
+
+
+def test_brain_status_reports_missing_model_without_exposing_secrets(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "status.sqlite3",
+        identity_path=tmp_path / "identity.json",
+    )
+    client = TestClient(create_app(organism))
+    response = client.get("/brain/status")
+    assert response.status_code == 200
+    assert response.json()["configured"] is False
+    assert "api_key" not in response.json()
+
+
+def test_brain_endpoint_uses_consent_memory_and_returns_evidence(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "brain.sqlite3",
+        identity_path=tmp_path / "identity.json",
+        brain_provider=StubProvider(),
+    )
+    client = TestClient(create_app(organism))
+
+    profile = client.put("/identity", json={
+        "display_name": "Aakash",
+        "description": "Software engineer",
+        "principles": ["Be honest about uncertainty."],
+        "boundaries": ["Do not send anything without approval."],
+        "communication_preferences": {"tone": "natural"},
+    })
+    assert profile.status_code == 200
+    assert client.get("/identity").json()["display_name"] == "Aakash"
+
+    consent = client.post("/consents", json={"purpose": "personal_memory"}).json()
+    memory = client.post("/memories", json={
+        "kind": "preference",
+        "content": "I prefer concise technical explanations.",
+        "source": "owner statement",
+        "consent_id": consent["id"],
+    })
+    assert memory.status_code == 201
+
+    response = client.post("/brain/respond", json={
+        "message": "How do I prefer technical explanations?",
+        "mode": "assistant",
+    })
+    assert response.status_code == 200
+    assert response.json()["model"] == "stub-model"
+    assert response.json()["conversation_saved"] is False
+    assert response.json()["recalled_memories"][0]["memory_id"] == memory.json()["id"]
+
+
+def test_brain_endpoint_returns_service_unavailable_without_provider(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "not-configured.sqlite3",
+        identity_path=tmp_path / "identity.json",
+    )
+    response = TestClient(create_app(organism)).post(
+        "/brain/respond", json={"message": "Hello"}
+    )
+    assert response.status_code == 503
+    assert "ARTIFICIAL_HUMAN_LLM_MODEL" in response.json()["detail"]
+
+
+def test_revoking_memory_consent_removes_memory_from_brain_context(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "revoked.sqlite3",
+        identity_path=tmp_path / "identity.json",
+        brain_provider=StubProvider(),
+    )
+    client = TestClient(create_app(organism))
+    consent = client.post("/consents", json={"purpose": "personal_memory"}).json()
+    memory = client.post("/memories", json={
+        "kind": "semantic",
+        "content": "The owner's preferred editor is VS Code.",
+        "source": "owner statement",
+        "consent_id": consent["id"],
+    }).json()
+    assert client.delete(f"/consents/{consent['id']}").status_code == 200
+
+    response = client.post("/brain/respond", json={
+        "message": "Which editor do I prefer?"
+    })
+    assert response.status_code == 200
+    assert response.json()["recalled_memories"] == []
