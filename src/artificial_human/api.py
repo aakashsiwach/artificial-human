@@ -56,6 +56,16 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     def get_organism() -> ArtificialOrganism:
         return app.state.organism
 
+    @app.get("/", include_in_schema=False)
+    def root() -> dict[str, str]:
+        return {
+            "service": "Artificial Human",
+            "message": "The artificial organism API is running.",
+            "docs": "/docs",
+            "health": "/health",
+            "status": "/status",
+        }
+
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "artificial-human"}
