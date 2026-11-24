@@ -43,6 +43,7 @@ def test_dataset_is_synthetic_split_and_consistent() -> None:
     assert categories == {
         "exact_keyword", "paraphrase", "conceptual", "episodic", "temporal_chronological",
         "historical_fact", "contradiction", "type_filter", "irrelevant", "owner_isolation",
+        "source_attribution",
     }
     assert all(item["source"].startswith("synthetic:") for item in dataset["memories"])
     assert all(owner.startswith("bench-") for owner in dataset["owners"].values())
