@@ -2,7 +2,6 @@ from fastapi.testclient import TestClient
 import pytest
 
 from artificial_human.api import create_app
-from artificial_human.core.models import MemoryKind
 from artificial_human.memory.repository import ConsentRequiredError, MemoryRepository
 from artificial_human.organism import ArtificialOrganism
 
