@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from artificial_human.brain.providers.base import (
+    ProviderNotConfiguredError,
+    ProviderRequestError,
+)
+from artificial_human.brain.service import BrainMode
 from artificial_human.core.models import MemoryKind
+from artificial_human.identity.profile import IdentityProfile
 from artificial_human.memory.repository import ConsentRequiredError
 from artificial_human.organism import ArtificialOrganism
 
@@ -45,6 +52,21 @@ class PlanRequest(BaseModel):
     goal: str = Field(min_length=1, max_length=4_000)
 
 
+class IdentityUpdateRequest(BaseModel):
+    display_name: str = Field(min_length=1, max_length=120)
+    description: str = Field(default="", max_length=4_000)
+    principles: list[str] = Field(default_factory=list, max_length=50)
+    boundaries: list[str] = Field(default_factory=list, max_length=50)
+    communication_preferences: dict[str, str] = Field(
+        default_factory=dict, max_length=30
+    )
+
+
+class BrainRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=20_000)
+    mode: BrainMode = "assistant"
+
+
 def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     app = FastAPI(
         title="Artificial Human",
@@ -73,6 +95,63 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     @app.get("/status")
     def status() -> dict[str, Any]:
         return get_organism().status()
+
+    @app.get("/identity")
+    def get_identity() -> dict[str, Any]:
+        return asdict(get_organism().identity)
+
+    @app.put("/identity")
+    def update_identity(payload: IdentityUpdateRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        profile = IdentityProfile(
+            owner_id=organism_ref.owner_id,
+            display_name=payload.display_name,
+            description=payload.description,
+            principles=tuple(payload.principles),
+            boundaries=tuple(payload.boundaries),
+            communication_preferences=payload.communication_preferences,
+        )
+        try:
+            organism_ref.identity_repository.save(profile)
+        except (OSError, ValueError) as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        organism_ref.identity = profile
+        return asdict(profile)
+
+    @app.get("/brain/status")
+    def brain_status() -> dict[str, object]:
+        return get_organism().reasoning_status()
+
+    @app.post("/brain/respond")
+    def brain_respond(payload: BrainRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        try:
+            memories = organism_ref.memory.list(organism_ref.owner_id, limit=500)
+            result = organism_ref.cognitive_brain.respond(
+                owner_id=organism_ref.owner_id,
+                query=payload.message,
+                profile=organism_ref.identity,
+                memories=memories,
+                mode=payload.mode,
+            )
+        except ProviderNotConfiguredError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+        except ProviderRequestError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return {
+            "answer": result.answer,
+            "model": result.model,
+            "mode": result.mode,
+            "recalled_memories": result.recalled_memories,
+            "approved_demonstrations": result.demonstrations,
+            "usage": {
+                "prompt_tokens": result.prompt_tokens,
+                "completion_tokens": result.completion_tokens,
+            },
+            "conversation_saved": False,
+        }
 
     @app.post("/consents", status_code=201)
     def grant_consent(payload: ConsentRequest) -> dict[str, Any]:
