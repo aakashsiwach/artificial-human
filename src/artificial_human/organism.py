@@ -9,6 +9,7 @@ from artificial_human.brain.planner import Planner
 from artificial_human.circulation.scheduler import WorkScheduler
 from artificial_human.core.events import EventBus
 from artificial_human.identity.profile import IdentityProfile
+from artificial_human.learning import LearningSystem
 from artificial_human.immune.engine import ImmuneSystem
 from artificial_human.memory.repository import MemoryRepository
 from artificial_human.metabolism.governor import ResourceGovernor
@@ -26,6 +27,7 @@ class ArtificialOrganism:
         self.owner_id = owner_id or os.getenv("ARTIFICIAL_HUMAN_OWNER_ID", "local-owner")
         self.identity = IdentityProfile(owner_id=self.owner_id)
         self.memory = MemoryRepository(database_path)
+        self.learning = LearningSystem(self.memory)
         self.brain = Planner()
         self.senses = ManualSensor()
         self.immune = ImmuneSystem()
