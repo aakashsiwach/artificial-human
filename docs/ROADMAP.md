@@ -2,6 +2,20 @@
 
 The long-term goal is a computational artificial mind whose architecture is grounded in human neuroscience and cognitive science. The project proceeds through explicit research hypotheses and measurable implementations. It does not claim that present-day code is a complete human brain or conscious.
 
+**Source of truth:** [Research Charter](RESEARCH_CHARTER.md). It records the north star, scientific evidence standards, current baseline, technology strategy, staged research plan, and a reusable context-recovery prompt. The roadmap records delivery status; the charter records why and how we choose the work. Always verify merged code and CI before changing checkboxes.
+
+## Strategic execution order
+
+1. **Close the measurement gap (next):** build held-out, multi-turn benchmarks for attention, working-memory retention, prediction, and memory recall. Expand beyond the current small, project-authored English memory dataset and record baselines, ablations, failure cases, and resource use.
+2. **Deepen memory and learning:** add associative/relational memory, temporal context and contiguity, retrieval-dependent strengthening, forgetting/interference, source monitoring, and owner-reviewed consolidation. Compare each mechanism with the current static memory baseline.
+3. **Ground the mind in the environment:** add permission-scoped multimodal perception, spatial/world-state representations, and uncertainty-aware multisensory integration.
+4. **Add affect and regulation:** research bounded appraisal, interoception, homeostasis, and motivation, with explicit state and no unsupported claims about feelings.
+5. **Develop adaptive action:** compare safe, simulation-first reinforcement and action-selection approaches under independent approval boundaries.
+6. **Research neural substrates and alternative architectures:** compare recurrent, state-space, local-plasticity, spiking, and neuromorphic approaches only on tasks where their proposed mechanisms can be measured.
+7. **Integrate and compare cognitive architectures:** evaluate closed-loop behaviour, generalisation, adaptation, calibration, robustness, and resource efficiency. Keep consciousness research separate from capability claims.
+
+Do not skip the evaluation stage merely to add a visually impressive subsystem. Follow the charter's scientific protocol and minimum acceptance criteria.
+
 ## Milestone 0 — organism foundation
 
 - [x] Modular organism subsystem boundaries.
