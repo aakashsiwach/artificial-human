@@ -1,5 +1,7 @@
 # Safety and privacy model
 
+The [Research Charter](RESEARCH_CHARTER.md) defines the scientific and ethical boundaries for the long-term artificial-mind research programme. Any work involving neural data, human participants, animals, biological tissue, neural organoids, or biohybrid systems requires appropriate institutional, legal, ethical, and domain-expert governance before experimentation.
+
 ## Default-deny posture
 
 - Personal memory is disabled until an owner creates a purpose-specific consent grant.
