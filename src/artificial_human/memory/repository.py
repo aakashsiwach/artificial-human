@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import json
 import os
 import sqlite3
@@ -232,7 +233,7 @@ class MemoryRepository:
             )
         return example_cursor.rowcount + memory_cursor.rowcount
 
-    def export(self, owner_id: str) -> list[dict[str, Any]]:
+    def export(self, owner_id: str) -> builtins.list[dict[str, Any]]:
         return [
             {
                 "id": item.id, "owner_id": item.owner_id, "kind": item.kind.value,
@@ -275,7 +276,7 @@ class MemoryRepository:
 
     def list_training_examples(
         self, owner_id: str, *, status: str | None = None, limit: int = 100
-    ) -> list[LearningExample]:
+    ) -> builtins.list[LearningExample]:
         if not 1 <= limit <= 500:
             raise ValueError("limit must be between 1 and 500")
         if status not in (None, "pending_review", "approved", "rejected"):
@@ -283,7 +284,7 @@ class MemoryRepository:
         query = """SELECT e.* FROM training_examples e
                    JOIN consents c ON c.id = e.consent_id
                    WHERE e.owner_id = ? AND c.active = 1"""
-        values: list[Any] = [owner_id]
+        values: builtins.list[Any] = [owner_id]
         if status is not None:
             query += " AND e.status = ?"
             values.append(status)
@@ -328,7 +329,7 @@ class MemoryRepository:
             )
         return cursor.rowcount == 1
 
-    def export_training_corpus(self, owner_id: str) -> list[dict[str, str]]:
+    def export_training_corpus(self, owner_id: str) -> builtins.list[dict[str, str]]:
         approved = self.list_training_examples(owner_id, status="approved", limit=500)
         return [
             {

@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from artificial_human.brain.evaluation import evaluate_text_similarity
+from artificial_human.brain.providers.base import (
+    ProviderNotConfiguredError,
+    ProviderRequestError,
+)
+from artificial_human.brain.service import BrainMode
 from artificial_human.core.models import MemoryKind
+from artificial_human.identity.profile import IdentityProfile
 from artificial_human.memory.repository import ConsentRequiredError
 from artificial_human.organism import ArtificialOrganism
 
@@ -45,6 +53,27 @@ class PlanRequest(BaseModel):
     goal: str = Field(min_length=1, max_length=4_000)
 
 
+class IdentityUpdateRequest(BaseModel):
+    display_name: str = Field(min_length=1, max_length=120)
+    description: str = Field(default="", max_length=4_000)
+    principles: list[str] = Field(default_factory=list, max_length=50)
+    boundaries: list[str] = Field(default_factory=list, max_length=50)
+    communication_preferences: dict[str, str] = Field(
+        default_factory=dict, max_length=30
+    )
+
+
+class BrainRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=20_000)
+    mode: BrainMode = "assistant"
+    session_id: str | None = Field(default=None, min_length=1, max_length=128)
+
+
+class BrainEvaluationRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=20_000)
+    reference_response: str = Field(min_length=1, max_length=20_000)
+
+
 def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     app = FastAPI(
         title="Artificial Human",
@@ -74,6 +103,114 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     def status() -> dict[str, Any]:
         return get_organism().status()
 
+    @app.post("/brain/evaluate-style")
+    def brain_evaluate_style(payload: BrainEvaluationRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        try:
+            memories = organism_ref.memory.list(organism_ref.owner_id, limit=500)
+            result = organism_ref.cognitive_brain.respond(
+                owner_id=organism_ref.owner_id,
+                query=payload.message,
+                profile=organism_ref.identity,
+                memories=memories,
+                mode="style_clone",
+            )
+        except ProviderNotConfiguredError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+        except ProviderRequestError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return {
+            "answer": result.answer,
+            "model": result.model,
+            "mode": result.mode,
+            "reference_metrics": evaluate_text_similarity(
+                payload.reference_response, result.answer
+            ),
+            "recalled_memories": result.recalled_memories,
+            "approved_demonstrations": result.demonstrations,
+            "plan_steps": result.plan_steps,
+            "conversation_saved": False,
+            "evaluation_note": (
+                "Lexical similarity is a surface-form proxy. It does not measure semantic "
+                "correctness, identity, or whether the response reflects the owner's real decisions."
+            ),
+        }
+
+    @app.get("/identity")
+    def get_identity() -> dict[str, Any]:
+        return asdict(get_organism().identity)
+
+    @app.put("/identity")
+    def update_identity(payload: IdentityUpdateRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        profile = IdentityProfile(
+            owner_id=organism_ref.owner_id,
+            display_name=payload.display_name,
+            description=payload.description,
+            principles=tuple(payload.principles),
+            boundaries=tuple(payload.boundaries),
+            communication_preferences=payload.communication_preferences,
+        )
+        try:
+            organism_ref.identity_repository.save(profile)
+        except (OSError, ValueError) as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        organism_ref.identity = profile
+        return asdict(profile)
+
+    @app.get("/brain/cognition/status")
+    def brain_cognition_status() -> dict[str, str]:
+        return get_organism().cognitive_brain.architecture.status()
+
+    @app.get("/brain/status")
+    def brain_status() -> dict[str, object]:
+        return get_organism().reasoning_status()
+
+    @app.delete("/brain/sessions/{session_id}")
+    def clear_brain_session(session_id: str) -> dict[str, bool]:
+        cleared = get_organism().cognitive_brain.clear_session(
+            get_organism().owner_id, session_id
+        )
+        return {"cleared": cleared}
+
+    @app.post("/brain/respond")
+    def brain_respond(payload: BrainRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        try:
+            memories = organism_ref.memory.list(organism_ref.owner_id, limit=500)
+            result = organism_ref.cognitive_brain.respond(
+                owner_id=organism_ref.owner_id,
+                query=payload.message,
+                profile=organism_ref.identity,
+                memories=memories,
+                mode=payload.mode,
+                session_id=payload.session_id,
+            )
+        except ProviderNotConfiguredError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+        except ProviderRequestError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return {
+            "answer": result.answer,
+            "model": result.model,
+            "mode": result.mode,
+            "recalled_memories": result.recalled_memories,
+            "approved_demonstrations": result.demonstrations,
+            "plan_steps": result.plan_steps,
+            "cognitive_trace": result.cognitive_trace,
+            "working_memory_session": result.session_id,
+            "working_memory_persisted": False,
+            "usage": {
+                "prompt_tokens": result.prompt_tokens,
+                "completion_tokens": result.completion_tokens,
+            },
+            "conversation_saved": False,
+        }
+
     @app.post("/consents", status_code=201)
     def grant_consent(payload: ConsentRequest) -> dict[str, Any]:
         try:
@@ -90,6 +227,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         changed = get_organism().memory.revoke_consent(get_organism().owner_id, consent_id)
         if not changed:
             raise HTTPException(status_code=404, detail="Active consent not found")
+        get_organism().cognitive_brain.clear_owner_sessions(get_organism().owner_id)
         return {"revoked": True}
 
     @app.post("/memories", status_code=201)
@@ -133,12 +271,17 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         deleted = get_organism().memory.delete(get_organism().owner_id, memory_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Memory not found")
+        get_organism().cognitive_brain.clear_owner_sessions(get_organism().owner_id)
         return {"deleted": True}
 
     @app.delete("/memories")
     def erase_memories() -> dict[str, int]:
-        count = get_organism().memory.erase_owner(get_organism().owner_id)
-        return {"deleted": count}
+        organism_ref = get_organism()
+        count = organism_ref.memory.erase_owner(organism_ref.owner_id)
+        sessions_cleared = organism_ref.cognitive_brain.clear_owner_sessions(
+            organism_ref.owner_id
+        )
+        return {"deleted": count, "sessions_cleared": sessions_cleared}
 
     @app.post("/training/examples", status_code=201)
     def add_training_example(payload: TrainingExampleRequest) -> dict[str, Any]:
@@ -220,6 +363,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         )
         if not deleted:
             raise HTTPException(status_code=404, detail="Training example not found")
+        organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         return {"deleted": True}
 
     @app.get("/training/corpus")
