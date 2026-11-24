@@ -2,11 +2,19 @@
 
 ## Research principle
 
+The [Research Charter](RESEARCH_CHARTER.md) is the authoritative project north star and contains the expanded neuroscience research map, evidence standards, technology-selection strategy, staged implementation sequence, bibliography, and context-recovery prompt. This blueprint is the compact biological-to-computational map; it must remain consistent with the charter and the actual implementation.
+
 The human brain is the scientific reference for the artificial mind. We should study biological mechanisms and cognitive theories, translate selected functions into explicit computational models, and evaluate those models. A biological label must never be used to imply that ordinary software is a real organ or that an implementation reproduces the biology.
 
 Brain functions are distributed across interacting networks. The table below is a research map, not a one-region/one-module anatomical claim.
 
 ## Cognitive architecture
+
+## Levels of analysis and technology strategy
+
+Research must connect cell types and synapses, local circuits, distributed network dynamics, behaviour, and causal evidence where available. A brain-region label is not a software specification. For each mechanism, distinguish an established empirical constraint, a supported but incomplete computational account, a contested theory, and a practical engineering choice.
+
+Use modern foundation models, deep-learning runtimes, embeddings, graph and relational models, recurrent/state-space models, reinforcement learning, simulation, spiking neural networks, and neuromorphic hardware as tools for specific hypotheses. Select them through current compatibility, licence, privacy, performance, and maintenance checks. Do not assume that a newer model or a more biologically named architecture is automatically better. Define baselines, ablations, evaluation tasks, and failure criteria before adoption.
 
 | Brain function / research area | Artificial Human subsystem | Current implementation |
 | --- | --- | --- |
@@ -84,6 +92,14 @@ Each hypothesis below is a functional analogue, measured in the [memory benchmar
 The memory model also leaves out consolidation over time, forgetting and interference, retrieval-dependent strengthening, emotional modulation, and multimodal binding. See [Long-term memory §11](MEMORY.md#11-comparison-with-biological-memory).
 
 ## Research requirements before claiming biological fidelity
+## Target closed-loop research architecture
+
+The current cycle is text-driven and ends in language generation. The longer-term research target is:
+
+**Sensory and interoceptive input → perceptual state estimation → memory retrieval and association → attention and limited workspace → predictive world model → affective appraisal and homeostatic state → goal and action selection → environment interaction → outcome and prediction-error evaluation → learning, plasticity, and memory consolidation.**
+
+This is a target architecture, not a claim that these modules are implemented. Each addition must have its own hypothesis, interface, benchmark, and safety boundary.
+
 
 For each proposed subsystem, document the biological evidence, the computational hypothesis, the abstraction level, measurable predictions, test datasets, failure modes, and ethical constraints. Prefer small falsifiable models over decorative brain-region labels. Compare alternatives and record when the biological evidence is unsettled.
 
