@@ -152,7 +152,7 @@ class BrainService:
             f"{json.dumps(plan_steps, ensure_ascii=False)}\n\n"
             "RETRIEVED MEMORY EVIDENCE (may be empty):\n"
             f"{json.dumps(memory_payload, ensure_ascii=False)}\n\n"
-            "OWNER-APPROVED LEARNING EXAMPLES (may be empty):\n"
+            "OWNER-APPROVED STYLE / TASK EXAMPLES (may be empty):\n"
             f"{json.dumps(example_payload, ensure_ascii=False)}\n\n"
             "Respond to the current input. Use the prediction novelty signal only as a "
             "prompt to check assumptions; novelty does not mean that information is false. "
