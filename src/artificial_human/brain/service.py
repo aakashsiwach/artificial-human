@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 from collections.abc import Sequence
 
+from artificial_human.brain.planner import Planner
 from artificial_human.brain.providers.base import ChatMessage, ChatProvider
 from artificial_human.brain.retrieval import MemoryRetriever
 from artificial_human.identity.profile import IdentityProfile
@@ -22,6 +23,7 @@ class BrainResponse:
     mode: BrainMode
     recalled_memories: tuple[dict[str, Any], ...]
     demonstrations: tuple[dict[str, Any], ...]
+    plan_steps: tuple[str, ...]
     prompt_tokens: int | None
     completion_tokens: int | None
 
@@ -34,10 +36,12 @@ class BrainService:
         provider: ChatProvider,
         learning: LearningSystem,
         retriever: MemoryRetriever | None = None,
+        planner: Planner | None = None,
     ) -> None:
         self.provider = provider
         self.learning = learning
         self.retriever = retriever or MemoryRetriever()
+        self.planner = planner or Planner()
 
     @staticmethod
     def _system_prompt(profile: IdentityProfile, mode: BrainMode) -> str:
@@ -85,6 +89,7 @@ class BrainService:
     ) -> BrainResponse:
         if not query.strip():
             raise ValueError("A message is required")
+        plan = self.planner.plan(query)
         matches = self.retriever.retrieve(query, memories, limit=max_memories)
         approved_examples = self.learning.examples(owner_id, status="approved", limit=500)
         ranked_examples = self.retriever_rank_examples(
@@ -115,6 +120,8 @@ class BrainService:
         context = (
             "CURRENT REQUEST:\n"
             f"{query.strip()}\n\n"
+            "TASK PLAN (a short workflow, not hidden chain-of-thought):\n"
+            f"{json.dumps([step.description for step in plan.steps], ensure_ascii=False)}\n\n"
             "RETRIEVED MEMORY EVIDENCE (may be empty):\n"
             f"{json.dumps(memory_payload, ensure_ascii=False)}\n\n"
             "OWNER-APPROVED STYLE / TASK EXAMPLES (may be empty):\n"
@@ -150,6 +157,7 @@ class BrainService:
                 }
                 for item, _ in ranked_examples
             ),
+            plan_steps=tuple(step.description for step in plan.steps),
             prompt_tokens=generation.prompt_tokens,
             completion_tokens=generation.completion_tokens,
         )
