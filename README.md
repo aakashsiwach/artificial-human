@@ -151,6 +151,8 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Documentation
 
+- [AI contributor instructions](AGENTS.md)
+- [Claude Code instructions](CLAUDE.md)
 - [Research Charter and Project North Star](docs/RESEARCH_CHARTER.md)
 - [Long-term memory](docs/MEMORY.md)
 - [Memory retrieval benchmark report](docs/benchmarks/memory-retrieval-report.md)
