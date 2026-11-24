@@ -6,6 +6,7 @@ from typing import Any, Literal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from artificial_human.brain.evaluation import evaluate_text_similarity
 from artificial_human.brain.providers.base import (
     ProviderNotConfiguredError,
     ProviderRequestError,
@@ -67,6 +68,11 @@ class BrainRequest(BaseModel):
     mode: BrainMode = "assistant"
 
 
+class BrainEvaluationRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=20_000)
+    reference_response: str = Field(min_length=1, max_length=20_000)
+
+
 def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     app = FastAPI(
         title="Artificial Human",
@@ -95,6 +101,41 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     @app.get("/status")
     def status() -> dict[str, Any]:
         return get_organism().status()
+
+    @app.post("/brain/evaluate-style")
+    def brain_evaluate_style(payload: BrainEvaluationRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        try:
+            memories = organism_ref.memory.list(organism_ref.owner_id, limit=500)
+            result = organism_ref.cognitive_brain.respond(
+                owner_id=organism_ref.owner_id,
+                query=payload.message,
+                profile=organism_ref.identity,
+                memories=memories,
+                mode="style_clone",
+            )
+        except ProviderNotConfiguredError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+        except ProviderRequestError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return {
+            "answer": result.answer,
+            "model": result.model,
+            "mode": result.mode,
+            "reference_metrics": evaluate_text_similarity(
+                payload.reference_response, result.answer
+            ),
+            "recalled_memories": result.recalled_memories,
+            "approved_demonstrations": result.demonstrations,
+            "plan_steps": result.plan_steps,
+            "conversation_saved": False,
+            "evaluation_note": (
+                "Lexical similarity is a surface-form proxy. It does not measure semantic "
+                "correctness, identity, or whether the response reflects the owner's real decisions."
+            ),
+        }
 
     @app.get("/identity")
     def get_identity() -> dict[str, Any]:
@@ -146,6 +187,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             "mode": result.mode,
             "recalled_memories": result.recalled_memories,
             "approved_demonstrations": result.demonstrations,
+            "plan_steps": result.plan_steps,
             "usage": {
                 "prompt_tokens": result.prompt_tokens,
                 "completion_tokens": result.completion_tokens,
