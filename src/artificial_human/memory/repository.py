@@ -40,6 +40,21 @@ class MemoryRecord:
     metadata: dict[str, Any]
 
 
+@dataclass(frozen=True, slots=True)
+class LearningExample:
+    id: str
+    owner_id: str
+    task_category: str
+    input_text: str
+    target_text: str
+    source: str
+    consent_id: str
+    status: str
+    created_at: str
+    reviewer: str | None = None
+    review_note: str | None = None
+
+
 class MemoryRepository:
     """SQLite memory store; personal-memory writes require active owner consent."""
 
@@ -97,6 +112,21 @@ class MemoryRepository:
                 );
                 CREATE INDEX IF NOT EXISTS idx_memories_owner
                     ON memories(owner_id, created_at DESC);
+                CREATE TABLE IF NOT EXISTS training_examples (
+                    id TEXT PRIMARY KEY,
+                    owner_id TEXT NOT NULL,
+                    task_category TEXT NOT NULL,
+                    input_text TEXT NOT NULL,
+                    target_text TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    consent_id TEXT NOT NULL REFERENCES consents(id),
+                    status TEXT NOT NULL DEFAULT 'pending_review',
+                    created_at TEXT NOT NULL,
+                    reviewer TEXT,
+                    review_note TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_training_owner
+                    ON training_examples(owner_id, status, created_at DESC);
                 """
             )
 
@@ -190,12 +220,17 @@ class MemoryRepository:
         """Delete all memories and revoke all consent grants for this owner."""
         now = self._now()
         with self._connect() as connection:
-            cursor = connection.execute("DELETE FROM memories WHERE owner_id = ?", (owner_id,))
+            example_cursor = connection.execute(
+                "DELETE FROM training_examples WHERE owner_id = ?", (owner_id,)
+            )
+            memory_cursor = connection.execute(
+                "DELETE FROM memories WHERE owner_id = ?", (owner_id,)
+            )
             connection.execute(
                 "UPDATE consents SET active = 0, revoked_at = ? WHERE owner_id = ?",
                 (now, owner_id),
             )
-        return cursor.rowcount
+        return example_cursor.rowcount + memory_cursor.rowcount
 
     def export(self, owner_id: str) -> list[dict[str, Any]]:
         return [
@@ -205,4 +240,96 @@ class MemoryRepository:
                 "created_at": item.created_at, "metadata": item.metadata,
             }
             for item in self.list(owner_id, limit=500)
+        ]
+
+
+    def add_training_example(
+        self, *, owner_id: str, task_category: str, input_text: str,
+        target_text: str, source: str, consent_id: str,
+    ) -> LearningExample:
+        if not all(value.strip() for value in (task_category, input_text, target_text, source)):
+            raise ValueError("task_category, input_text, target_text, and source are required")
+        with self._connect() as connection:
+            consent = connection.execute(
+                """SELECT id FROM consents
+                   WHERE id = ? AND owner_id = ? AND purpose = 'personal_learning' AND active = 1""",
+                (consent_id, owner_id),
+            ).fetchone()
+            if consent is None:
+                raise ConsentRequiredError("Active personal_learning consent is required")
+            example = LearningExample(
+                id=str(uuid4()), owner_id=owner_id, task_category=task_category,
+                input_text=input_text, target_text=target_text, source=source,
+                consent_id=consent_id, status="pending_review", created_at=self._now(),
+            )
+            connection.execute(
+                """INSERT INTO training_examples
+                   (id, owner_id, task_category, input_text, target_text, source,
+                    consent_id, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (example.id, example.owner_id, example.task_category, example.input_text,
+                 example.target_text, example.source, example.consent_id,
+                 example.status, example.created_at),
+            )
+        return example
+
+    def list_training_examples(
+        self, owner_id: str, *, status: str | None = None, limit: int = 100
+    ) -> list[LearningExample]:
+        if not 1 <= limit <= 500:
+            raise ValueError("limit must be between 1 and 500")
+        if status not in (None, "pending_review", "approved", "rejected"):
+            raise ValueError("status must be pending_review, approved, rejected, or omitted")
+        query = """SELECT e.* FROM training_examples e
+                   JOIN consents c ON c.id = e.consent_id
+                   WHERE e.owner_id = ? AND c.active = 1"""
+        values: list[Any] = [owner_id]
+        if status is not None:
+            query += " AND e.status = ?"
+            values.append(status)
+        query += " ORDER BY e.created_at DESC LIMIT ?"
+        values.append(limit)
+        with self._connect() as connection:
+            rows = connection.execute(query, values).fetchall()
+        return [
+            LearningExample(
+                id=row["id"], owner_id=row["owner_id"], task_category=row["task_category"],
+                input_text=row["input_text"], target_text=row["target_text"], source=row["source"],
+                consent_id=row["consent_id"], status=row["status"], created_at=row["created_at"],
+                reviewer=row["reviewer"], review_note=row["review_note"],
+            )
+            for row in rows
+        ]
+
+    def review_training_example(
+        self, owner_id: str, example_id: str, *, decision: str, reviewer: str, note: str = ""
+    ) -> bool:
+        if decision not in ("approved", "rejected"):
+            raise ValueError("decision must be approved or rejected")
+        if not reviewer.strip():
+            raise ValueError("reviewer is required")
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """UPDATE training_examples
+                   SET status = ?, reviewer = ?, review_note = ?
+                   WHERE id = ? AND owner_id = ? AND status = 'pending_review'
+                     AND consent_id IN (
+                       SELECT id FROM consents WHERE active = 1 AND purpose = 'personal_learning'
+                     )""",
+                (decision, reviewer, note, example_id, owner_id),
+            )
+        return cursor.rowcount == 1
+
+    def export_training_corpus(self, owner_id: str) -> list[dict[str, str]]:
+        approved = self.list_training_examples(owner_id, status="approved", limit=500)
+        return [
+            {
+                "id": item.id,
+                "task_category": item.task_category,
+                "input": item.input_text,
+                "target": item.target_text,
+                "source": item.source,
+                "created_at": item.created_at,
+            }
+            for item in approved
         ]
