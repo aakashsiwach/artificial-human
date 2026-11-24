@@ -171,3 +171,44 @@ def test_cognitive_status_reports_component_boundaries(tmp_path) -> None:
     assert response.status_code == 200
     assert response.json()["perception"] == "explicit_language_input"
     assert response.json()["working_memory"] == "capacity_limited_volatile_workspace"
+
+
+def test_revoking_memory_consent_clears_volatile_working_memory(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "session-consent.sqlite3",
+        identity_path=tmp_path / "identity.json",
+        brain_provider=StubProvider(),
+    )
+    client = TestClient(create_app(organism))
+    consent = client.post("/consents", json={"purpose": "personal_memory"}).json()
+    memory = client.post("/memories", json={
+        "kind": "preference",
+        "content": "My preferred code editor is VS Code.",
+        "source": "owner statement",
+        "consent_id": consent["id"],
+    })
+    assert memory.status_code == 201
+
+    first = client.post("/brain/respond", json={
+        "message": "Which code editor do I prefer?",
+        "session_id": "consent-session",
+    })
+    assert first.status_code == 200
+    assert any(
+        item["kind"] == "preference"
+        for item in first.json()["cognitive_trace"]["working_memory"]["items"]
+    )
+
+    revoked = client.delete(f"/consents/{consent['id']}")
+    assert revoked.status_code == 200
+
+    second = client.post("/brain/respond", json={
+        "message": "Do you remember my preferred editor?",
+        "session_id": "consent-session",
+    })
+    assert second.status_code == 200
+    assert all(
+        item["kind"] != "preference"
+        for item in second.json()["cognitive_trace"]["working_memory"]["items"]
+    )
