@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 import json
 import sys
 from collections.abc import Sequence
@@ -11,6 +12,7 @@ from artificial_human.cognition.benchmark.common import DEFAULT_SEED
 from artificial_human.cognition.benchmark.runner import EXTERNAL_SUITES as EXTERNAL_COGNITIVE_SUITES
 from artificial_human.cognition.benchmark.runner import SUITES as COGNITIVE_SUITES
 from artificial_human.core.models import MemoryKind
+from artificial_human.development.prenatal import GESTATION_DAYS, GESTATION_WEEKS, PrenatalBrain
 from artificial_human.memory.embeddings import (
     DEFAULT_FASTEMBED_MODEL,
     EmbeddingProvider,
@@ -137,6 +139,16 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("serve", help="Serve the loopback API on 127.0.0.1:8000")
     commands.add_parser("status", help="Print organism status")
 
+    prenatal = commands.add_parser(
+        "prenatal", help="Run the in-memory prenatal developmental simulation"
+    )
+    prenatal.add_argument("--days", type=int, default=GESTATION_DAYS)
+    prenatal.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    prenatal.add_argument(
+        "--exposure", action="append", default=[], metavar="WEEK:MODALITY:INTENSITY",
+        help="Explicit scalar cue, e.g. 25:auditory:0.7 (repeatable)",
+    )
+
     search = commands.add_parser("memory-search", help="Hybrid search of consented memories")
     search.add_argument("query")
     search.add_argument("--top-k", type=int, default=5)
@@ -259,12 +271,59 @@ def _cognition_eval(args: argparse.Namespace) -> int:
     return 0
 
 
+def _prenatal(args: argparse.Namespace) -> int:
+    if not 0 <= args.days <= GESTATION_DAYS:
+        print("[prenatal] --days must be between 0 and 280", file=sys.stderr)
+        return 2
+    if isinstance(args.seed, bool):
+        print("[prenatal] --seed must be an integer", file=sys.stderr)
+        return 2
+
+    parsed: list[tuple[int, str, float]] = []
+    try:
+        for value in args.exposure:
+            parts = value.split(":")
+            if len(parts) != 3:
+                raise ValueError("expected WEEK:MODALITY:INTENSITY")
+            week = int(parts[0])
+            intensity = float(parts[2])
+            if not 0 <= week <= GESTATION_WEEKS:
+                raise ValueError("exposure week must be between 0 and 40")
+            day = week * 7
+            if day > args.days:
+                raise ValueError("every exposure must occur before --days")
+            parsed.append((day, parts[1], intensity))
+    except ValueError as error:
+        print(f"[prenatal] invalid exposure: {error}", file=sys.stderr)
+        return 2
+
+    parsed.sort(key=lambda item: item[0])
+    brain = PrenatalBrain(seed=args.seed)
+    outcomes = []
+    try:
+        for day, modality, intensity in parsed:
+            brain.advance(day - brain.age_days)
+            outcomes.append(asdict(brain.expose(modality, intensity=intensity)))
+        brain.advance(args.days - brain.age_days)
+    except ValueError as error:
+        print(f"[prenatal] simulation error: {error}", file=sys.stderr)
+        return 2
+    print(json.dumps({
+        "simulation": "prenatal_developmental_substrate",
+        "snapshot": brain.snapshot().as_dict(),
+        "exposures": outcomes,
+    }, indent=2, ensure_ascii=False))
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "simulate":
         _simulate()
     elif args.command == "status":
         print(json.dumps(ArtificialOrganism().status(), indent=2))
+    elif args.command == "prenatal":
+        return _prenatal(args)
     elif args.command == "serve":
         import uvicorn
         uvicorn.run("artificial_human.api:app", host="127.0.0.1", port=8000, reload=False)
