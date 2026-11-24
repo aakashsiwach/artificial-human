@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 from artificial_human.memory.repository import (
-    ConsentRequiredError,
     LearningExample,
     MemoryRepository,
 )
