@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Sequence
+from collections.abc import Sequence
 from uuid import uuid4
 
 from artificial_human.core.models import HealthSignal, Incident, Observation, RepairProposal, Severity
