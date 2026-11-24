@@ -103,6 +103,18 @@ class CognitiveArchitecture:
             return []
         return [(item, min(1.0, score / maximum)) for item, score in items]
 
+    def status(self) -> dict[str, str]:
+        return {
+            "perception": "explicit_language_input",
+            "attention": "bounded_relevance_and_salience_heuristic",
+            "working_memory": "capacity_limited_volatile_workspace",
+            "prediction": "lexical_novelty_error_heuristic",
+            "executive_control": "goal_decomposition_with_approval_gate",
+            "memory": "consent_filtered_episodic_and_semantic_retrieval",
+            "learning": "owner_approved_demonstrations",
+            "language_model": "bounded_generation_and_deliberation_interface",
+        }
+
     @staticmethod
     def _explicit_salience(metadata: dict[str, Any]) -> float:
         value = metadata.get("salience", 0.0)
