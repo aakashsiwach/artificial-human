@@ -6,6 +6,8 @@ The human brain is the **research foundation**, not a decorative metaphor. The c
 
 ## Vision
 
+**Project north star:** [Research Charter and Project North Star](docs/RESEARCH_CHARTER.md) is the durable source of truth for the neuroscience foundation, long-term vision, scientific principles, technology strategy, implementation sequence, and context recovery. When a chat or contributor handoff loses context, start there and reconcile it with the roadmap and actual merged code.
+
 Build one coherent artificial organism with interacting cognitive and body-inspired systems:
 
 | Human / biological reference | Artificial Human subsystem | Responsibility |
@@ -149,6 +151,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Documentation
 
+- [Research Charter and Project North Star](docs/RESEARCH_CHARTER.md)
 - [Long-term memory](docs/MEMORY.md)
 - [Memory retrieval benchmark report](docs/benchmarks/memory-retrieval-report.md)
 - [ADR 0001: semantic, hybrid and temporal memory](docs/adr/0001-semantic-hybrid-temporal-memory.md)
@@ -160,7 +163,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Project status
 
-The project has an executable organism foundation and an integrated, neuroscience-informed cognitive-cycle foundation. It is not yet a complete artificial human, a biologically faithful brain simulation, an autonomous self-repair system, or artificial consciousness. See the roadmap for the research and implementation stages.
+The project has an executable organism foundation and an integrated, neuroscience-informed cognitive-cycle foundation, including semantic, hybrid, and temporal long-term memory. The next work is to strengthen cognitive-function evaluation, then develop associative memory and memory dynamics before expanding into multimodal perception, affect/homeostasis, action selection, and neural/neuromorphic experiments. It is not yet a complete artificial human, a biologically faithful brain simulation, an autonomous self-repair system, or artificial consciousness. See the [research charter](docs/RESEARCH_CHARTER.md) and [roadmap](docs/ROADMAP.md) for the scientific principles and implementation sequence.
 
 ## License
 
