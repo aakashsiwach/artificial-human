@@ -423,7 +423,6 @@ class PrenatalBrain:
             self._populations[route[0]].activity, signal
         )
         for source_id, target_id in zip(route, route[1:], strict=False):
-            source = self._populations[source_id]
             target = self._populations[target_id]
             projection = self._projections[(source_id, target_id)]
             target_activity = (
