@@ -197,6 +197,10 @@ class BrainService:
     def clear_session(self, owner_id: str, session_id: str) -> bool:
         return self.working_memory_sessions.clear(owner_id, session_id)
 
+    def clear_owner_sessions(self, owner_id: str) -> int:
+        """Clear volatile context when owner data or consent changes."""
+        return self.working_memory_sessions.clear_owner(owner_id)
+
     @staticmethod
     def retriever_rank_examples(
         query: str, examples: Sequence[LearningExample], *, limit: int
