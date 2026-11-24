@@ -72,7 +72,7 @@ class ArtificialOrganism:
             "owner_id": self.owner_id,
             "state": "operational",
             "systems": {
-                "brain": "ready" if reasoning["configured"] else "provider_not_configured",
+                "brain": "cognitive_cycle_ready" if reasoning["configured"] else "cognitive_cycle_ready_provider_not_configured",
                 "identity": "ready",
                 "memory": "ready_consent_required",
                 "sensory": "manual_input_only",
