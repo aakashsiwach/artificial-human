@@ -89,3 +89,11 @@ def test_provider_maps_http_error_without_returning_response_body() -> None:
         assert "secret detail" not in str(caught.value)
     finally:
         provider.close()
+
+def test_remote_provider_must_use_https() -> None:
+    with pytest.raises(ValueError, match="must use HTTPS"):
+        ProviderSettings(
+            base_url="http://model.example/v1",
+            model="remote-model",
+            api_key="secret",
+        )
