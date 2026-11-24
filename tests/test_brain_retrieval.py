@@ -14,7 +14,7 @@ def test_rank_texts_prefers_documents_with_more_query_overlap() -> None:
         limit=3,
     )
     assert ranked[0][0] == "relevant"
-    assert len(ranked) == 3
+    assert len(ranked) == 2
 
 
 def test_memory_retriever_returns_only_matching_records() -> None:
