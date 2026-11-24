@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -20,6 +20,19 @@ class MemoryRequest(BaseModel):
     source: str = Field(min_length=1, max_length=500)
     consent_id: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class TrainingExampleRequest(BaseModel):
+    task_category: str = Field(min_length=1, max_length=120)
+    input_text: str = Field(min_length=1, max_length=20_000)
+    target_text: str = Field(min_length=1, max_length=20_000)
+    source: str = Field(min_length=1, max_length=500)
+    consent_id: str
+
+
+class TrainingReviewRequest(BaseModel):
+    decision: Literal["approved", "rejected"]
+    note: str = Field(default="", max_length=2_000)
 
 
 class SignalRequest(BaseModel):
@@ -116,6 +129,99 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     def erase_memories() -> dict[str, int]:
         count = get_organism().memory.erase_owner(get_organism().owner_id)
         return {"deleted": count}
+
+    @app.post("/training/examples", status_code=201)
+    def add_training_example(payload: TrainingExampleRequest) -> dict[str, Any]:
+        organism_ref = get_organism()
+        try:
+            example = organism_ref.learning.capture(
+                owner_id=organism_ref.owner_id,
+                task_category=payload.task_category,
+                input_text=payload.input_text,
+                target_text=payload.target_text,
+                source=payload.source,
+                consent_id=payload.consent_id,
+            )
+        except ConsentRequiredError as error:
+            raise HTTPException(status_code=403, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return {
+            "id": example.id,
+            "task_category": example.task_category,
+            "input_text": example.input_text,
+            "target_text": example.target_text,
+            "source": example.source,
+            "status": example.status,
+            "created_at": example.created_at,
+        }
+
+    @app.get("/training/examples")
+    def list_training_examples(status: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+        organism_ref = get_organism()
+        try:
+            examples = organism_ref.learning.examples(
+                organism_ref.owner_id, status=status, limit=limit
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return [
+            {
+                "id": item.id,
+                "task_category": item.task_category,
+                "input_text": item.input_text,
+                "target_text": item.target_text,
+                "source": item.source,
+                "status": item.status,
+                "reviewer": item.reviewer,
+                "review_note": item.review_note,
+                "created_at": item.created_at,
+            }
+            for item in examples
+        ]
+
+    @app.post("/training/examples/{example_id}/review")
+    def review_training_example(
+        example_id: str, payload: TrainingReviewRequest
+    ) -> dict[str, str]:
+        organism_ref = get_organism()
+        try:
+            organism_ref.learning.review(
+                owner_id=organism_ref.owner_id,
+                example_id=example_id,
+                decision=payload.decision,
+                reviewer=organism_ref.owner_id,
+                note=payload.note,
+            )
+        except KeyError as error:
+            raise HTTPException(
+                status_code=404,
+                detail="Pending example not found or its learning consent is inactive",
+            ) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return {"id": example_id, "status": payload.decision}
+
+    @app.delete("/training/examples/{example_id}")
+    def delete_training_example(example_id: str) -> dict[str, bool]:
+        organism_ref = get_organism()
+        deleted = organism_ref.memory.delete_training_example(
+            organism_ref.owner_id, example_id
+        )
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Training example not found")
+        return {"deleted": True}
+
+    @app.get("/training/corpus")
+    def export_training_corpus() -> dict[str, Any]:
+        organism_ref = get_organism()
+        examples = organism_ref.learning.export_approved_corpus(organism_ref.owner_id)
+        return {
+            "count": len(examples),
+            "format": "supervised-json-records",
+            "note": "Approved examples only; exporting does not fine-tune a model.",
+            "examples": examples,
+        }
 
     @app.post("/signals/evaluate")
     def evaluate_signal(payload: SignalRequest) -> dict[str, Any]:
