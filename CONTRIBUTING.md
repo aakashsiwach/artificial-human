@@ -30,7 +30,7 @@ Commit regenerated benchmark reports only together with the change that explains
 
 ## Design rules
 
-0. Read [docs/RESEARCH_CHARTER.md](docs/RESEARCH_CHARTER.md) and [docs/ROADMAP.md](docs/ROADMAP.md) before proposing a substantial cognitive or neuroscience-related change. The repository is the source of truth when chat context is missing.
+0. Follow [AGENTS.md](AGENTS.md) (and [CLAUDE.md](CLAUDE.md) in Claude Code); read [docs/RESEARCH_CHARTER.md](docs/RESEARCH_CHARTER.md) and [docs/ROADMAP.md](docs/ROADMAP.md) before proposing a substantial cognitive or neuroscience-related change. The repository is the source of truth when chat context is missing.
 
 1. Keep subsystem interfaces narrow and documented.
 2. Preserve memory provenance and consent checks.
