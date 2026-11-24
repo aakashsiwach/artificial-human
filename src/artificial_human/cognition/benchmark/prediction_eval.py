@@ -18,11 +18,17 @@ from artificial_human.brain.retrieval import tokenize
 from artificial_human.cognition.benchmark.common import SuiteResult
 from artificial_human.cognition.benchmark.datasets import PredictionItem, prediction_items
 from artificial_human.cognition.benchmark.metrics import (
+    apply_logistic,
     auroc,
+    brier_score,
+    calibration_slope_intercept,
     choose_threshold,
     detection_rates,
+    expected_calibration_error,
+    fit_logistic,
     mean,
     pearson,
+    reliability_bins,
 )
 from artificial_human.cognition.perception import PerceptionSystem
 from artificial_human.cognition.prediction import PredictionSystem
@@ -93,6 +99,55 @@ def _system_report(
     return report, scores
 
 
+def _probability_report(probabilities: Sequence[float], labels: Sequence[int]) -> dict[str, Any]:
+    rates = detection_rates(probabilities, labels, 0.5)
+    slope = calibration_slope_intercept(probabilities, labels)
+    return {
+        "brier_score": round(brier_score(probabilities, labels), 4),
+        "expected_calibration_error": round(expected_calibration_error(probabilities, labels), 4),
+        "calibration_intercept": None if slope is None else round(slope[0], 4),
+        "calibration_slope": None if slope is None else round(slope[1], 4),
+        "auroc": round(auroc(probabilities, labels), 4),
+        "false_novelty_rate_at_0.5": round(rates["false_positive_rate"], 4),
+        "missed_novelty_rate_at_0.5": round(rates["false_negative_rate"], 4),
+        "reliability_bins": reliability_bins(probabilities, labels, bins=5),
+    }
+
+
+def calibration_report(
+    scorer: Scorer, tuning: Sequence[PredictionItem], evaluation: Sequence[PredictionItem]
+) -> dict[str, Any]:
+    """Compare the raw score (read as a probability) with a frozen logistic mapping.
+
+    The logistic mapping is fitted on the tuning split only and then applied,
+    unchanged, to the eval split. Calibration changes how well score values
+    match observed frequencies; a monotone mapping cannot change the ranking
+    (AUROC) and is not evidence of better prediction.
+    """
+    tuning_scores = [scorer(item) for item in tuning]
+    labels = [item.unexpected for item in evaluation]
+    scores = [scorer(item) for item in evaluation]
+    uncalibrated = [min(max(score, 0.0), 1.0) for score in scores]
+    parameters = fit_logistic(tuning_scores, [item.unexpected for item in tuning])
+    report: dict[str, Any] = {
+        "uncalibrated_score_as_probability": _probability_report(uncalibrated, labels),
+        "logistic_mapping_fitted_on": "tuning",
+        "logistic_parameters": None if parameters is None else {
+            "intercept": round(parameters[0], 4), "slope": round(parameters[1], 4),
+        },
+    }
+    if parameters is not None:
+        calibrated = [apply_logistic(parameters, score) for score in scores]
+        report["logistic_calibrated"] = _probability_report(calibrated, labels)
+    prevalence = mean([float(item.unexpected) for item in tuning])
+    report["base_rate_reference"] = {
+        "probability": round(prevalence, 4),
+        "brier_score": round(brier_score([prevalence] * len(labels), labels), 4),
+        "note": "Constant tuning-split prevalence; a score carrying no information.",
+    }
+    return report
+
+
 def run_prediction_suite(provider: EmbeddingProvider | None = None) -> SuiteResult:
     items = prediction_items()
     tuning = [item for item in items if item.split == "tuning"]
@@ -124,6 +179,15 @@ def run_prediction_suite(provider: EmbeddingProvider | None = None) -> SuiteResu
             }
             for name in scorers
         }
+    result.extra["calibration"] = {
+        name: calibration_report(scorer, tuning, evaluation) for name, scorer in scorers.items()
+    }
+    result.extra["calibration_note"] = (
+        "Novelty is a score, not a probability. Calibration maps scores to observed "
+        "frequencies of 'unexpected' labels; it does not make the score a better predictor, "
+        "and it is unrelated to biological prediction error. With 18 tuning items the "
+        "fitted mapping is crude."
+    )
     perception = PerceptionSystem()
     predictor = PredictionSystem()
     perturbed_equal = sum(

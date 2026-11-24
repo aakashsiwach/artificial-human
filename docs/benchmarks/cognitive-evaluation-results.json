@@ -1,6 +1,6 @@
 {
- "schema_version": "1.0",
- "generated_at": "2026-11-24T16:59:03+00:00",
+ "schema_version": "1.1",
+ "generated_at": "2026-11-24T18:24:41+00:00",
  "seed": 20261124,
  "suites_run": [
   "attention",
@@ -24,7 +24,7 @@
   "space": "fastembed:BAAI/bge-small-en-v1.5:384"
  },
  "network_used_by_evaluation": false,
- "total_runtime_seconds": 34.134,
+ "total_runtime_seconds": 36.398,
  "suites": {
   "attention": {
    "suite": "attention",
@@ -438,6 +438,7 @@
     }
    ],
    "findings": [
+    "Generalisation (tune on clean + informative salience, test on salient distractors + cross-source): existing 0.889 → 0.596; relevance-only 0.822 → 0.824; weight tuned in-distribution (r=0.8) 0.889 → 0.596.",
     "Overall nDCG@k: existing 0.793, relevance-only 0.714, salience-only 0.529, input order 0.298.",
     "clean_relevance: existing nDCG@k 0.966 vs relevance-only 0.992.",
     "salience_informative: existing nDCG@k 0.812 vs relevance-only 0.652.",
@@ -509,10 +510,184 @@
      "salient_distractors": 19,
      "tied_relevance": 0,
      "cross_source_normalisation": 13
+    },
+    "generalisation": {
+     "train_conditions": [
+      "clean_relevance",
+      "salience_informative"
+     ],
+     "held_out_conditions": [
+      "salient_distractors",
+      "cross_source_normalisation"
+     ],
+     "tuning_tasks": 20,
+     "in_distribution_eval_tasks": 60,
+     "held_out_eval_tasks": 60,
+     "tuned_relevance_weight": 0.8,
+     "tuning_ndcg_by_weight": {
+      "1.0": 0.8451,
+      "0.9": 0.9275,
+      "0.8": 0.9561,
+      "0.7": 0.9475,
+      "0.6": 0.9331,
+      "0.5": 0.8739,
+      "0.4": 0.8462,
+      "0.3": 0.8171,
+      "0.2": 0.715,
+      "0.1": 0.6827,
+      "0.0": 0.6303
+     },
+     "systems": {
+      "existing_attention": {
+       "in_distribution_ndcg@k": 0.8889,
+       "held_out_ndcg@k": 0.5963,
+       "generalisation_gap": 0.2926,
+       "held_out_by_condition": {
+        "salient_distractors": {
+         "precision@k": 0.4533,
+         "recall@k": 0.3479,
+         "ndcg@k": 0.5179,
+         "mrr": 0.6581,
+         "pairwise_accuracy": 0.7944,
+         "tasks": 30
+        },
+        "cross_source_normalisation": {
+         "precision@k": 0.57,
+         "recall@k": 0.4628,
+         "ndcg@k": 0.6747,
+         "mrr": 0.8,
+         "pairwise_accuracy": 0.8382,
+         "tasks": 30
+        }
+       },
+       "held_out_failure_categories_per_task": {
+        "salient_distractor_selected": 0.9667,
+        "weak_learning_example_selected": 0.7333,
+        "other_irrelevant_selected": 0.05,
+        "highly_relevant_missed": 1.85
+       }
+      },
+      "relevance_only": {
+       "in_distribution_ndcg@k": 0.822,
+       "held_out_ndcg@k": 0.8236,
+       "generalisation_gap": -0.0016,
+       "held_out_by_condition": {
+        "salient_distractors": {
+         "precision@k": 0.8783,
+         "recall@k": 0.5765,
+         "ndcg@k": 0.9726,
+         "mrr": 1.0,
+         "pairwise_accuracy": 0.9693,
+         "tasks": 30
+        },
+        "cross_source_normalisation": {
+         "precision@k": 0.57,
+         "recall@k": 0.4628,
+         "ndcg@k": 0.6747,
+         "mrr": 0.8,
+         "pairwise_accuracy": 0.8382,
+         "tasks": 30
+        }
+       },
+       "held_out_failure_categories_per_task": {
+        "salient_distractor_selected": 0.1167,
+        "weak_learning_example_selected": 0.7333,
+        "other_irrelevant_selected": 0.05,
+        "highly_relevant_missed": 1.1667
+       }
+      },
+      "salience_only": {
+       "in_distribution_ndcg@k": 0.6196,
+       "held_out_ndcg@k": 0.2051,
+       "generalisation_gap": 0.4145,
+       "held_out_by_condition": {
+        "salient_distractors": {
+         "precision@k": 0.075,
+         "recall@k": 0.0537,
+         "ndcg@k": 0.0701,
+         "mrr": 0.1986,
+         "pairwise_accuracy": 0.264,
+         "tasks": 30
+        },
+        "cross_source_normalisation": {
+         "precision@k": 0.3867,
+         "recall@k": 0.3514,
+         "ndcg@k": 0.34,
+         "mrr": 0.6269,
+         "pairwise_accuracy": 0.5542,
+         "tasks": 30
+        }
+       },
+       "held_out_failure_categories_per_task": {
+        "salient_distractor_selected": 1.3833,
+        "weak_learning_example_selected": 0.4667,
+        "other_irrelevant_selected": 1.0333,
+        "highly_relevant_missed": 3.2
+       }
+      },
+      "input_order": {
+       "in_distribution_ndcg@k": 0.228,
+       "held_out_ndcg@k": 0.3804,
+       "generalisation_gap": -0.1524,
+       "held_out_by_condition": {
+        "salient_distractors": {
+         "precision@k": 0.39,
+         "recall@k": 0.2552,
+         "ndcg@k": 0.3321,
+         "mrr": 0.637,
+         "pairwise_accuracy": 0.5424,
+         "tasks": 30
+        },
+        "cross_source_normalisation": {
+         "precision@k": 0.4017,
+         "recall@k": 0.3602,
+         "ndcg@k": 0.4287,
+         "mrr": 0.6781,
+         "pairwise_accuracy": 0.6433,
+         "tasks": 30
+        }
+       },
+       "held_out_failure_categories_per_task": {
+        "salient_distractor_selected": 0.2167,
+        "weak_learning_example_selected": 0.3,
+        "other_irrelevant_selected": 1.7333,
+        "highly_relevant_missed": 2.7
+       }
+      },
+      "tuned_weight_r0.8": {
+       "in_distribution_ndcg@k": 0.8889,
+       "held_out_ndcg@k": 0.5963,
+       "generalisation_gap": 0.2926,
+       "held_out_by_condition": {
+        "salient_distractors": {
+         "precision@k": 0.4533,
+         "recall@k": 0.3479,
+         "ndcg@k": 0.5179,
+         "mrr": 0.6581,
+         "pairwise_accuracy": 0.7944,
+         "tasks": 30
+        },
+        "cross_source_normalisation": {
+         "precision@k": 0.57,
+         "recall@k": 0.4628,
+         "ndcg@k": 0.6747,
+         "mrr": 0.8,
+         "pairwise_accuracy": 0.8382,
+         "tasks": 30
+        }
+       },
+       "held_out_failure_categories_per_task": {
+        "salient_distractor_selected": 0.9667,
+        "weak_learning_example_selected": 0.7333,
+        "other_irrelevant_selected": 0.05,
+        "highly_relevant_missed": 1.85
+       }
+      }
+     }
     }
    },
-   "runtime_seconds": 1.6218,
-   "peak_memory_kib": 1321.1
+   "runtime_seconds": 2.2305,
+   "peak_memory_kib": 1330.5
   },
   "working-memory": {
    "suite": "working-memory",
@@ -749,6 +924,7 @@
     }
    ],
    "findings": [
+    "Across a 216-cell grid (capacity × delay × distractor salience × ordering), existing retention by ordering is targets_first 0.526, interleaved 0.568, targets_last 0.895. In 48 cells at least one baseline retains more targets.",
     "Retention is content-agnostic: similar and dissimilar distractors give identical retention (difference +0.000). The implementation has no similarity-based interference.",
     "With lower-salience distractors, mean retention (capacities 3–9) first drops below 1.0 at 4 intervening items. Multiplicative decay (×0.92 per insertion) eventually pushes older high-salience targets below fresh distractors, so decay rather than content determines forgetting.",
     "A low-salience input cannot enter a full workspace: it is evicted on arrival because eviction is applied after insertion.",
@@ -908,10 +1084,147 @@
       "12": 1.0
      }
     },
+    "generalisation_grid": {
+     "cells": 216,
+     "repetitions_per_cell": 3,
+     "factors": {
+      "capacity": [
+       "2",
+       "4",
+       "7",
+       "10"
+      ],
+      "delay": [
+       "0",
+       "2",
+       "4",
+       "8",
+       "12",
+       "16"
+      ],
+      "distractor_salience": [
+       "low",
+       "matched",
+       "high"
+      ],
+      "ordering": [
+       "targets_first",
+       "interleaved",
+       "targets_last"
+      ]
+     },
+     "mean_retention_by_factor": {
+      "existing_working_memory": {
+       "capacity": {
+        "2": 0.3848,
+        "4": 0.6543,
+        "7": 0.7757,
+        "10": 0.8374
+       },
+       "delay": {
+        "0": 0.9167,
+        "2": 0.8302,
+        "4": 0.784,
+        "8": 0.5833,
+        "12": 0.463,
+        "16": 0.4012
+       },
+       "distractor_salience": {
+        "low": 0.8333,
+        "matched": 0.6111,
+        "high": 0.5448
+       },
+       "ordering": {
+        "targets_first": 0.5262,
+        "interleaved": 0.5679,
+        "targets_last": 0.8951
+       }
+      },
+      "fifo": {
+       "capacity": {
+        "2": 0.3148,
+        "4": 0.537,
+        "7": 0.6852,
+        "10": 0.7407
+       },
+       "delay": {
+        "0": 0.9167,
+        "2": 0.7778,
+        "4": 0.6667,
+        "8": 0.4444,
+        "12": 0.3056,
+        "16": 0.3056
+       },
+       "distractor_salience": {
+        "low": 0.5694,
+        "matched": 0.5694,
+        "high": 0.5694
+       },
+       "ordering": {
+        "targets_first": 0.375,
+        "interleaved": 0.4167,
+        "targets_last": 0.9167
+       }
+      },
+      "lru": {
+       "capacity": {
+        "2": 0.3148,
+        "4": 0.537,
+        "7": 0.6852,
+        "10": 0.7407
+       },
+       "delay": {
+        "0": 0.9167,
+        "2": 0.7778,
+        "4": 0.6667,
+        "8": 0.4444,
+        "12": 0.3056,
+        "16": 0.3056
+       },
+       "distractor_salience": {
+        "low": 0.5694,
+        "matched": 0.5694,
+        "high": 0.5694
+       },
+       "ordering": {
+        "targets_first": 0.375,
+        "interleaved": 0.4167,
+        "targets_last": 0.9167
+       }
+      },
+      "salience_no_decay": {
+       "capacity": {
+        "2": 0.3724,
+        "4": 0.6584,
+        "7": 0.8128,
+        "10": 0.8704
+       },
+       "delay": {
+        "0": 0.9167,
+        "2": 0.8179,
+        "4": 0.7623,
+        "8": 0.5802,
+        "12": 0.5216,
+        "16": 0.4722
+       },
+       "distractor_salience": {
+        "low": 0.9167,
+        "matched": 0.7438,
+        "high": 0.375
+       },
+       "ordering": {
+        "targets_first": 0.679,
+        "interleaved": 0.679,
+        "targets_last": 0.6775
+       }
+      }
+     },
+     "cells_where_a_baseline_retains_more": 48
+    },
     "delayed_retention_tasks_per_policy": 156
    },
-   "runtime_seconds": 0.6159,
-   "peak_memory_kib": 63.0
+   "runtime_seconds": 1.6838,
+   "peak_memory_kib": 116.8
   },
   "prediction": {
    "suite": "prediction",
@@ -1300,12 +1613,431 @@
     "The optional local-embedding reference reaches AUROC 0.828 but also scores contradictions as familiar (0.131). Semantic similarity is not contradiction detection."
    ],
    "extra": {
+    "calibration": {
+     "existing_prediction": {
+      "uncalibrated_score_as_probability": {
+       "brier_score": 0.3254,
+       "expected_calibration_error": 0.3342,
+       "calibration_intercept": -0.2942,
+       "calibration_slope": 0.0656,
+       "auroc": 0.5969,
+       "false_novelty_rate_at_0.5": 0.5,
+       "missed_novelty_rate_at_0.5": 0.3125,
+       "reliability_bins": [
+        {
+         "lower": 0.0,
+         "upper": 0.2,
+         "count": 11,
+         "mean_predicted": 0.0736,
+         "observed_rate": 0.3636
+        },
+        {
+         "lower": 0.2,
+         "upper": 0.4,
+         "count": 2,
+         "mean_predicted": 0.3333,
+         "observed_rate": 0.0
+        },
+        {
+         "lower": 0.4,
+         "upper": 0.6,
+         "count": 5,
+         "mean_predicted": 0.5086,
+         "observed_rate": 0.6
+        },
+        {
+         "lower": 0.6,
+         "upper": 0.8,
+         "count": 5,
+         "mean_predicted": 0.675,
+         "observed_rate": 0.8
+        },
+        {
+         "lower": 0.8,
+         "upper": 1.0,
+         "count": 13,
+         "mean_predicted": 0.93,
+         "observed_rate": 0.3846
+        }
+       ]
+      },
+      "logistic_mapping_fitted_on": "tuning",
+      "logistic_parameters": {
+       "intercept": -0.7436,
+       "slope": 0.8626
+      },
+      "logistic_calibrated": {
+       "brier_score": 0.24,
+       "expected_calibration_error": 0.0511,
+       "calibration_intercept": 0.0856,
+       "calibration_slope": 1.1444,
+       "auroc": 0.5969,
+       "false_novelty_rate_at_0.5": 0.2,
+       "missed_novelty_rate_at_0.5": 0.75,
+       "reliability_bins": [
+        {
+         "lower": 0.0,
+         "upper": 0.2,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        },
+        {
+         "lower": 0.2,
+         "upper": 0.4,
+         "count": 13,
+         "mean_predicted": 0.3443,
+         "observed_rate": 0.3077
+        },
+        {
+         "lower": 0.4,
+         "upper": 0.6,
+         "count": 23,
+         "mean_predicted": 0.4831,
+         "observed_rate": 0.5217
+        },
+        {
+         "lower": 0.6,
+         "upper": 0.8,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        },
+        {
+         "lower": 0.8,
+         "upper": 1.0,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        }
+       ]
+      },
+      "base_rate_reference": {
+       "probability": 0.4444,
+       "brier_score": 0.2469,
+       "note": "Constant tuning-split prevalence; a score carrying no information."
+      }
+     },
+     "content_word_overlap": {
+      "uncalibrated_score_as_probability": {
+       "brier_score": 0.3475,
+       "expected_calibration_error": 0.3706,
+       "calibration_intercept": -0.2553,
+       "calibration_slope": 0.0165,
+       "auroc": 0.575,
+       "false_novelty_rate_at_0.5": 0.5,
+       "missed_novelty_rate_at_0.5": 0.25,
+       "reliability_bins": [
+        {
+         "lower": 0.0,
+         "upper": 0.2,
+         "count": 11,
+         "mean_predicted": 0.0675,
+         "observed_rate": 0.1818
+        },
+        {
+         "lower": 0.2,
+         "upper": 0.4,
+         "count": 3,
+         "mean_predicted": 0.3056,
+         "observed_rate": 0.6667
+        },
+        {
+         "lower": 0.4,
+         "upper": 0.6,
+         "count": 2,
+         "mean_predicted": 0.5,
+         "observed_rate": 0.5
+        },
+        {
+         "lower": 0.6,
+         "upper": 0.8,
+         "count": 7,
+         "mean_predicted": 0.6714,
+         "observed_rate": 0.8571
+        },
+        {
+         "lower": 0.8,
+         "upper": 1.0,
+         "count": 13,
+         "mean_predicted": 0.9846,
+         "observed_rate": 0.3846
+        }
+       ]
+      },
+      "logistic_mapping_fitted_on": "tuning",
+      "logistic_parameters": {
+       "intercept": -0.6482,
+       "slope": 0.7224
+      },
+      "logistic_calibrated": {
+       "brier_score": 0.2407,
+       "expected_calibration_error": 0.1876,
+       "calibration_intercept": 0.0644,
+       "calibration_slope": 1.2093,
+       "auroc": 0.575,
+       "false_novelty_rate_at_0.5": 0.4,
+       "missed_novelty_rate_at_0.5": 0.75,
+       "reliability_bins": [
+        {
+         "lower": 0.0,
+         "upper": 0.2,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        },
+        {
+         "lower": 0.2,
+         "upper": 0.4,
+         "count": 14,
+         "mean_predicted": 0.3632,
+         "observed_rate": 0.2857
+        },
+        {
+         "lower": 0.4,
+         "upper": 0.6,
+         "count": 22,
+         "mean_predicted": 0.4899,
+         "observed_rate": 0.5455
+        },
+        {
+         "lower": 0.6,
+         "upper": 0.8,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        },
+        {
+         "lower": 0.8,
+         "upper": 1.0,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        }
+       ]
+      },
+      "base_rate_reference": {
+       "probability": 0.4444,
+       "brier_score": 0.2469,
+       "note": "Constant tuning-split prevalence; a score carrying no information."
+      }
+     },
+     "jaccard_distance": {
+      "uncalibrated_score_as_probability": {
+       "brier_score": 0.3303,
+       "expected_calibration_error": 0.3264,
+       "calibration_intercept": -0.3416,
+       "calibration_slope": 0.0647,
+       "auroc": 0.5859,
+       "false_novelty_rate_at_0.5": 0.55,
+       "missed_novelty_rate_at_0.5": 0.25,
+       "reliability_bins": [
+        {
+         "lower": 0.0,
+         "upper": 0.2,
+         "count": 7,
+         "mean_predicted": 0.0383,
+         "observed_rate": 0.1429
+        },
+        {
+         "lower": 0.2,
+         "upper": 0.4,
+         "count": 5,
+         "mean_predicted": 0.331,
+         "observed_rate": 0.6
+        },
+        {
+         "lower": 0.4,
+         "upper": 0.6,
+         "count": 1,
+         "mean_predicted": 0.4,
+         "observed_rate": 0.0
+        },
+        {
+         "lower": 0.6,
+         "upper": 0.8,
+         "count": 7,
+         "mean_predicted": 0.7124,
+         "observed_rate": 0.5714
+        },
+        {
+         "lower": 0.8,
+         "upper": 1.0,
+         "count": 16,
+         "mean_predicted": 0.939,
+         "observed_rate": 0.5
+        }
+       ]
+      },
+      "logistic_mapping_fitted_on": "tuning",
+      "logistic_parameters": {
+       "intercept": -1.1143,
+       "slope": 1.3258
+      },
+      "logistic_calibrated": {
+       "brier_score": 0.2367,
+       "expected_calibration_error": 0.1699,
+       "calibration_intercept": 0.0385,
+       "calibration_slope": 0.9496,
+       "auroc": 0.5859,
+       "false_novelty_rate_at_0.5": 0.4,
+       "missed_novelty_rate_at_0.5": 0.6875,
+       "reliability_bins": [
+        {
+         "lower": 0.0,
+         "upper": 0.2,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        },
+        {
+         "lower": 0.2,
+         "upper": 0.4,
+         "count": 13,
+         "mean_predicted": 0.2956,
+         "observed_rate": 0.3077
+        },
+        {
+         "lower": 0.4,
+         "upper": 0.6,
+         "count": 23,
+         "mean_predicted": 0.5098,
+         "observed_rate": 0.5217
+        },
+        {
+         "lower": 0.6,
+         "upper": 0.8,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        },
+        {
+         "lower": 0.8,
+         "upper": 1.0,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        }
+       ]
+      },
+      "base_rate_reference": {
+       "probability": 0.4444,
+       "brier_score": 0.2469,
+       "note": "Constant tuning-split prevalence; a score carrying no information."
+      }
+     },
+     "embedding_distance_reference": {
+      "uncalibrated_score_as_probability": {
+       "brier_score": 0.213,
+       "expected_calibration_error": 0.1993,
+       "calibration_intercept": 1.1917,
+       "calibration_slope": 0.9786,
+       "auroc": 0.8281,
+       "false_novelty_rate_at_0.5": 0.0,
+       "missed_novelty_rate_at_0.5": 0.6875,
+       "reliability_bins": [
+        {
+         "lower": 0.0,
+         "upper": 0.2,
+         "count": 16,
+         "mean_predicted": 0.058,
+         "observed_rate": 0.25
+        },
+        {
+         "lower": 0.2,
+         "upper": 0.4,
+         "count": 12,
+         "mean_predicted": 0.3189,
+         "observed_rate": 0.3333
+        },
+        {
+         "lower": 0.4,
+         "upper": 0.6,
+         "count": 8,
+         "mean_predicted": 0.5183,
+         "observed_rate": 1.0
+        },
+        {
+         "lower": 0.6,
+         "upper": 0.8,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        },
+        {
+         "lower": 0.8,
+         "upper": 1.0,
+         "count": 0,
+         "mean_predicted": null,
+         "observed_rate": null
+        }
+       ]
+      },
+      "logistic_mapping_fitted_on": "tuning",
+      "logistic_parameters": {
+       "intercept": -1.8782,
+       "slope": 7.899
+      },
+      "logistic_calibrated": {
+       "brier_score": 0.1791,
+       "expected_calibration_error": 0.2022,
+       "calibration_intercept": -0.3867,
+       "calibration_slope": 0.9687,
+       "auroc": 0.8281,
+       "false_novelty_rate_at_0.5": 0.35,
+       "missed_novelty_rate_at_0.5": 0.25,
+       "reliability_bins": [
+        {
+         "lower": 0.0,
+         "upper": 0.2,
+         "count": 10,
+         "mean_predicted": 0.1458,
+         "observed_rate": 0.0
+        },
+        {
+         "lower": 0.2,
+         "upper": 0.4,
+         "count": 5,
+         "mean_predicted": 0.2844,
+         "observed_rate": 0.6
+        },
+        {
+         "lower": 0.4,
+         "upper": 0.6,
+         "count": 4,
+         "mean_predicted": 0.5159,
+         "observed_rate": 0.5
+        },
+        {
+         "lower": 0.6,
+         "upper": 0.8,
+         "count": 9,
+         "mean_predicted": 0.685,
+         "observed_rate": 0.3333
+        },
+        {
+         "lower": 0.8,
+         "upper": 1.0,
+         "count": 8,
+         "mean_predicted": 0.8999,
+         "observed_rate": 1.0
+        }
+       ]
+      },
+      "base_rate_reference": {
+       "probability": 0.4444,
+       "brier_score": 0.2469,
+       "note": "Constant tuning-split prevalence; a score carrying no information."
+      }
+     }
+    },
+    "calibration_note": "Novelty is a score, not a probability. Calibration maps scores to observed frequencies of 'unexpected' labels; it does not make the score a better predictor, and it is unrelated to biological prediction error. With 18 tuning items the fitted mapping is crude.",
     "case_and_punctuation_invariance": 1.0,
     "empty_context_comparable": false,
     "empty_context_novelty": 0.0
    },
-   "runtime_seconds": 2.0292,
-   "peak_memory_kib": 101.1
+   "runtime_seconds": 2.748,
+   "peak_memory_kib": 131.9
   },
   "memory": {
    "suite": "memory",
@@ -1851,8 +2583,8 @@
     "threshold_tuned_on": "tuning",
     "skipped_variants": {}
    },
-   "runtime_seconds": 29.1133,
-   "peak_memory_kib": 1188.4
+   "runtime_seconds": 28.9364,
+   "peak_memory_kib": 1199.0
   },
   "integration": {
    "suite": "integration",
@@ -2446,8 +3178,8 @@
     "Lexical retrieval found nothing for 'Where does she live?' because the light stemmer maps 'lives' to 'liv' but 'live' to 'live'. This is recorded as a measured limitation and has not been changed in this phase."
    ],
    "extra": {},
-   "runtime_seconds": 0.7104,
-   "peak_memory_kib": 131.1
+   "runtime_seconds": 0.7447,
+   "peak_memory_kib": 132.5
   }
  }
 }

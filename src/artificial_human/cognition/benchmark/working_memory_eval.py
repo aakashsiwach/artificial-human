@@ -304,6 +304,9 @@ def run_working_memory_suite(seed: int) -> SuiteResult:
             )
     result.by_condition["newcomer_admission_full_capacity_7"] = newcomer
 
+    generalisation = working_memory_generalisation(seed)
+    result.extra["generalisation_grid"] = generalisation
+
     # Headline metrics per policy.
     for policy in POLICIES:
         result.systems[policy] = {
@@ -329,7 +332,13 @@ def run_working_memory_suite(seed: int) -> SuiteResult:
     ]
     existing_curve = curves["existing_working_memory"]["retention_by_intervening_items"]
     horizon = next((delay for delay in delays if existing_curve[str(delay)] < 1.0), None)
+    grid = generalisation["mean_retention_by_factor"]["existing_working_memory"]
     result.findings = [
+        f"Across a {generalisation['cells']}-cell grid (capacity × delay × distractor salience × "
+        "ordering), existing retention by ordering is "
+        + ", ".join(f"{key} {value:.3f}" for key, value in grid["ordering"].items())
+        + f". In {generalisation['cells_where_a_baseline_retains_more']} cells at least one "
+        "baseline retains more targets.",
         "Retention is content-agnostic: similar and dissimilar distractors give identical "
         f"retention (difference {interference['existing_working_memory']['difference']:+.3f}). "
         "The implementation has no similarity-based interference.",
@@ -345,6 +354,91 @@ def run_working_memory_suite(seed: int) -> SuiteResult:
         f"({pressure['existing_working_memory']['capacity_violations']} violations).",
     ]
     return result
+
+
+GRID_CAPACITIES: tuple[int, ...] = (2, 4, 7, 10)
+GRID_DELAYS: tuple[int, ...] = (0, 2, 4, 8, 12, 16)
+GRID_DISTRIBUTIONS: dict[str, tuple[float, float]] = {
+    "low": (0.1, 0.5), "matched": (0.5, 0.9), "high": (0.8, 1.0),
+}
+GRID_ORDERINGS: tuple[str, ...] = ("targets_first", "interleaved", "targets_last")
+GRID_REPETITIONS = 3
+
+
+def _grid_events(
+    delay: int, distribution: tuple[float, float], ordering: str, source: Any
+) -> tuple[list[Event], dict[str, str]]:
+    targets = [Event(f"target-{i}", f"target {i}", 0.8) for i in range(3)]
+    distractors = [
+        Event(f"distractor-{i}", f"distractor {i}", round(source.uniform(*distribution), 4))
+        for i in range(delay)
+    ]
+    if ordering == "targets_first":
+        events = targets + distractors
+    elif ordering == "targets_last":
+        events = distractors + targets
+    else:
+        events = []
+        for index in range(max(len(targets), len(distractors))):
+            if index < len(targets):
+                events.append(targets[index])
+            if index < len(distractors):
+                events.append(distractors[index])
+    return events, {event.item_id: event.content for event in targets}
+
+
+def working_memory_generalisation(seed: int) -> dict[str, Any]:
+    """Target retention over a full factorial grid of task parameters (eval split).
+
+    Factors: capacity, intervening items (delay/distractor load), distractor
+    salience distribution, and event ordering. Seeded salience draws come from
+    the eval-split stream; nothing is tuned.
+    """
+    factors = {
+        "capacity": GRID_CAPACITIES, "delay": GRID_DELAYS,
+        "distractor_salience": tuple(GRID_DISTRIBUTIONS), "ordering": GRID_ORDERINGS,
+    }
+    cells = 0
+    marginals: dict[str, dict[str, dict[str, list[float]]]] = {
+        policy: {factor: {} for factor in factors} for policy in POLICIES
+    }
+    best_baseline_wins = 0
+    for capacity in GRID_CAPACITIES:
+        for delay in GRID_DELAYS:
+            for name, distribution in GRID_DISTRIBUTIONS.items():
+                for ordering in GRID_ORDERINGS:
+                    cells += 1
+                    cell_scores: dict[str, float] = {}
+                    for policy in POLICIES:
+                        values = []
+                        for repetition in range(GRID_REPETITIONS):
+                            source = rng(seed, "wm-grid", "eval", str(capacity), str(delay),
+                                         name, ordering, str(repetition))
+                            events, targets = _grid_events(delay, distribution, ordering, source)
+                            values.append(_retained(_play(policy, capacity, events), targets)[0])
+                        cell_scores[policy] = mean(values)
+                        keys = {"capacity": str(capacity), "delay": str(delay),
+                                "distractor_salience": name, "ordering": ordering}
+                        for factor, key in keys.items():
+                            marginals[policy][factor].setdefault(key, []).append(cell_scores[policy])
+                    baseline_best = max(
+                        value for policy, value in cell_scores.items()
+                        if policy != "existing_working_memory"
+                    )
+                    best_baseline_wins += baseline_best > cell_scores["existing_working_memory"] + 1e-9
+    return {
+        "cells": cells,
+        "repetitions_per_cell": GRID_REPETITIONS,
+        "factors": {factor: list(map(str, levels)) for factor, levels in factors.items()},
+        "mean_retention_by_factor": {
+            policy: {
+                factor: {key: round(mean(values), 4) for key, values in levels.items()}
+                for factor, levels in by_factor.items()
+            }
+            for policy, by_factor in marginals.items()
+        },
+        "cells_where_a_baseline_retains_more": best_baseline_wins,
+    }
 
 
 def _existing_checks() -> list[dict[str, Any]]:

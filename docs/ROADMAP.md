@@ -6,7 +6,7 @@ The long-term goal is a computational artificial mind whose architecture is grou
 
 ## Strategic execution order
 
-1. **Close the measurement gap (in progress):** build held-out, multi-turn benchmarks for attention, working-memory retention, prediction, and memory recall. Expand beyond the current small, project-authored English memory dataset and record baselines, ablations, failure cases, and resource use. *Status:* a synthetic, reproducible baseline across all five areas exists ([report](benchmarks/cognitive-evaluation-report.md)). Externally authored data and calibration/generalisation tasks remain open.
+1. **Close the measurement gap (in progress):** build held-out, multi-turn benchmarks for attention, working-memory retention, prediction, and memory recall. Expand beyond the current small, project-authored English memory dataset and record baselines, ablations, failure cases, and resource use. *Status:* a synthetic, reproducible baseline across all five areas exists ([report](benchmarks/cognitive-evaluation-report.md)). Opt-in external evaluation now covers long-term recall (LongMemEval Oracle) and a human working-memory reference (NEMAR digit span) ([report](benchmarks/external-evaluation-report.md)), together with novelty-score calibration and generalisation tests. Still open: external material for attention and prediction, calibration of other scores, cross-language and cross-domain generalisation, and failure-recovery measures.
 2. **Deepen memory and learning:** add associative/relational memory, temporal context and contiguity, retrieval-dependent strengthening, forgetting/interference, source monitoring, and owner-reviewed consolidation. Compare each mechanism with the current static memory baseline.
 3. **Ground the mind in the environment:** add permission-scoped multimodal perception, spatial/world-state representations, and uncertainty-aware multisensory integration.
 4. **Add affect and regulation:** research bounded appraisal, interoception, homeostasis, and motivation, with explicit state and no unsupported claims about feelings.
@@ -49,10 +49,13 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
   - [x] Bitemporal records (event, recorded, validity times), supersession links, `known_at`/`valid_at` queries, contradiction preservation.
   - [x] Integration before attention in the cognitive cycle, with retrieval channels in the trace.
   - [x] Reproducible synthetic benchmark with tuning/eval split, baselines and ablations (Recall@K, Precision@K, MRR, nDCG@K).
-- [ ] Build held-out benchmarks for attention, working-memory retention, recall, and prediction. (Remains open: no externally authored or independently reviewed material has been adopted.)
+- [ ] Build held-out benchmarks for attention, working-memory retention, recall, and prediction. (Remains open: attention and prediction/novelty still have no externally authored evaluation material.)
   - [x] Reproducible synthetic benchmarks with tuning/eval splits, fixed seeds, baselines, ablations, failure cases and resource measurements for attention, working memory, prediction/novelty, long-term recall, and six integrated multi-turn scenarios. Offline `artificial-human cognition-eval` runs in CI on Python 3.12 and 3.13 ([research record](COGNITIVE_EVALUATION.md), [report](benchmarks/cognitive-evaluation-report.md)).
-  - [ ] Externally authored or independently reviewed evaluation material with a verified, compatible licence (LoCoMo, LongMemEval and STS-B were reviewed and not adopted; see the research record).
-  - [ ] Calibration and generalisation tasks (Charter Stage 1); not yet covered.
+  - [x] Externally authored evaluation for long-term recall: LongMemEval Oracle (MIT), turn-level evidence retrieval over 500 held-out questions. Opt-in, local, never downloaded or tuned on ([governance](benchmarks/EXTERNAL_DATASETS.md), [report](benchmarks/external-evaluation-report.md)).
+  - [x] Independent human behavioural reference for working memory: NEMAR on003838 digit span (CC0), participant-level held-out split, aggregates only.
+  - [ ] Externally authored material for attention and prediction/novelty. NEMAR on004574 (cross-modal oddball) was reviewed and not adopted: undocumented behavioural columns, a mostly clinical population, and no defensible mapping to text novelty. LoCoMo and STS-B were rejected on licence grounds.
+  - [x] Calibration of the novelty score (logistic mapping fitted on the tuning split only; Brier, ECE, reliability bins, calibration slope/intercept, base-rate reference) and generalisation tests (attention held-out conditions, a 216-cell working-memory grid, LongMemEval breakdowns by category, history length, evidence position and temporal distance).
+  - [ ] Calibration of other scores (attention weights, retrieval scores), cross-language and cross-domain generalisation, and failure-recovery measures. External suites are not run in CI (by design: no data downloads in CI).
 - [ ] Add multimodal perception behind permission-scoped sensory interfaces.
 
 ## Milestone 2 — deeper biological and cognitive mechanisms

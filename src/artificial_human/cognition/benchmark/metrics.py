@@ -18,10 +18,16 @@ from artificial_human.memory.benchmark.metrics import (
 )
 
 __all__ = [
+    "apply_logistic",
     "auroc",
     "balanced_accuracy",
+    "brier_score",
+    "calibration_slope_intercept",
     "choose_threshold",
     "detection_rates",
+    "expected_calibration_error",
+    "fit_logistic",
+    "reliability_bins",
     "kendall_tau",
     "mean",
     "ndcg_at_k",
@@ -150,3 +156,119 @@ def kendall_tau(observed: Sequence[str], reference: Sequence[str]) -> float:
             else:
                 discordant += 1
     return (concordant - discordant) / (n * (n - 1) / 2)
+
+
+# ------------------------------------------------------------- calibration
+
+
+def _sigmoid(value: float) -> float:
+    if value >= 0:
+        return 1.0 / (1.0 + math.exp(-value))
+    exp = math.exp(value)
+    return exp / (1.0 + exp)
+
+
+def fit_logistic(
+    features: Sequence[float], labels: Sequence[int], *, ridge: float = 1e-3,
+    iterations: int = 100,
+) -> tuple[float, float] | None:
+    """Fit ``P(y=1) = sigmoid(a + b·x)`` by ridge-regularised Newton–Raphson.
+
+    Returns ``(a, b)``, or ``None`` when the fit does not converge. The small
+    ridge keeps estimates finite for (near-)separable data; it shrinks rather
+    than eliminates extreme slopes.
+    """
+    if len(features) != len(labels) or len(features) < 2:
+        raise ValueError("logistic fit needs two equal-length series of at least two values")
+    a = b = 0.0
+    for _ in range(iterations):
+        g_a = g_b = 0.0
+        h_aa = h_ab = h_bb = 0.0
+        for x, y in zip(features, labels, strict=True):
+            p = _sigmoid(a + b * x)
+            w = p * (1 - p)
+            g_a += y - p
+            g_b += (y - p) * x
+            h_aa += w
+            h_ab += w * x
+            h_bb += w * x * x
+        g_a -= ridge * a
+        g_b -= ridge * b
+        h_aa += ridge
+        h_bb += ridge
+        determinant = h_aa * h_bb - h_ab * h_ab
+        if determinant <= 1e-12:
+            return None
+        step_a = (h_bb * g_a - h_ab * g_b) / determinant
+        step_b = (h_aa * g_b - h_ab * g_a) / determinant
+        a, b = a + step_a, b + step_b
+        if not (math.isfinite(a) and math.isfinite(b)):
+            return None
+        if abs(step_a) < 1e-9 and abs(step_b) < 1e-9:
+            return a, b
+    return None
+
+
+def apply_logistic(parameters: tuple[float, float], value: float) -> float:
+    return _sigmoid(parameters[0] + parameters[1] * value)
+
+
+def brier_score(probabilities: Sequence[float], labels: Sequence[int]) -> float:
+    if not probabilities or len(probabilities) != len(labels):
+        raise ValueError("Brier score needs equal-length, non-empty inputs")
+    return mean([(p - y) ** 2 for p, y in zip(probabilities, labels, strict=True)])
+
+
+def reliability_bins(
+    probabilities: Sequence[float], labels: Sequence[int], bins: int = 10
+) -> list[dict[str, float | int | None]]:
+    """Equal-width bins over [0, 1]: count, mean predicted probability, observed rate."""
+    if bins < 1:
+        raise ValueError("bins must be positive")
+    grouped: list[list[tuple[float, int]]] = [[] for _ in range(bins)]
+    for p, y in zip(probabilities, labels, strict=True):
+        if not 0.0 <= p <= 1.0:
+            raise ValueError("probabilities must lie in [0, 1]")
+        grouped[min(int(p * bins), bins - 1)].append((p, y))
+    return [
+        {
+            "lower": round(index / bins, 4), "upper": round((index + 1) / bins, 4),
+            "count": len(members),
+            "mean_predicted": round(mean([p for p, _ in members]), 4) if members else None,
+            "observed_rate": round(mean([float(y) for _, y in members]), 4) if members else None,
+        }
+        for index, members in enumerate(grouped)
+    ]
+
+
+def expected_calibration_error(
+    probabilities: Sequence[float], labels: Sequence[int], bins: int = 10
+) -> float:
+    total = len(probabilities)
+    if not total:
+        raise ValueError("ECE needs at least one prediction")
+    error = 0.0
+    for item in reliability_bins(probabilities, labels, bins):
+        count = int(item["count"] or 0)
+        if count:
+            error += count / total * abs(
+                float(item["mean_predicted"] or 0.0) - float(item["observed_rate"] or 0.0)
+            )
+    return error
+
+
+def calibration_slope_intercept(
+    probabilities: Sequence[float], labels: Sequence[int]
+) -> tuple[float, float] | None:
+    """Cox calibration: regress outcomes on logit(p). Ideal slope 1, intercept 0.
+
+    Returns ``(intercept, slope)``, or ``None`` when not estimable (a single
+    class, or a fit that does not converge).
+    """
+    if len(set(labels)) < 2:
+        return None
+    clipped = [min(max(p, 1e-6), 1 - 1e-6) for p in probabilities]
+    logits = [math.log(p / (1 - p)) for p in clipped]
+    if len(set(round(value, 9) for value in logits)) < 2:
+        return None
+    return fit_logistic(logits, labels)

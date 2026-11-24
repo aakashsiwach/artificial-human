@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from artificial_human.cognition.benchmark.common import DEFAULT_SEED
+from artificial_human.cognition.benchmark.runner import EXTERNAL_SUITES as EXTERNAL_COGNITIVE_SUITES
 from artificial_human.cognition.benchmark.runner import SUITES as COGNITIVE_SUITES
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.embeddings import (
@@ -58,6 +59,23 @@ def _memory_demo(organism: ArtificialOrganism) -> dict[str, object]:
     return answers
 
 
+def _emit(text: str) -> None:
+    """Write report text to stdout as UTF-8 regardless of the console code page.
+
+    Reports contain non-ASCII characters (for example en dashes and minus signs);
+    printing them through a cp1252 console or pipe raised UnicodeEncodeError.
+    """
+    stream = sys.stdout
+    buffer = getattr(stream, "buffer", None)
+    line = text + "\n"
+    if buffer is None:
+        stream.write(line)
+        return
+    stream.flush()
+    buffer.write(line.encode("utf-8"))
+    buffer.flush()
+
+
 def _provider_from_args(args: argparse.Namespace) -> EmbeddingProvider | None:
     if args.backend == "none":
         return None
@@ -81,7 +99,7 @@ def _memory_eval(args: argparse.Namespace) -> int:
         json_path, markdown_path = write_reports(report, Path(args.output_dir))
         print(f"[memory-eval] wrote {json_path} and {markdown_path}", file=sys.stderr)
     else:
-        print(render_markdown(report))
+        _emit(render_markdown(report))
     leaks = sum(item["overall"]["owner_leaks"] for item in report["variants"].values())
     if leaks:
         print(f"[memory-eval] owner isolation violated: {leaks} leaked results", file=sys.stderr)
@@ -147,13 +165,33 @@ def build_parser() -> argparse.ArgumentParser:
         "cognition-eval",
         help="Evaluate attention, working memory, prediction, memory and the integrated cycle",
         description=(
-            "Runs offline by default. Exit status: 0 = evaluation completed (whatever the "
-            "scores), 1 = execution error, 3 = a safety invariant (owner isolation) failed."
+            "Runs offline by default. External suites (longmemeval, digit-span) run only when "
+            "their local data path is given; nothing is ever downloaded. Exit status: 0 = "
+            "evaluation completed (whatever the scores), 1 = execution or dataset error, "
+            "2 = invalid arguments, 3 = a safety invariant (owner isolation) failed."
         ),
     )
     cognition.add_argument(
-        "--suite", action="append", choices=("all", *COGNITIVE_SUITES),
-        help="Suite to run (repeatable; default: all)",
+        "--suite", action="append",
+        choices=("all", *COGNITIVE_SUITES, *EXTERNAL_COGNITIVE_SUITES),
+        help="Suite to run (repeatable; default: all internal suites plus any external "
+             "suite whose data path is given)",
+    )
+    cognition.add_argument(
+        "--longmemeval-path",
+        help="Local path to longmemeval_oracle.json (opt-in external suite)",
+    )
+    cognition.add_argument(
+        "--digit-span-dir",
+        help="Local directory of NEMAR on003838 sub-*_task-memory_beh.tsv files (opt-in)",
+    )
+    cognition.add_argument(
+        "--external-limit", type=int,
+        help="Evaluate only the first N LongMemEval questions (quick checks)",
+    )
+    cognition.add_argument(
+        "--report-stem", default="cognitive-evaluation",
+        help="File-name stem for written reports (for example external-evaluation)",
     )
     cognition.add_argument("--seed", type=int, default=DEFAULT_SEED)
     cognition.add_argument("--output-dir", help="Write report files here (default: stdout)")
@@ -172,13 +210,22 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _cognition_eval(args: argparse.Namespace) -> int:
+    from artificial_human.cognition.benchmark.external import ExternalDatasetError
     from artificial_human.cognition.benchmark.report import render_markdown
     from artificial_human.cognition.benchmark.runner import (
         InvariantViolation,
+        resolve_suites,
         run_cognitive_evaluation,
         write_reports,
     )
 
+    available = [name for name, value in (("longmemeval", args.longmemeval_path),
+                                          ("digit-span", args.digit_span_dir)) if value]
+    try:
+        resolve_suites(args.suite or ["all"], available_external=available)
+    except ValueError as error:
+        print(f"[cognition-eval] invalid arguments: {error}", file=sys.stderr)
+        return 2
     provider: EmbeddingProvider | None = None
     if args.embedding_backend == "fastembed":
         provider = FastEmbedProvider(args.model, cache_dir=args.cache_dir, offline=args.offline)
@@ -186,22 +233,27 @@ def _cognition_eval(args: argparse.Namespace) -> int:
         report = run_cognitive_evaluation(
             args.suite or ["all"], seed=args.seed, provider=provider,
             progress=lambda message: print(f"[cognition-eval] {message}", file=sys.stderr),
+            longmemeval_path=args.longmemeval_path, digit_span_dir=args.digit_span_dir,
+            external_limit=args.external_limit,
         )
     except InvariantViolation as error:
         print(f"[cognition-eval] safety invariant failed: {error}", file=sys.stderr)
         return 3
+    except ExternalDatasetError as error:
+        print(f"[cognition-eval] external dataset error: {error}", file=sys.stderr)
+        return 1
     except Exception as error:  # report execution errors without a traceback dump
         print(f"[cognition-eval] execution error: {type(error).__name__}: {error}",
               file=sys.stderr)
         return 1
     formats = args.format or (["json", "markdown"] if args.output_dir else ["markdown"])
     if args.output_dir:
-        for path in write_reports(report, Path(args.output_dir), formats):
+        for path in write_reports(report, Path(args.output_dir), formats, args.report_stem):
             print(f"[cognition-eval] wrote {path}", file=sys.stderr)
     elif "json" in formats:
-        print(json.dumps(report, indent=1, ensure_ascii=False))
+        _emit(json.dumps(report, indent=1, ensure_ascii=False))
     else:
-        print(render_markdown(report))
+        _emit(render_markdown(report))
     for name, suite in report["suites"].items():
         print(f"[cognition-eval] {name}: {suite['runtime_seconds']:.2f}s", file=sys.stderr)
     return 0

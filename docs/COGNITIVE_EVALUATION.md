@@ -86,18 +86,79 @@ The existing [memory benchmark](MEMORY.md#10-evaluation) is extended, not duplic
 
 Each scenario runs with lexical + temporal retrieval and, when a local model is configured, with hybrid + temporal retrieval.
 
+## Calibration of the novelty score
+
+The prediction suite's novelty value is a **score, not a probability**. Calibration asks whether a mapping from score to probability of "unexpected" matches observed label frequencies. A logistic mapping `P = σ(a + b·score)` is fitted by ridge-regularised Newton–Raphson on the **18 tuning items only**, frozen, then applied to the 36 eval items. It is compared with the raw score read as a probability and with a constant base-rate predictor (tuning prevalence 0.444).
+
+Reported per system: Brier score, expected calibration error (ECE), reliability bins, Cox calibration intercept and slope (logistic regression of outcomes on logit(p); ideal 0 and 1), AUROC, and false/missed novelty rates at p = 0.5.
+
+Result (existing novelty, eval split):
+
+| Mapping | Brier | ECE | Cal. slope | AUROC |
+| --- | --- | --- | --- | --- |
+| Raw score read as a probability | 0.325 | 0.334 | 0.07 | 0.597 |
+| Logistic, fitted on tuning | 0.240 | 0.051 | 1.14 | 0.597 |
+| Constant base rate | 0.247 | — | — | 0.5 |
+
+Calibration removes the raw score's miscalibration, but the calibrated Brier score is barely better than predicting the base rate. The score carries little information about unexpectedness. A monotone mapping cannot change the ranking (AUROC). **Calibration is not prediction accuracy and is unrelated to a biological prediction-error signal.**
+
+## Generalisation tests
+
+- **Attention, held-out conditions.** The weight of the documented formula is tuned (grid 0.0–1.0) on tuning-split tasks of the *clean relevance* and *informative salience* conditions only. Systems are then tested on eval-split tasks of the unseen *salient distractors* and *cross-source normalisation* conditions. The tuned weight is 0.8, identical to the existing weight. That weight falls from nDCG@k 0.889 in-distribution to 0.596 on held-out conditions, while relevance-only stays at 0.822 → 0.824. Held-out failure categories per task: salient distractors selected 0.97 (existing) vs 0.12 (relevance-only); weak learning examples selected 0.73 for both.
+- **Working memory, factorial grid.** 216 cells: capacity {2, 4, 7, 10} × intervening items {0, 2, 4, 8, 12, 16} × distractor salience {low, matched, high} × ordering {targets first, interleaved, targets last}, with 3 seeded repetitions each. Existing retention depends strongly on ordering (0.526 targets first, 0.568 interleaved, 0.895 targets last) and on distractor salience (0.833 low to 0.545 high). Salience without decay is ordering-insensitive (about 0.68). In 48 of 216 cells at least one baseline retains more targets.
+- **Long-term memory, independent data.** LongMemEval Oracle breakdowns by category, number of history sessions, history length, evidence position, single- vs multi-session evidence, and days since the latest evidence (see below).
+
 ## External datasets
 
-The brief asked for externally authored, independently reviewed material where licensing allows. Candidates reviewed on 2026-11-24:
+Full governance records (licence evidence, versions, hashes, fields used and excluded, download commands) are in [benchmarks/EXTERNAL_DATASETS.md](benchmarks/EXTERNAL_DATASETS.md).
 
-| Dataset | Status found | Decision |
-| --- | --- | --- |
-| LoCoMo (Maharana et al., ACL 2024) | Reported by secondary sources as CC BY-NC 4.0. The official repository licence was not retrieved. | Not adopted: non-commercial terms are incompatible with the project's Apache-2.0 distribution, and the licence is unverified. |
-| LongMemEval (Wu et al., ICLR 2025) | Repository listed as MIT. Chat histories derive from ShareGPT and UltraChat. | Not adopted: ShareGPT consists of real user conversations (personal-data risk), and the licence was not verified at the source. |
-| STS Benchmark (Cer et al., 2017) | Scores CC BY-SA 4.0; source texts carry separate licences, some requiring provider agreements. | Not adopted: mixed licensing cannot be verified for redistribution. |
-| Oberauer et al. (2018) working-memory benchmarks | Published list of human findings, with reference datasets of human experiments. | Used only as a qualitative checklist; no data copied. |
+| Dataset | Decision |
+| --- | --- |
+| LongMemEval **Oracle** (Wu et al., ICLR 2025), MIT | **Adopted** as the opt-in suite `longmemeval`: turn-level evidence retrieval, all questions held out |
+| LongMemEval `_s` / `_m` / `custom_history` | Rejected: ShareGPT/UltraChat filler sessions (real user conversations) |
+| NEMAR on003838 digit span (Pavlov et al., 2022), CC0 | **Adopted** as the opt-in suite `digit-span`: human behavioural reference, participant-level split, aggregates only |
+| NEMAR on004574 cross-modal oddball, CC0 | Research candidate, not adopted: undocumented behavioural columns, mostly clinical population (health data needed), no defensible mapping to text novelty |
+| LoCoMo (Maharana et al., ACL 2024) | Rejected: reported CC BY-NC 4.0, unverified at source |
+| STS Benchmark (Cer et al., 2017) | Rejected: mixed per-source licences |
+| Oberauer et al. (2018) working-memory benchmarks | Qualitative checklist only; no data copied |
 
-**No external dataset is included.** All benchmarks are synthetic and project-authored, and the reports say so. This is a known limitation, and the corresponding roadmap item remains open.
+External suites never download data. They run only with an explicit local path (`--longmemeval-path`, `--digit-span-dir`), never in CI, and their outputs contain no conversation text, question text, or participant identifiers.
+
+### External results (full report: [benchmarks/external-evaluation-report.md](benchmarks/external-evaluation-report.md))
+
+**LongMemEval Oracle**: 500 questions; 470 scored at turn level (the 30 abstention questions are reported separately); local `BAAI/bge-small-en-v1.5` for semantic variants; threshold 0.57 inherited from the internal tuning split, not tuned on these questions.
+
+| Variant | Turn recall@1 | Turn recall@5 | Turn recall@10 | Turn MRR | Abstention rejection |
+| --- | --- | --- | --- | --- | --- |
+| lexical | 0.359 | 0.755 | 0.862 | 0.685 | 0.000 |
+| lexical + temporal | 0.332 | 0.728 | 0.839 | 0.654 | 0.033 |
+| semantic | 0.289 | 0.704 | 0.841 | 0.619 | 0.100 |
+| hybrid + temporal | 0.348 | 0.759 | 0.882 | 0.688 | 0.033 |
+
+- **The internal benchmark does not generalise as hoped.** On the project's synthetic memory benchmark, semantic-only beats lexical (MRR 0.824 vs 0.681). On independent data, semantic-only is worse than lexical (0.619 vs 0.685), and hybrid + temporal is roughly level with lexical (0.688). The synthetic dataset overstated the benefit of the embedding channel.
+- The embedding channel helps strongly where wording diverges: **single-session-preference** turn MRR rises from 0.459 (lexical) to 0.767 (semantic) and 0.727 (hybrid). It hurts on single-session-assistant (0.767 lexical vs 0.555 semantic) and temporal-reasoning questions.
+- **Rule-based temporal intent lowers evidence recall** on this data (lexical MRR 0.685 → 0.654). The English cue rules exclude or re-rank evidence for questions phrased with temporal words.
+- **Longer histories are harder**: questions with more than 40 turns reach MRR 0.45–0.49 in every variant, against 0.81 (lexical) for 10 turns or fewer. Evidence late in the history is retrieved worse than early evidence (lexical 0.560 vs 0.701).
+- **Abstention is not supported**: retrieval returns results for at least 90% of questions about events that never happened. Rejecting unanswerable questions needs a separate mechanism.
+- Session-level metrics are uninformative here (every Oracle session is an evidence session). Owner leaks 0; isolation probes 0. Runtime: 30 s lexical; 50 min with local embeddings on CPU (about 11k turns embedded); peak traced Python memory 32 MB (ONNX runtime memory is not traced).
+- This is evidence retrieval only. Answer accuracy was not evaluated.
+
+**NEMAR on003838 digit span**: 86 participants (31 tuning / 55 held-out), 9,276 trials.
+
+| Load | Held-out humans: mean (SD) | Humans first / last third | Software (same sequences) | Software first / last third |
+| --- | --- | --- | --- | --- |
+| 5 | 0.925 (0.060) | 0.979 / 0.905 | 1.000 | 1.000 / 1.000 |
+| 9 | 0.460 (0.132) | 0.767 / 0.172 | 0.778 | 0.333 / 1.000 |
+| 13 | 0.273 (0.088) | 0.610 / 0.026 | 0.538 | 0.000 / 1.000 |
+
+Serial-position RMSE against held-out participants: existing software 0.680; recency store (best capacity 1, fitted on tuning) 0.592; primacy store (capacity 5, fitted on tuning) 0.284; flat per-load mean 0.232. Humans in this strict serial-recall task show a strong primacy gradient and almost no recency. The software shows pure recency. Neither the human data nor this comparison says anything about the mechanisms involved. The comparison shows only that the workspace's retention profile is the opposite of human serial-recall behaviour on identical sequences.
+
+### Remaining Stage 1 gaps
+
+- No independently authored material for **attention** or **prediction/novelty**. The cross-modal oddball dataset was reviewed and not adopted.
+- Calibration covers only the novelty score. Attention weights and retrieval scores are uncalibrated.
+- No cross-language or cross-domain generalisation, and no failure-recovery measures.
+- External suites are opt-in and do not run in CI. Their committed reports are regenerated manually.
 
 ## Reproducing
 
@@ -105,6 +166,11 @@ The brief asked for externally authored, independently reviewed material where l
 python -m pip install -e ".[dev]"
 artificial-human cognition-eval --suite all --output-dir docs/benchmarks           # offline
 artificial-human cognition-eval --suite prediction --format json                    # one suite, JSON to stdout
+# opt-in external suites (local data only; see benchmarks/EXTERNAL_DATASETS.md)
+artificial-human cognition-eval --suite longmemeval --suite digit-span \
+  --longmemeval-path external-data/longmemeval/longmemeval_oracle.json \
+  --digit-span-dir external-data/nemar/on003838/beh \
+  --report-stem external-evaluation --output-dir docs/benchmarks
 python -m pip install -e ".[dev,semantic]"
 artificial-human cognition-eval --embedding-backend fastembed --output-dir docs/benchmarks
 ```
