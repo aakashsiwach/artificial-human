@@ -46,6 +46,11 @@ def test_brain_uses_profile_recalled_memory_and_approved_demonstrations(tmp_path
         "owner", example.id, decision="approved", reviewer="owner"
     )
 
+    approved_examples = LearningSystem(repository).examples(
+        "owner", status="approved"
+    )
+    assert [item.id for item in approved_examples] == [example.id]
+
     provider = RecordingProvider()
     brain = BrainService(provider, LearningSystem(repository))
     response = brain.respond(
