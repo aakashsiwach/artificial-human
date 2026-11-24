@@ -10,10 +10,14 @@ from artificial_human.core.models import HealthSignal, Incident, Observation, Re
 class DendriticCell:
     """Classifies a signal and presents an immune alert to the organism."""
 
-    def classify(self, signal: HealthSignal) -> str:
+    def classify(
+        self, signal: HealthSignal, severity: Severity | None = None
+    ) -> str:
         if not signal.abnormal:
             return "normal"
-        return "critical_alert" if signal.threshold > 0 and signal.direction == "below" else "alert"
+        if severity == Severity.CRITICAL:
+            return "critical_alert"
+        return "alert"
 
 
 @dataclass(frozen=True, slots=True)
