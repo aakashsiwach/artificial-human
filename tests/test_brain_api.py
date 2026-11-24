@@ -2,7 +2,6 @@ from fastapi.testclient import TestClient
 
 from artificial_human.brain.providers.base import ChatMessage, Generation
 from artificial_human.api import create_app
-from artificial_human.core.models import MemoryKind
 from artificial_human.organism import ArtificialOrganism
 
 
@@ -90,12 +89,12 @@ def test_revoking_memory_consent_removes_memory_from_brain_context(tmp_path) -> 
     )
     client = TestClient(create_app(organism))
     consent = client.post("/consents", json={"purpose": "personal_memory"}).json()
-    memory = client.post("/memories", json={
+    client.post("/memories", json={
         "kind": "semantic",
         "content": "The owner's preferred editor is VS Code.",
         "source": "owner statement",
         "consent_id": consent["id"],
-    }).json()
+    })
     assert client.delete(f"/consents/{consent['id']}").status_code == 200
 
     response = client.post("/brain/respond", json={
