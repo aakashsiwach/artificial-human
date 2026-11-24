@@ -27,6 +27,9 @@ The first version is a Python 3.12+ modular monolith with a local SQLite store a
 6. Regeneration creates a reviewable proposal with tests and safety checks.
 7. Sleep prepares a candidate review from existing consented memories.
 8. The owner inspects, corrects, approves, or deletes data and proposals.
+9. Owner demonstrations enter a separate personal_learning consent scope.
+10. Training examples remain pending until the owner approves or rejects them.
+11. Only approved examples under active learning consent can enter a supervised corpus export.
 
 ## Storage
 
