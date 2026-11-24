@@ -66,6 +66,9 @@ def test_brain_endpoint_uses_consent_memory_and_returns_evidence(tmp_path) -> No
     assert response.json()["conversation_saved"] is False
     assert response.json()["recalled_memories"][0]["memory_id"] == memory.json()["id"]
     assert len(response.json()["plan_steps"]) == 4
+    assert response.json()["cognitive_trace"]["architecture"] == "neuroscience_informed_cognitive_cycle_v1"
+    assert response.json()["cognitive_trace"]["perception"]["modality"] == "language"
+    assert response.json()["working_memory_persisted"] is False
 
 
 def test_brain_endpoint_returns_service_unavailable_without_provider(tmp_path) -> None:
@@ -154,3 +157,17 @@ def test_brain_session_retains_only_volatile_working_memory_and_can_be_cleared(t
     assert cleared.status_code == 200
     assert cleared.json()["cleared"] is True
     assert client.delete("/brain/sessions/research-session").json()["cleared"] is False
+
+
+
+def test_cognitive_status_reports_component_boundaries(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "cognitive-status.sqlite3",
+        identity_path=tmp_path / "identity.json",
+        brain_provider=StubProvider(),
+    )
+    response = TestClient(create_app(organism)).get("/brain/cognition/status")
+    assert response.status_code == 200
+    assert response.json()["perception"] == "explicit_language_input"
+    assert response.json()["working_memory"] == "capacity_limited_volatile_workspace"
