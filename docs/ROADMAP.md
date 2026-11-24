@@ -14,6 +14,8 @@ The project is intentionally incremental. “Artificial human” describes the l
 - [x] Reviewable regeneration proposals.
 - [x] Sleep/consolidation review proposals.
 - [x] Local API, CLI, tests, and CI.
+- [x] Separate consent scope for owner-supervised learning examples.
+- [x] Pending-review, approve/reject, delete, and approved-corpus export workflow.
 
 ## Milestone 1 — personal identity and memory
 
