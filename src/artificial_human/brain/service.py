@@ -9,6 +9,7 @@ from artificial_human.brain.providers.base import ChatMessage, ChatProvider
 from artificial_human.brain.retrieval import MemoryRetriever, rank_texts
 from artificial_human.cognition.architecture import CognitiveArchitecture
 from artificial_human.cognition.core_knowledge import retrieve_core_knowledge
+from artificial_human.cognition.dynamics import RecurrentDynamicsEngine
 from artificial_human.cognition.working_memory import WorkingMemory, WorkingMemorySessions
 from artificial_human.identity.constitution import (
     CORE_IDENTITY_RESPONSE,
@@ -47,6 +48,7 @@ class BrainService:
         retriever: MemoryRetriever | None = None,
         architecture: CognitiveArchitecture | None = None,
         working_memory_sessions: WorkingMemorySessions | None = None,
+        dynamics: RecurrentDynamicsEngine | None = None,
     ) -> None:
         self.provider = provider
         self.learning = learning
@@ -56,6 +58,7 @@ class BrainService:
             learning=learning,
         )
         self.working_memory_sessions = working_memory_sessions or WorkingMemorySessions()
+        self.dynamics = dynamics or RecurrentDynamicsEngine()
 
     @staticmethod
     def _system_prompt(profile: IdentityProfile, mode: BrainMode) -> str:
@@ -114,6 +117,9 @@ class BrainService:
     ) -> BrainResponse:
         if not query.strip():
             raise ValueError("A message is required")
+        # Every input drives a bounded recurrent activity cycle. Raw text is not
+        # retained by the dynamics engine; only aggregate population state remains.
+        dynamics_state = self.dynamics.process(query)
         # Identity is a source-code-defined constitutional fact, not an LLM guess
         # and not a database lookup. Answer direct identity questions deterministically.
         if is_identity_question(query):
@@ -141,6 +147,7 @@ class BrainService:
                         "used": False,
                         "reason": "deterministic constitutional response",
                     },
+                    "recurrent_dynamics": dynamics_state,
                 },
                 session_id=session_id,
             )
@@ -191,6 +198,7 @@ class BrainService:
         ]
         plan_steps = [step.description for step in cycle.plan.steps]
         cognitive_trace = cycle.trace()
+        cognitive_trace["recurrent_dynamics"] = dynamics_state
         core_facts = retrieve_core_knowledge(query)
         core_knowledge_payload = [
             {
@@ -210,6 +218,8 @@ class BrainService:
             f"{json.dumps(cycle.working_memory_context, ensure_ascii=False)}\n\n"
             "EXECUTIVE TASK PLAN (observable workflow, not hidden chain-of-thought):\n"
             f"{json.dumps(plan_steps, ensure_ascii=False)}\n\n"
+            "RECURRENT ABSTRACT POPULATION ACTIVITY (bounded in-process model):\n"
+            f"{json.dumps(dynamics_state, ensure_ascii=False)}\n\n"
             "TRUSTED SOURCE-CODE FOUNDATIONAL KNOWLEDGE (version-controlled facts):\n"
             f"{json.dumps(core_knowledge_payload, ensure_ascii=False)}\n\n"
             "RETRIEVED MEMORY EVIDENCE (may be empty):\n"
