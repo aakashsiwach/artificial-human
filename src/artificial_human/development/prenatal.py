@@ -147,13 +147,15 @@ class _ProjectionState:
 
 # Functional population abstractions; not one-to-one anatomical regions.
 POPULATIONS: Final[tuple[PopulationDefinition, ...]] = (
-    PopulationDefinition("sensory_input", "sensory input and relay", 12, 4.0, 24.0),
-    PopulationDefinition("recurrent_integration", "recurrent integration", 16, 5.0, 32.0),
-    PopulationDefinition("association", "distributed association", 18, 8.0, 36.0),
-    PopulationDefinition("sequence_context", "sequence and context", 12, 11.0, 40.0),
-    PopulationDefinition("action_prediction", "sensorimotor prediction", 14, 12.0, 40.0),
-    PopulationDefinition("regulation", "state regulation", 10, 5.0, 32.0),
-    PopulationDefinition("inhibitory_control", "local inhibitory control", 8, 8.0, 36.0),
+    # Maturation windows deliberately extend beyond 40 gestational weeks:
+    # term is not a fully mature brain, and postnatal development is out of scope.
+    PopulationDefinition("sensory_input", "sensory input and relay", 12, 4.0, 50.0),
+    PopulationDefinition("recurrent_integration", "recurrent integration", 16, 5.0, 54.0),
+    PopulationDefinition("association", "distributed association", 18, 8.0, 60.0),
+    PopulationDefinition("sequence_context", "sequence and context", 12, 11.0, 64.0),
+    PopulationDefinition("action_prediction", "sensorimotor prediction", 14, 12.0, 60.0),
+    PopulationDefinition("regulation", "state regulation", 10, 5.0, 54.0),
+    PopulationDefinition("inhibitory_control", "local inhibitory control", 8, 8.0, 60.0),
 )
 
 # The topology is stable. Learning changes efficacy, never nodes or endpoints.
