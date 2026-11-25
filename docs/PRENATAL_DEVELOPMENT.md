@@ -29,7 +29,7 @@ The versioned blueprint `prenatal-scaffold-v1` defines seven abstract neural pop
 Two aspects are separated:
 
 1. **Structural scaffold:** population identities and projection endpoints are fixed. The `structure_signature()` method makes this invariant inspectable.
-2. **Development and adaptation:** each population has a maturity value; each existing projection has a bounded efficacy (`strength`) updated by low-amplitude intrinsic co-activity and explicit experience.
+2. **Development and adaptation:** each population has a maturity value; each existing projection has a bounded efficacy (`strength`) updated by low-amplitude intrinsic co-activity and explicit experience. The abstract population maturity windows intentionally extend beyond 40 gestational weeks, so no population reaches 100% maturity at the term boundary. Their exact values are model parameters, not biological measurements; postnatal development is not yet simulated.
 
 The plasticity rule is a bounded Hebbian-style update:
 
