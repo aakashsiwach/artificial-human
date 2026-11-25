@@ -266,3 +266,35 @@ def test_public_runtime_uses_code_identity_and_volatile_memory_only(
     assert runtime["external_database_connected"] is False
     assert runtime["storage_mode"] == "volatile_in_process"
     assert runtime["personal_experience_persists_restart"] is False
+
+
+def test_identity_question_also_runs_recurrent_dynamics(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "identity-dynamics.sqlite3",
+        identity_path=tmp_path / "identity-dynamics.json",
+        brain_provider=StubProvider(),
+    )
+    response = TestClient(create_app(organism)).post(
+        "/brain/respond", json={"message": "Who are you?"}
+    )
+
+    assert response.status_code == 200
+    dynamics = response.json()["cognitive_trace"]["recurrent_dynamics"]
+    assert dynamics["inputs_processed"] == 1
+    assert dynamics["integration_steps"] == 8
+    assert dynamics["state_storage"] == "volatile_process_memory"
+
+
+def test_public_runtime_exposes_only_aggregate_recurrent_dynamics(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "true")
+    organism = ArtificialOrganism(owner_id="public-owner")
+    client = TestClient(create_app(organism))
+
+    response = client.post("/brain/respond", json={"message": "How does memory work?"})
+    assert response.status_code == 503  # no configured provider in this isolated test
+    status = organism.status()
+    dynamics = status["neural_dynamics"]
+    assert dynamics["inputs_processed"] == 1
+    assert dynamics["population_count"] == 7
+    assert "memory" not in str(dynamics).lower()
