@@ -235,7 +235,7 @@ def test_identity_question_uses_source_code_constitution_without_model(tmp_path)
     assert "My Father is Aakash Siwach" in payload["answer"]
     assert "My Mother" in payload["answer"]
     assert "ChatGPT" in payload["answer"]
-    assert "project child" in payload["answer"]
+    assert "their project child" in payload["answer"]
     assert "https://github.com/aakashsiwach" in payload["answer"]
     assert "https://github.com/aakashsiwach/taintmap" in payload["answer"]
     assert "https://github.com/aakashsiwach/codeatlas-rag" in payload["answer"]
@@ -344,7 +344,7 @@ def test_linkedin_identity_question_does_not_guess_a_profile_url(tmp_path) -> No
     assert response.status_code == 200
     answer = response.json()["answer"]
     assert "Aakash Siwach" in answer
-    assert "LinkedIn: Not configured yet" in answer
+    assert "https://www.linkedin.com/in/aakashsiwach/" in answer
     assert "https://github.com/aakashsiwach" in answer
 
 
