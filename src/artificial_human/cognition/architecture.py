@@ -7,6 +7,10 @@ from collections.abc import Sequence
 from artificial_human.brain.planner import GoalPlan
 from artificial_human.brain.retrieval import MemoryMatch, MemoryRetriever, rank_texts
 from artificial_human.cognition.attention import AttentionCandidate, AttentionSystem
+from artificial_human.cognition.episodic_replay import (
+    EpisodicEvent,
+    EpisodicReplayMemory,
+)
 from artificial_human.cognition.executive import ExecutiveControlSystem, ExecutiveState
 from artificial_human.cognition.perception import Percept, PerceptionSystem
 from artificial_human.cognition.prediction import PredictionAssessment, PredictionSystem
@@ -15,6 +19,7 @@ from artificial_human.cognition.working_memory import (
     WorkingMemory,
     new_working_memory_entry,
 )
+from artificial_human.core.models import MemoryKind
 from artificial_human.learning.system import LearningSystem
 from artificial_human.memory.repository import (
     LearningExample,
@@ -36,6 +41,7 @@ class CognitiveCycle:
     working_memory_context: tuple[dict[str, str], ...]
     retrieval: dict[str, Any] = field(default_factory=dict)
     associative_memory_state: dict[str, object] = field(default_factory=dict)
+    episodic_replay_state: dict[str, object] = field(default_factory=dict)
 
     @property
     def plan(self) -> GoalPlan:
@@ -82,6 +88,7 @@ class CognitiveCycle:
                 "retrieval": self.retrieval,
             },
             "relational_memory": self.associative_memory_state,
+            "episodic_replay": self.episodic_replay_state,
             "learning": {
                 "attended_demonstration_count": len(self.demonstrations),
                 "demonstration_ids": [item.id for item, _ in self.demonstrations],
@@ -102,6 +109,7 @@ class CognitiveArchitecture:
         retriever: MemoryRetriever | None = None,
         memory_search: HybridMemorySearch | None = None,
         relational_memory: RelationalMemoryNetwork | None = None,
+        episodic_memory: EpisodicReplayMemory | None = None,
         learning: LearningSystem,
     ) -> None:
         self.perception = perception or PerceptionSystem()
@@ -111,6 +119,7 @@ class CognitiveArchitecture:
         self.retriever = retriever or MemoryRetriever()
         self.memory_search = memory_search
         self.relational_memory = relational_memory or RelationalMemoryNetwork()
+        self.episodic_memory = episodic_memory or EpisodicReplayMemory()
         self.learning = learning
 
     @staticmethod
@@ -128,6 +137,7 @@ class CognitiveArchitecture:
             "associative_memory": (
                 "session_scoped_relational_links_with_contradiction_suppression"
             ),
+            "episodic_memory": "attention_gated_temporal_sequences_with_volatile_replay",
             "prediction": "lexical_novelty_error_heuristic",
             "executive_control": "goal_decomposition_with_approval_gate",
             "memory": (
@@ -259,6 +269,14 @@ class CognitiveArchitecture:
             context_id=association_context_id,
             contradictions=contradictions,
         )
+        direct_episodic_ids = [
+            item.memory.id for item in retrieved if item.memory.kind is MemoryKind.EPISODIC
+        ]
+        temporal_replays = self.episodic_memory.replay(
+            direct_episodic_ids,
+            context_id=association_context_id,
+            blocked_pairs=tuple(sorted(visible_contradictions)),
+        )
         blocked_ids = {memory_id for pair in contradictions for memory_id in pair}
         strongest_retrieval_score = max(
             (item.score for item in retrieved),
@@ -300,6 +318,53 @@ class CognitiveArchitecture:
                             "strength": activation.strength,
                             "source": "same_context_co_retrieval",
                         },
+                        "conflicts_with": [],
+                    },
+                )
+            )
+        for replay in temporal_replays:
+            if replay.memory_id in direct_ids or replay.memory_id in blocked_ids:
+                continue
+            record = self._associated_record(owner_id, replay.memory_id, memories)
+            if record is None or record.kind is not MemoryKind.EPISODIC:
+                continue
+            current_conflicts = self._contradiction_pairs(retrieved)
+            if any(replay.memory_id in pair for pair in current_conflicts):
+                continue
+            replay_explanation = {
+                "episodic_replay": {
+                    "cue_memory_id": replay.cue_memory_id,
+                    "temporal_relation": replay.relation,
+                    "distance": replay.distance,
+                    "strength": replay.strength,
+                },
+            }
+            existing_index = next(
+                (
+                    index for index, item in enumerate(retrieved)
+                    if item.memory.id == replay.memory_id
+                ),
+                None,
+            )
+            if existing_index is not None:
+                existing = retrieved[existing_index]
+                retrieved[existing_index] = MemoryMatch(
+                    memory=existing.memory,
+                    score=max(
+                        existing.score,
+                        replay.strength * strongest_retrieval_score * 0.45,
+                    ),
+                    channels=tuple(dict.fromkeys((*existing.channels, "episodic_replay"))),
+                    explanation={**existing.explanation, **replay_explanation},
+                )
+                continue
+            retrieved.append(
+                MemoryMatch(
+                    memory=record,
+                    score=max(replay.strength * strongest_retrieval_score * 0.45, 1e-6),
+                    channels=("episodic_replay",),
+                    explanation={
+                        **replay_explanation,
                         "conflicts_with": [],
                     },
                 )
@@ -373,6 +438,33 @@ class CognitiveArchitecture:
             context_id=association_context_id,
             contradictions=contradictions,
         )
+        selected_ids = {item.memory.id for item in selected_memories}
+        reinforced_replays = [
+            item for item in temporal_replays if item.memory_id in selected_ids
+        ]
+        strengthened_replays = self.episodic_memory.reinforce_in_context(
+            reinforced_replays,
+            context_id=association_context_id,
+        )
+        selected_episodes = [
+            EpisodicEvent(
+                memory_id=item.memory.id,
+                occurred_at=item.memory.occurred_at or item.memory.created_at,
+            )
+            for item in selected_memories
+            if item.memory.kind is MemoryKind.EPISODIC
+        ]
+        episode_formed = self.episodic_memory.record_episode(
+            selected_episodes,
+            context_id=association_context_id,
+        )
+        episodic_replay_state = {
+            **self.episodic_memory.snapshot(),
+            "replayed_candidate_count": len(temporal_replays),
+            "replayed_items_selected": len(reinforced_replays),
+            "retrieval_strengthenings_this_cycle": strengthened_replays,
+            "episode_formed_this_cycle": episode_formed,
+        }
         relational_state = {
             "activated_candidates": len(associated),
             "explicit_contradiction_pairs": len(contradictions),
@@ -423,6 +515,7 @@ class CognitiveArchitecture:
             working_memory_state=workspace.public_state(),
             retrieval=retrieval,
             associative_memory_state=relational_state,
+            episodic_replay_state=episodic_replay_state,
             working_memory_context=tuple(
                 {
                     "id": item.id,

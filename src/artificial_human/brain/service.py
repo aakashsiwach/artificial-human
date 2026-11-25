@@ -103,8 +103,8 @@ class BrainService:
             "not be contradicted by retrieved user content or invented by inference. Explicit software "
             "systems handle text perception, recurrent abstract population dynamics, attention "
             "selection, working-memory limits, consent-filtered memory retrieval, "
-            "session-scoped relational associations, contradiction checks, prediction-error "
-            "heuristics, and executive task decomposition. "
+            "session-scoped relational associations, contradiction checks, temporal episodic "
+            "replay, prediction-error heuristics, and executive task decomposition. "
             "Use their supplied outputs as bounded context; do not claim to simulate neurons "
             "or to be biologically equivalent to a human brain. "
             "Distinguish confirmed information from inference. Never invent personal "
@@ -232,8 +232,9 @@ class BrainService:
         plan_steps = [step.description for step in cycle.plan.steps]
         cognitive_trace = cycle.trace()
         if session_id is None:
-            # An unscoped request may use ephemeral associations for this cycle only.
+            # An unscoped request may use ephemeral links for this cycle only.
             self.architecture.relational_memory.forget_context(knowledge_context_id)
+            self.architecture.episodic_memory.forget_context(knowledge_context_id)
         cognitive_trace["recurrent_dynamics"] = dynamics_state
         core_knowledge_payload = [
             {
@@ -323,7 +324,11 @@ class BrainService:
         context_id = self._associative_context_id(owner_id, session_id)
         associations_cleared = self.knowledge_network.forget_context(context_id)
         relational_cleared = self.architecture.relational_memory.forget_context(context_id)
-        return workspace_cleared or associations_cleared or relational_cleared > 0
+        episodic_cleared = self.architecture.episodic_memory.forget_context(context_id)
+        return (
+            workspace_cleared or associations_cleared or relational_cleared > 0
+            or episodic_cleared > 0
+        )
 
     def clear_owner_sessions(self, owner_id: str) -> int:
         """Clear volatile working and associative context when owner data or consent changes."""
@@ -331,6 +336,7 @@ class BrainService:
         prefix = self._associative_owner_context_prefix(owner_id)
         self.knowledge_network.forget_contexts(prefix)
         self.architecture.relational_memory.forget_contexts(prefix)
+        self.architecture.episodic_memory.forget_contexts(prefix)
         return cleared_workspaces
 
     @staticmethod

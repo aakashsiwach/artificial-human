@@ -40,11 +40,13 @@ The Brain now runs an explicit cognitive cycle before calling the language model
 1. Perception normalizes explicit language input.
 2. Memory retrieval runs an owner-scoped, consent-filtered hybrid search (lexical BM25 + optional semantic embeddings + temporal reasoning, fused with Reciprocal Rank Fusion) and gathers owner-approved learning examples.
 3. Attention selects a bounded set of relevant items.
-4. Working memory maintains a capacity-limited, volatile workspace.
-5. Prediction calculates a lexical novelty signal against active context.
-6. Executive control produces an inspectable goal plan with approval gates.
-7. The language model acts as a language and deliberation component inside the architecture.
-8. A cognitive trace reports which software systems operated.
+4. Episodic memory groups attention-selected event records by event time and can replay immediate neighbours within the same owner/session context.
+5. Relational memory retrieves previously co-activated records, while explicit contradictions block conflicting positive links.
+6. Working memory maintains a capacity-limited, volatile workspace.
+7. Prediction calculates a lexical novelty signal against active context.
+8. Executive control produces an inspectable goal plan with approval gates.
+9. The language model acts as a language and deliberation component inside the architecture.
+10. A cognitive trace reports which software systems operated.
 
 Implemented modules live under `src/artificial_human/cognition/`. The details, endpoint examples, research limitations, and future mechanisms are documented in [Brain and intelligence](docs/BRAIN.md).
 
@@ -77,6 +79,8 @@ Full details, configuration, limitations and the comparison with biological memo
 - **Working memory:** retention against intervening items and capacity, interference, reactivation, eviction and sessions. Compared with FIFO, LRU and salience without decay.
 - **Prediction/novelty:** 36 eval items (18 tuning) with authored labels. Compared with content-word overlap and Jaccard distance.
 - **Memory:** the long-term memory benchmark above.
+- **Associative memory:** source-context isolation, contradiction suppression, and bounded-interference controls.
+- **Episodic replay:** nine four-event sequences, immediate-neighbour recall, a no-replay baseline, and cross-context leakage checks.
 - **Integration:** six multi-turn scenarios through the full cognitive cycle.
 
 ```bash
@@ -142,8 +146,13 @@ This setting does not make source code rewrite itself or automatically learn per
 The runtime can learn bounded associations between version-controlled core-knowledge facts
 when they are co-activated by a question. Later queries can spread activation to related facts.
 Only fact identifiers and link weights live in process memory; no raw user text is stored by
-this association graph. Links decay and reset on restart. This is a small experimental
-mechanism, not the system's complete long-term or autobiographical memory.
+this association graph. The separate relational graph uses opaque consent-visible memory IDs,
+respects owner/session boundaries, and suppresses explicit contradictions. A bounded episodic
+replay buffer stores event IDs, timestamps and adjacent transition weights; later cues can
+recover immediate earlier/later events in the same session. Associated IDs are re-resolved
+through the owner's live consent-visible repository. These volatile graphs and event sequences
+are cleared with their session and reset on restart. They are software retrieval mechanisms,
+not a complete autobiographical memory or biological hippocampal simulation.
 
 ## Runtime population dynamics
 
