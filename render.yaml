@@ -8,11 +8,11 @@ services:
     buildCommand: pip install .
     startCommand: uvicorn artificial_human.api:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: checksPass
     envVars:
       - key: ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT
         value: "true"
       - key: ARTIFICIAL_HUMAN_API_TOKEN
-        sync: false
+        generateValue: true
       - key: ARTIFICIAL_HUMAN_CORS_ORIGINS
         sync: false
