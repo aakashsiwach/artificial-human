@@ -31,6 +31,15 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Separate consent scope for owner-supervised learning examples.
 - [x] Pending-review, approve/reject, delete, and approved-corpus export workflow.
 
+### Associative memory research track
+
+- [x] Add a bounded volatile association graph over source-defined fact identifiers.
+- [x] Strengthen concept links through co-activation; retrieve related facts through spreading activation.
+- [x] Add bounded link decay and a hard association-count limit.
+- [ ] Evaluate associative recall against keyword-only retrieval and random-link baselines.
+- [ ] Add context-sensitive source monitoring, contradiction-sensitive association and interference experiments.
+- [ ] Extend beyond source facts to carefully governed volatile episodic representations, with explicit privacy controls.
+
 ### Recurrent activity research track
 
 - [x] Add a process-local recurrent population activity engine with fixed abstract topology, bounded updates, activity leak, inhibitory projection, and content-free telemetry.
