@@ -34,6 +34,18 @@ CORE_KNOWLEDGE: tuple[CoreKnowledgeFact, ...] = (
         ("father", "mother", "parents", "family", "creator", "owner", "chatgpt", "identity"),
     ),
     CoreKnowledgeFact(
+        "identity.founder",
+        "Father and project founder",
+        "The human founder, creator, and project owner of Artificial Human is Aakash Siwach. He is a software engineer and open-source developer. His verified GitHub profile is https://github.com/aakashsiwach. His LinkedIn profile URL has not yet been confirmed and must not be guessed.",
+        ("aakash", "siwach", "father", "founder", "creator", "owner", "linkedin", "github", "profile"),
+    ),
+    CoreKnowledgeFact(
+        "founder.public_portfolio",
+        "Father's public software portfolio",
+        "Aakash Siwach's verified public GitHub repositories include Artificial Human, TaintMap, CodeAtlas, mergeworthy, Test Case Management, and AI Document Analyzer. His technical work spans Java and Spring Boot, Python and FastAPI, React/full-stack systems, banking and payment integrations, healthcare applications, QA automation, and AI developer tools.",
+        ("portfolio", "github", "repositories", "projects", "software", "engineering", "java", "spring", "python", "fastapi", "react", "banking", "payments", "healthcare", "testing", "qa", "ai"),
+    ),
+    CoreKnowledgeFact(
         "architecture.cognitive_cycle",
         "Cognitive architecture",
         "The implemented cognitive cycle is explicit language perception, owner-scoped memory retrieval, bounded attention, volatile working memory, lexical novelty assessment, deterministic executive planning, and a replaceable language-model generation component, followed by an inspectable cognitive trace.",
