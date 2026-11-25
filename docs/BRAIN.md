@@ -14,7 +14,10 @@ The language model is a component used for language generation and deliberation.
 explicit text input. The current experiment uses seven abstract population nodes and ten
 directed projections from the developmental scaffold, performs eight bounded synchronous
 updates, applies activity leak and an inhibitory projection, and reports population-level
-activity without storing raw input text. It is reset when the service process restarts.
+activity without storing raw input text. An API lifespan task also advances one low-amplitude,
+deterministic resting-state approximation each second while the process is awake. A lock
+serialises idle ticks and message-driven updates. Both states reset when the service restarts;
+a suspended free-tier instance does not run the loop.
 
 Text features provide hand-authored external channel drives. They are not biologically
 grounded sensory encoders. Projection weights are currently fixed; no synaptic learning is
