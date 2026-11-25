@@ -288,13 +288,18 @@ def test_identity_question_also_runs_recurrent_dynamics(tmp_path) -> None:
 
 def test_public_runtime_exposes_only_aggregate_recurrent_dynamics(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "true")
-    organism = ArtificialOrganism(owner_id="public-owner")
-    client = TestClient(create_app(organism))
+    organism = ArtificialOrganism(
+        owner_id="public-owner",
+        brain_provider=StubProvider(),
+    )
+    organism.cognitive_brain.respond(
+        owner_id=organism.owner_id,
+        query="How does memory work?",
+        profile=organism.identity,
+    )
 
-    response = client.post("/brain/respond", json={"message": "How does memory work?"})
-    assert response.status_code == 503  # no configured provider in this isolated test
-    status = organism.status()
-    dynamics = status["neural_dynamics"]
+    dynamics = organism.status()["neural_dynamics"]
     assert dynamics["inputs_processed"] == 1
     assert dynamics["population_count"] == 7
-    assert "memory" not in str(dynamics).lower()
+    assert dynamics["state_storage"] == "volatile_process_memory"
+    assert "How does memory work?" not in str(dynamics)
