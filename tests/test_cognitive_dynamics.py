@@ -62,3 +62,33 @@ def test_recurrent_dynamics_rejects_empty_inputs() -> None:
     engine = RecurrentDynamicsEngine()
     with pytest.raises(ValueError, match="non-empty text"):
         engine.process("   ")
+
+
+def test_idle_tick_advances_resting_activity_without_counting_user_input() -> None:
+    engine = RecurrentDynamicsEngine()
+    before = engine.snapshot().as_dict()
+
+    after = engine.tick_idle()
+
+    assert after["idle_ticks"] == 1
+    assert after["inputs_processed"] == 0
+    assert after["integration_steps"] == 1
+    assert after["intrinsic_activity_model"] == "deterministic_low_amplitude_approximation"
+    assert after["plasticity_enabled"] is False
+    assert after["populations"] != before["populations"]
+
+
+def test_repeated_idle_ticks_remain_bounded_and_reset_cleanly() -> None:
+    engine = RecurrentDynamicsEngine()
+    for _ in range(100):
+        state = engine.tick_idle()
+
+    assert state["idle_ticks"] == 100
+    assert state["inputs_processed"] == 0
+    assert all(0.0 <= item["activity"] <= 1.0 for item in state["populations"])
+
+    engine.reset()
+    reset_state = engine.snapshot().as_dict()
+    assert reset_state["idle_ticks"] == 0
+    assert reset_state["integration_steps"] == 0
+    assert reset_state["mean_activity"] == 0.0
