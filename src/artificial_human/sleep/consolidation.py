@@ -94,11 +94,11 @@ class SleepSystem:
         episodes = episodic_memory.episodes_for_context_prefix(context_prefix)
         contexts_by_transition: dict[tuple[str, str], set[str]] = {}
         for context_id, episode in episodes:
-            for left, right in zip(episode, episode[1:], strict=False):
-                if left.memory_id == right.memory_id:
+            for left_event, right_event in zip(episode, episode[1:], strict=False):
+                if left_event.memory_id == right_event.memory_id:
                     continue
                 contexts_by_transition.setdefault(
-                    (left.memory_id, right.memory_id), set()
+                    (left_event.memory_id, right_event.memory_id), set()
                 ).add(context_id)
 
         visible_links = repository.links(owner_id)
@@ -113,20 +113,20 @@ class SleepSystem:
             if frozenset((left_id, right_id)) in blocked_pairs:
                 continue
             try:
-                left = repository.get(owner_id, left_id)
-                right = repository.get(owner_id, right_id)
+                left_record = repository.get(owner_id, left_id)
+                right_record = repository.get(owner_id, right_id)
             except MemoryNotFoundError:
                 # Deleted, revoked, or foreign source records are never revived.
                 continue
             if (
-                left.kind is not MemoryKind.EPISODIC
-                or right.kind is not MemoryKind.EPISODIC
-                or left.consent_id != right.consent_id
+                left_record.kind is not MemoryKind.EPISODIC
+                or right_record.kind is not MemoryKind.EPISODIC
+                or left_record.consent_id != right_record.consent_id
             ):
                 continue
 
             fingerprint = hashlib.sha256(
-                "|".join((owner_id, left.consent_id, left_id, right_id)).encode("utf-8")
+                "|".join((owner_id, left_record.consent_id, left_id, right_id)).encode("utf-8")
             ).hexdigest()
             owner_scope = self._owner_scope(owner_id)
             key = (owner_scope, fingerprint)
@@ -149,20 +149,20 @@ class SleepSystem:
 
                 summary = (
                     f"Recurring event pattern observed in {len(contexts)} distinct sessions:\n"
-                    f"1. {left.content[:240]}\n"
-                    f"2. {right.content[:240]}\n\n"
+                    f"1. {left_record.content[:240]}\n"
+                    f"2. {right_record.content[:240]}\n\n"
                     "This is an inferred candidate based on repeated temporal co-occurrence, "
                     "not an established fact. Owner approval is required before it is saved."
                 )
                 proposal = ConsolidationProposal(
-                    source_memory_ids=(left.id, right.id),
+                    source_memory_ids=(left_record.id, right_record.id),
                     summary=summary,
                     recurrence_count=len(contexts),
                 )
                 self._proposals[proposal.id] = _StoredProposal(
                     proposal=proposal,
                     owner_scope=owner_scope,
-                    consent_id=left.consent_id,
+                    consent_id=left_record.consent_id,
                     fingerprint=fingerprint,
                 )
                 self._fingerprints[key] = proposal.id
