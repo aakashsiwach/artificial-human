@@ -137,8 +137,10 @@ This setting does not make source code rewrite itself or automatically learn per
 
 Each explicit message now runs a bounded recurrent activity update across seven abstract
 population nodes and ten directed projections. The current model retains only aggregate
-activity in process memory, uses fixed weights, and resets on restart. It does not retain raw
-input text, train weights, or claim to simulate biological neurons. See [Brain and intelligence](docs/BRAIN.md).
+activity in process memory, uses fixed weights, and resets on restart. A one-second,
+low-amplitude resting-state approximation runs only while the API process is awake. It does
+not retain raw input text, train weights, or claim to simulate biological neurons. A suspended
+free-tier instance does not execute the loop. See [Brain and intelligence](docs/BRAIN.md).
 
 ## Brain provider configuration
 
