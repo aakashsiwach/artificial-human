@@ -60,16 +60,11 @@ class AssociativeKnowledgeNetwork:
 
     def process(self, query: str, *, limit: int = 5) -> tuple[KnowledgeActivation, ...]:
         """Retrieve facts, learn co-activation links, then spread activation."""
-        if not query.strip():
-            return ()
         if not 1 <= limit <= 20:
             raise ValueError("limit must be between 1 and 20")
-        direct_facts = retrieve_core_knowledge(query, limit=limit)
-        if not direct_facts:
-            with self._lock:
-                self._inputs_processed += 1
+        if not query.strip():
             return ()
-
+        direct_facts = retrieve_core_knowledge(query, limit=limit)
         direct = {
             fact.fact_id: max(0.25, 1.0 - (position * 0.12))
             for position, fact in enumerate(direct_facts)
@@ -77,12 +72,15 @@ class AssociativeKnowledgeNetwork:
         with self._lock:
             self._inputs_processed += 1
 
-            # Forgetting/interference is bounded and applies only to volatile links.
+            # Forgetting/interference is bounded and applies to every new input,
+            # including inputs that do not match any source-defined fact.
             self._links = {
                 key: strength * self.decay
                 for key, strength in self._links.items()
                 if strength * self.decay >= 0.001
             }
+            if not direct:
+                return ()
 
             identifiers = list(direct)
             for index, first in enumerate(identifiers):
