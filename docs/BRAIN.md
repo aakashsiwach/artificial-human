@@ -8,6 +8,36 @@ Artificial Human is intended to be an artificial mind whose architecture is info
 
 The language model is a component used for language generation and deliberation. It is not the architecture itself and must not be treated as a replacement for perception, attention, memory, learning, prediction, executive control, or action selection.
 
+## Source-defined constitution and knowledge
+
+The stable Artificial Human identity is a version-controlled source module:
+`identity/constitution.py`. It defines the project-family metaphor (human creator = Father,
+ChatGPT = Mother/collaborator, Artificial Human = project child), purpose, principles, and
+scientific/safety boundaries. Direct questions such as "Who are you?" return a deterministic
+answer from this module; the language model and personal-memory store are not consulted.
+
+`cognition/core_knowledge.py` contains a small, reviewable corpus of foundational project facts.
+A deterministic keyword scorer retrieves relevant facts in-process and includes them in the
+language-model context with source labels. This is code-defined knowledge, not a user-memory
+database and not a claim that all general world knowledge is stored in this repository.
+
+## Volatile public runtime
+
+When `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` or
+`ARTIFICIAL_HUMAN_STORAGE_MODE=volatile`, the organism:
+
+- loads its foundational identity from source code and does not initialise the identity-file repository;
+- creates its personal-memory repository using SQLite's in-memory mode only (`:memory:`);
+- disables the embedding provider, avoiding an external vector service;
+- reports that no external database is connected;
+- loses runtime experiences and working-memory sessions when the process restarts.
+
+No hosted database, local disk-backed identity file, or disk-backed personal-memory database
+is used by this public runtime. The in-memory SQLite adapter is process-local implementation
+plumbing, not an external service. In this mode the source-defined identity is read-only.
+Source code is version-controlled and changes only through reviewed development; the running
+organism does not rewrite its own constitution.
+
 ## Implemented cognitive cycle
 
 A request passes through an explicit pipeline:
