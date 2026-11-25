@@ -191,7 +191,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 - Regeneration creates review proposals; it does not modify source code, merge, or deploy.
 - External actions require a separate approval mechanism.
 - Local API mode remains unauthenticated for development. Keep it bound to loopback.
-- Public deployments must set `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` and a high-entropy `ARTIFICIAL_HUMAN_API_TOKEN`; all routes except `/health` require bearer authentication and API docs are disabled.
+- Public monitoring deployments must set `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true`, `ARTIFICIAL_HUMAN_MONITOR_ONLY=true`, and a high-entropy `ARTIFICIAL_HUMAN_API_TOKEN`; only `/health` and the protected `/monitor/overview` are exposed, and API docs are disabled.
 - Configure `ARTIFICIAL_HUMAN_CORS_ORIGINS` with the exact trusted dashboard origin. See [Control Room and monitoring deployment](docs/MONITORING.md).
 
 ## Documentation
