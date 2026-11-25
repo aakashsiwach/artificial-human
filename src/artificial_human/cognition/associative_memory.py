@@ -93,7 +93,7 @@ class AssociativeKnowledgeNetwork:
                         self.learning_rate * direct[first] * direct[second] * (1.0 - current)
                     )
                     if key not in self._links and len(self._links) >= self.max_links:
-                        weakest = min(self._links, key=self._links.get)  # type: ignore[arg-type]
+                        weakest = min(self._links, key=lambda item: self._links[item])
                         if self._links[weakest] >= updated:
                             continue
                         del self._links[weakest]
