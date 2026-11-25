@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
+from hashlib import sha256
+from uuid import uuid4
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -61,6 +63,21 @@ class BrainService:
         self.working_memory_sessions = working_memory_sessions or WorkingMemorySessions()
         self.dynamics = dynamics or RecurrentDynamicsEngine()
         self.knowledge_network = knowledge_network or AssociativeKnowledgeNetwork()
+
+    @staticmethod
+    def _associative_owner_context_prefix(owner_id: str) -> str:
+        """Build a non-content prefix for deleting all associations owned by one account."""
+        owner_digest = sha256(owner_id.encode("utf-8")).hexdigest()[:16]
+        return f"owner-{owner_digest}.session-"
+
+    @classmethod
+    def _associative_context_id(cls, owner_id: str, session_id: str | None) -> str:
+        """Return a hashed owner/session scope; never retain raw identifiers."""
+        if session_id is None:
+            return f"request-{uuid4().hex}"
+        owner_prefix = cls._associative_owner_context_prefix(owner_id)
+        session_digest = sha256(session_id.encode("utf-8")).hexdigest()[:24]
+        return f"{owner_prefix}{session_digest}"
 
     @staticmethod
     def _system_prompt(profile: IdentityProfile, mode: BrainMode) -> str:
@@ -123,7 +140,13 @@ class BrainService:
         # Every input drives a bounded recurrent activity cycle. Raw text is not
         # retained by the dynamics engine; only aggregate population state remains.
         dynamics_state = self.dynamics.process(query)
-        knowledge_activations = self.knowledge_network.process(query)
+        knowledge_context_id = self._associative_context_id(owner_id, session_id)
+        knowledge_activations = self.knowledge_network.process(
+            query, context_id=knowledge_context_id
+        )
+        if session_id is None:
+            # Requests without an explicit session are isolated and leave no learned trace.
+            self.knowledge_network.forget_context(knowledge_context_id)
         # Identity is a source-code-defined constitutional fact, not an LLM guess
         # and not a database lookup. Answer direct identity questions deterministically.
         if is_identity_question(query):
@@ -153,6 +176,9 @@ class BrainService:
                     },
                     "recurrent_dynamics": dynamics_state,
                     "associative_memory": self.knowledge_network.snapshot(),
+                    "associative_memory_context": (
+                        "session" if session_id is not None else "request"
+                    ),
                 },
                 session_id=session_id,
             )
@@ -213,10 +239,20 @@ class BrainService:
                 "activation": activation.activation,
                 "directly_activated": activation.directly_activated,
                 "spread_activation": activation.spread_activation,
+                "association_context": (
+                    "current_session"
+                    if activation.association_context_id is not None and session_id is not None
+                    else "current_request"
+                    if activation.association_context_id is not None
+                    else None
+                ),
             }
             for activation in knowledge_activations
         ]
         cognitive_trace["associative_memory"] = self.knowledge_network.snapshot()
+        cognitive_trace["associative_memory_context"] = (
+            "session" if session_id is not None else "request"
+        )
         context = (
             "CURRENT SENSORY INPUT:\n"
             f"{cycle.percept.content}\n\n"
@@ -277,11 +313,18 @@ class BrainService:
         )
 
     def clear_session(self, owner_id: str, session_id: str) -> bool:
-        return self.working_memory_sessions.clear(owner_id, session_id)
+        """Clear working and associative context for one owner-scoped session."""
+        workspace_cleared = self.working_memory_sessions.clear(owner_id, session_id)
+        context_id = self._associative_context_id(owner_id, session_id)
+        associations_cleared = self.knowledge_network.forget_context(context_id)
+        return workspace_cleared or associations_cleared
 
     def clear_owner_sessions(self, owner_id: str) -> int:
-        """Clear volatile context when owner data or consent changes."""
-        return self.working_memory_sessions.clear_owner(owner_id)
+        """Clear volatile working and associative context when owner data or consent changes."""
+        cleared_workspaces = self.working_memory_sessions.clear_owner(owner_id)
+        prefix = self._associative_owner_context_prefix(owner_id)
+        self.knowledge_network.forget_contexts(prefix)
+        return cleared_workspaces
 
     @staticmethod
     def retriever_rank_examples(

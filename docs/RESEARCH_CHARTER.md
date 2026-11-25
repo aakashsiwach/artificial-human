@@ -152,6 +152,17 @@ As of 2026-11-24, the following project foundations are merged.
 - Configurable language model as a downstream language/deliberation component.
 - Inspectable cognitive traces that report implemented operations without exposing private memory content or hidden chain-of-thought.
 
+### Associative knowledge and source-context boundaries
+
+- Source-defined knowledge facts are linked by bounded, volatile co-activation
+  and spreading activation, with link decay and a hard graph-size limit.
+- Associative links are partitioned by owner-scoped, hashed conversation context.
+  Requests without explicit sessions are ephemeral; clearing a session or owner
+  removes its corresponding associative links.
+- The context-scoped evaluation compares within-session cue recall, cross-session
+  leakage, and a shared-global control. This tests software context isolation only;
+  it does not verify factual source credibility or contradiction resolution.
+
 ### Long-term memory foundation
 
 - Typed memory records with provenance and purpose-specific consent.

@@ -12,7 +12,7 @@ from typing import Any
 _PURPOSE = """\
 This report measures the cognitive subsystems that exist on `main` today:
 attention, working memory, the lexical prediction/novelty signal, long-term
-memory recall, controlled associative cue completion, and the integrated multi-turn cycle. It establishes a
+memory recall, controlled associative cue completion, context-scoped source monitoring, and the integrated multi-turn cycle. It establishes a
 reproducible baseline *before* new mechanisms are introduced, as Stage 1 of the
 [Research Charter](../RESEARCH_CHARTER.md) requires. No algorithm was changed to
 improve these numbers.
@@ -64,6 +64,7 @@ _DEFINITIONS = """\
 | Prediction | 54 authored context/input pairs in 9 categories: exact repetition, near repetition, paraphrase, low-overlap related, unrelated, shared vocabulary with a different sense, contradiction, contextually expected, contextually unexpected | Author label `unexpected` (unrelated, other word sense, contradiction, script violation) vs expected |
 | Memory | Existing synthetic memory benchmark (46 memories, two synthetic owners) plus source-attribution queries | Graded relevance per query, expected source, empty set for irrelevant queries |
 | Associative memory | Nine fixed source-fact pairs; each pair is co-activated during training, then tested with a cue that directly retrieves only its source fact | Whether the declared target fact is retrieved in the top 5 |
+| Associative context | Nine source-fact pairs trained in separate contexts, then queried in the same context, a different context, and a shared global graph | Same-context target recall@5 and cross-context leakage@5 |
 | Integration | Six multi-turn scenarios through `CognitiveArchitecture` (A–F) | Scenario-specific behavioural checks |"""
 
 _BASELINES = """\
@@ -108,6 +109,8 @@ _METRICS = """\
   expected source / all conflicting memories appear in the top 5.
 - **Associative target recall@5 / MRR.** Share of held-out cues that retrieve the
   declared target in the top 5 / mean reciprocal rank of that target.
+- **Cross-context leakage@5.** Share of cues that retrieve a target learned in a
+  different context; lower is better.
 - **False associations per query.** Mean count of top-5 facts that are neither
   the cue source nor the declared target."""
 
@@ -459,6 +462,24 @@ def _suite_section(suite: Mapping[str, Any]) -> list[str]:
                     f"| {_fmt(values.get('false_associations'))} |"
                 )
         lines.append("")
+    elif name == "associative-context":
+        lines += [
+            f"Contexts: {suite['extra']['context_count']} trained; "
+            f"{suite['extra']['contexts_removed']} removed during cleanup.",
+            "",
+            "| Probe | Same-context recall@5 | Different-context leakage@5 | Shared-global recall@5 |",
+            "| --- | ---: | ---: | ---: |",
+        ]
+        for probe, systems in suite["by_condition"].items():
+            same = systems["same_context"]
+            cross = systems["different_context"]
+            shared = systems["shared_global_control"]
+            lines.append(
+                f"| {probe} | {_fmt(same['target_recall@5'])} "
+                f"| {_fmt(cross['target_recall@5'])} "
+                f"| {_fmt(shared['target_recall@5'])} |"
+            )
+        lines.append("")
     if suite["checks"] and name != "integration":
         lines += ["**Checks**", ""] + [
             f"- {'PASS' if item['passed'] else 'FAIL'}: {item['name']}" for item in suite["checks"]
@@ -531,6 +552,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "prediction": "novelty threshold per system (balanced accuracy)",
         "memory": "semantic similarity threshold",
         "associative-memory": "none (fixed source-fact probes; no tuning)",
+        "associative-context": "none (fixed source-fact/context probes; no tuning)",
         "integration": "none (fixed scenarios)",
         "longmemeval": "none: every external question is held out",
         "digit-span": "fitting human reference models only (participant-level split)",
@@ -546,7 +568,8 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "## 6. Metric definitions", "", _METRICS, "",
         "## 7. Results by subsystem", "",
     ]
-    for name in ("attention", "working-memory", "prediction", "memory", "associative-memory"):
+    for name in ("attention", "working-memory", "prediction", "memory",
+                 "associative-memory", "associative-context"):
         if name in suites:
             lines += _suite_section(suites[name])
     lines += ["## 8. Integrated multi-turn results", ""]
