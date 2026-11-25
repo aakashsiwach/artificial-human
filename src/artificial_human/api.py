@@ -179,6 +179,9 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     public_deployment = os.getenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "").lower() in {
         "1", "true", "yes",
     }
+    monitor_only = os.getenv("ARTIFICIAL_HUMAN_MONITOR_ONLY", "").lower() in {
+        "1", "true", "yes",
+    }
     docs_enabled = not public_deployment
     app = FastAPI(
         title="Artificial Human",
@@ -203,8 +206,15 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
 
     @app.middleware("http")
     async def protect_public_deployment(request: Any, call_next: Any) -> Any:
-        if not public_deployment or request.url.path == "/health" or request.method == "OPTIONS":
+        if not public_deployment or request.method == "OPTIONS":
             return await call_next(request)
+        if request.url.path == "/health":
+            return await call_next(request)
+        if monitor_only and request.url.path != "/monitor/overview":
+            return JSONResponse(
+                status_code=404,
+                content={"detail": "This deployment only exposes read-only monitoring."},
+            )
         expected = os.getenv("ARTIFICIAL_HUMAN_API_TOKEN", "")
         if not expected:
             return JSONResponse(
@@ -221,6 +231,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         return await call_next(request)
 
     app.state.public_deployment = public_deployment
+    app.state.monitor_only = monitor_only
     app.state.organism = organism or ArtificialOrganism()
 
     def get_organism() -> ArtificialOrganism:
