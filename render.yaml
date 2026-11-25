@@ -12,6 +12,8 @@ services:
     envVars:
       - key: ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT
         value: "true"
+      - key: ARTIFICIAL_HUMAN_MONITOR_ONLY
+        value: "true"
       - key: ARTIFICIAL_HUMAN_API_TOKEN
         generateValue: true
       - key: ARTIFICIAL_HUMAN_CORS_ORIGINS
