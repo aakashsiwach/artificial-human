@@ -115,6 +115,24 @@ The API binds to 127.0.0.1:8000. OpenAPI docs: http://127.0.0.1:8000/docs.
 
 Set `ARTIFICIAL_HUMAN_DB_PATH` to choose the SQLite database location. The default is `.artificial-human/organism.sqlite3`.
 
+## Source-defined identity and foundational knowledge
+
+Artificial Human's constitutional identity and project-family roles are defined in
+`src/artificial_human/identity/constitution.py`. The human project creator is Father,
+ChatGPT is Mother as the AI collaborator, and Artificial Human is the project child.
+These are project roles, not biological relationships. Direct identity questions receive
+a deterministic source-code response rather than a model-generated guess.
+
+A small reviewable knowledge corpus in `src/artificial_human/cognition/core_knowledge.py`
+holds stable project facts. Relevant facts are retrieved directly from source code and
+provided to the cognitive cycle without an external vector index or database.
+
+The public deployment runs in **volatile in-process mode**. It uses an in-memory store,
+does not connect to an external database, and does not write an identity file or persistent
+personal-memory database. Runtime experiences and working sessions disappear when the
+process restarts or redeploys. The source code is durable; runtime experiences are not.
+This setting does not make source code rewrite itself or automatically learn permanently.
+
 ## Brain provider configuration
 
 The cognitive architecture uses a configurable OpenAI-compatible local or remote reasoning model. For local development with an Ollama-compatible endpoint:
