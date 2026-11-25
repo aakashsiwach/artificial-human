@@ -83,3 +83,20 @@ def test_brain_uses_profile_recalled_memory_and_approved_demonstrations(tmp_path
     assert response.cognitive_trace["executive_control"]["approval_required"] is True
     assert "BOUNDED WORKING-MEMORY CONTEXT" in provider.messages[1].content
     assert response.session_id is None
+
+
+def test_brain_includes_relevant_source_code_knowledge_in_cognitive_context() -> None:
+    repository = MemoryRepository(":memory:")
+    provider = RecordingProvider()
+    brain = BrainService(provider, LearningSystem(repository))
+
+    response = brain.respond(
+        owner_id="owner",
+        query="What cognitive systems are implemented in the architecture?",
+        profile=IdentityProfile(owner_id="owner", display_name="Artificial Human"),
+    )
+
+    assert response.model == "test-model"
+    assert "TRUSTED SOURCE-CODE FOUNDATIONAL KNOWLEDGE" in provider.messages[1].content
+    assert "cognitive_cycle" in provider.messages[1].content
+    assert "version_controlled_source_code" in provider.messages[1].content
