@@ -188,6 +188,44 @@ specified graph operations under synthetic conditions. It does not measure
 human interference, factual source credibility, truth, or biological plasticity.
 It uses opaque test IDs and no user memories.
 
+### Temporal episodic sequence formation and replay
+
+The cognitive cycle includes a bounded, volatile `EpisodicReplayMemory` over
+opaque episodic memory IDs. It does not copy event text, source labels, owner IDs,
+or raw session IDs. Each episode is formed only from episodic records selected by
+attention. Records are ordered by `occurred_at`, falling back to `created_at`,
+and the network stores bidirectional transitions between adjacent events rather
+than an all-to-all association graph.
+
+A later episodic cue can recover the immediate event before and after it from
+the same hashed owner/session context. A replayed ID is resolved again through
+the owner's live consent-visible repository before it can enter attention.
+Deleted, revoked, foreign, non-episodic, or explicitly contradictory records
+cannot be revived by sequence replay. When an item found by ordinary associative
+retrieval is also supported by temporal replay, the cognitive trace records both
+retrieval channels.
+
+Transition strengths have bounded learning, retrieval-dependent strengthening,
+and context-local decay. Separate hard limits bound the number of contexts,
+episodes per context, events per episode, and directed transitions. A transition
+evicted by the budget is no longer replayable even though an episode's event IDs
+may remain in its bounded sequence record. Ephemeral requests delete their
+replay context before response generation completes; session and owner cleanup
+remove the corresponding episodes and transition weights.
+
+The `episodic-replay` suite uses nine project-authored four-event sequences. It
+cues each middle event and evaluates recovery of its immediate predecessor and
+successor. Controls include no replay and a different owner/session context.
+Primary measures are exact neighbour recall@2, MRR, false replays per query, and
+cross-context leakage@2.
+
+This is a deterministic event-sequence retrieval experiment over synthetic
+opaque IDs. It does not establish human autobiographical memory, offline
+sleep-stage replay, hippocampal pattern completion, or biological systems
+consolidation. The runtime replay is cue-driven and occurs during an ordinary
+cognitive cycle; sleep-stage-inspired offline replay and owner-reviewed
+consolidation remain open research tasks.
+
 ### Integrated multi-turn scenarios
 
 | Scenario | Question | Notes |

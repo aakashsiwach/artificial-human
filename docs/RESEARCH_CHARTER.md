@@ -302,7 +302,7 @@ This is the next major cognitive implementation target.
 
 - Build explicit associative/relational memory between people, concepts, events, locations, facts, goals, and sources.
 - Investigate hippocampal-inspired pattern completion and pattern separation as competing, measurable computational mechanisms.
-- Add temporal contiguity and context-dependent episodic cueing.
+- Add temporal contiguity and context-dependent episodic cueing. (Owner/session-scoped adjacent-event replay is implemented in PR #12; pending merge and CI.)
 - Model retrieval-dependent strengthening, decay, and interference; make parameters inspectable and owner-controlled.
 - Investigate confidence and source credibility without converting repetition or model inference into truth.
 - Implement owner-reviewed replay and consolidation candidates that preserve provenance.

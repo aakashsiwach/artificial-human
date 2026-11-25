@@ -426,3 +426,147 @@ def test_associated_record_is_blocked_by_contradiction_even_when_not_lexically_r
     assert gamma_result == []
     assert second.cognitive_trace["relational_memory"]["contradiction_suppressions"] >= 1
     assert second.cognitive_trace["relational_memory"]["association_count"] == 0
+
+
+
+def test_brain_forms_and_replays_temporal_episodes_in_the_same_session() -> None:
+    repository = MemoryRepository(":memory:")
+    consent = repository.grant_consent("owner")
+    records = [
+        repository.add(
+            owner_id="owner",
+            kind=MemoryKind.EPISODIC,
+            content=content,
+            source="owner event log",
+            consent_id=consent.id,
+            occurred_at=occurred_at,
+        )
+        for content, occurred_at in (
+            ("alpha kickoff event detail", "2026-11-25T10:01:00+00:00"),
+            ("beta review event detail", "2026-11-25T10:02:00+00:00"),
+            ("gamma deployment event detail", "2026-11-25T10:03:00+00:00"),
+        )
+    ]
+    learning = LearningSystem(repository)
+    architecture = CognitiveArchitecture(
+        memory_search=HybridMemorySearch(repository),
+        learning=learning,
+    )
+    brain = BrainService(RecordingProvider(), learning, architecture=architecture)
+    profile = IdentityProfile(owner_id="owner")
+
+    first = brain.respond(
+        owner_id="owner",
+        query="alpha beta gamma",
+        profile=profile,
+        memories=records,
+        session_id="episodic-session",
+    )
+    assert first.cognitive_trace["episodic_replay"]["episode_formed_this_cycle"] is True
+    assert first.cognitive_trace["episodic_replay"]["episode_count"] >= 1
+
+    second = brain.respond(
+        owner_id="owner",
+        query="alpha",
+        profile=profile,
+        memories=records,
+        session_id="episodic-session",
+    )
+    assert second.cognitive_trace["episodic_replay"]["replayed_candidate_count"] >= 1
+    assert second.cognitive_trace["episodic_replay"]["retrieval_strengthenings_this_cycle"] >= 1
+    assert any(
+        "episodic_replay" in item["retrieval_channels"]
+        for item in second.recalled_memories
+    )
+
+    assert brain.clear_session("owner", "episodic-session") is True
+    assert brain.architecture.episodic_memory.snapshot()["episode_count"] == 0
+
+
+def test_ephemeral_brain_requests_do_not_retain_episodic_sequences() -> None:
+    repository = MemoryRepository(":memory:")
+    consent = repository.grant_consent("owner")
+    records = [
+        repository.add(
+            owner_id="owner",
+            kind=MemoryKind.EPISODIC,
+            content=content,
+            source="owner event log",
+            consent_id=consent.id,
+            occurred_at=occurred_at,
+        )
+        for content, occurred_at in (
+            ("alpha first event", "2026-11-25T10:01:00+00:00"),
+            ("beta second event", "2026-11-25T10:02:00+00:00"),
+        )
+    ]
+    learning = LearningSystem(repository)
+    brain = BrainService(
+        RecordingProvider(),
+        learning,
+        architecture=CognitiveArchitecture(
+            memory_search=HybridMemorySearch(repository),
+            learning=learning,
+        ),
+    )
+
+    response = brain.respond(
+        owner_id="owner",
+        query="alpha beta",
+        profile=IdentityProfile(owner_id="owner"),
+        memories=records,
+    )
+    assert response.cognitive_trace["episodic_replay"]["episode_formed_this_cycle"] is True
+    assert brain.architecture.episodic_memory.snapshot()["episode_count"] == 0
+
+
+
+def test_clear_owner_sessions_removes_only_that_owners_episodic_sequences() -> None:
+    repository = MemoryRepository(":memory:")
+    learning = LearningSystem(repository)
+    brain = BrainService(
+        RecordingProvider(),
+        learning,
+        architecture=CognitiveArchitecture(
+            memory_search=HybridMemorySearch(repository),
+            learning=learning,
+        ),
+    )
+    profiles = {
+        owner: IdentityProfile(owner_id=owner)
+        for owner in ("owner-a", "owner-b")
+    }
+    for owner in ("owner-a", "owner-b"):
+        consent = repository.grant_consent(owner)
+        records = [
+            repository.add(
+                owner_id=owner,
+                kind=MemoryKind.EPISODIC,
+                content=f"{owner} {name} event detail",
+                source="owner event log",
+                consent_id=consent.id,
+                occurred_at=occurred_at,
+            )
+            for name, occurred_at in (
+                ("first", "2026-11-25T10:01:00+00:00"),
+                ("second", "2026-11-25T10:02:00+00:00"),
+            )
+        ]
+        brain.respond(
+            owner_id=owner,
+            query="first second",
+            profile=profiles[owner],
+            memories=records,
+            session_id="same-session-label",
+        )
+
+    assert brain.architecture.episodic_memory.snapshot()["context_count"] == 2
+    brain.clear_owner_sessions("owner-a")
+    assert brain.architecture.episodic_memory.snapshot()["context_count"] == 1
+
+    context_b = brain._associative_context_id("owner-b", "same-session-label")
+    remaining = brain.architecture.episodic_memory.replay(
+        [records[0].id],
+        context_id=context_b,
+    )
+    assert len(remaining) == 1

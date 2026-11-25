@@ -146,6 +146,8 @@ class ArtificialOrganism:
             "cognitive_systems": self.cognitive_brain.architecture.status(),
             "neural_dynamics": self.neural_dynamics.snapshot().as_dict(),
             "associative_memory": self.cognitive_brain.knowledge_network.snapshot(),
+            "relational_memory": self.cognitive_brain.architecture.relational_memory.snapshot(),
+            "episodic_memory": self.cognitive_brain.architecture.episodic_memory.snapshot(),
             "immune_cells": [
                 "dendritic", "neutrophil", "macrophage", "b_cell_memory", "t_cell_verifier"
             ],
