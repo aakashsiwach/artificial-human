@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict, replace
 from datetime import datetime
 import hmac
@@ -176,6 +178,25 @@ class BrainEvaluationRequest(BaseModel):
 
 
 def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
+    runtime_organism = organism or ArtificialOrganism()
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        async def idle_activity_loop() -> None:
+            while True:
+                await asyncio.sleep(1.0)
+                # Run the deterministic activity step off the event loop.
+                # The engine serialises access with its internal lock.
+                await asyncio.to_thread(runtime_organism.neural_dynamics.tick_idle)
+
+        task = asyncio.create_task(idle_activity_loop(), name="artificial-human-idle-activity")
+        try:
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
     public_deployment = os.getenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "").lower() in {
         "1", "true", "yes",
     }
@@ -187,6 +208,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         title="Artificial Human",
         version="0.1.0",
         description="Experimental artificial organism API. Public deployments require bearer auth.",
+        lifespan=lifespan,
         docs_url="/docs" if docs_enabled else None,
         redoc_url="/redoc" if docs_enabled else None,
         openapi_url="/openapi.json" if docs_enabled else None,
@@ -251,7 +273,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
 
     app.state.public_deployment = public_deployment
     app.state.monitor_only = monitor_only
-    app.state.organism = organism or ArtificialOrganism()
+    app.state.organism = runtime_organism
 
     def get_organism() -> ArtificialOrganism:
         return app.state.organism
