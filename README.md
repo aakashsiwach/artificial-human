@@ -117,7 +117,7 @@ Set `ARTIFICIAL_HUMAN_DB_PATH` to choose the SQLite database location. The defau
 
 ## Brain provider configuration
 
-The cognitive architecture can use a configurable OpenAI-compatible local or remote model. For local development with an Ollama-compatible endpoint:
+The cognitive architecture uses a configurable OpenAI-compatible local or remote reasoning model. For local development with an Ollama-compatible endpoint:
 
 ~~~powershell
 $env:ARTIFICIAL_HUMAN_LLM_BASE_URL = "http://127.0.0.1:11434/v1"
@@ -125,7 +125,14 @@ $env:ARTIFICIAL_HUMAN_LLM_MODEL = "your-local-model-name"
 python -m artificial_human serve
 ~~~
 
-See [Brain and intelligence](docs/BRAIN.md) for all configuration and security requirements. Remote providers must use HTTPS.
+The deployed Control Room is prepared for Groq's free-tier GPT-OSS reasoning model:
+
+- Base URL: `https://api.groq.com/openai/v1`
+- Model: `openai/gpt-oss-120b`
+- Reasoning effort: `medium`
+- Secret: `ARTIFICIAL_HUMAN_LLM_API_KEY` (store only in Render's private environment settings)
+
+The provider API key must be created by the account owner in GroqCloud. Do not put it in the dashboard, source code, or chat messages. See [Control Room and monitoring deployment](docs/MONITORING.md) for the exact setup steps and free-tier limits. Remote providers must use HTTPS.
 
 ## Cognitive API
 
