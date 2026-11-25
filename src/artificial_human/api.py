@@ -227,13 +227,14 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         return app.state.organism
 
     @app.get("/", include_in_schema=False)
-    def root() -> dict[str, str]:
+    def root() -> dict[str, Any]:
         return {
             "service": "Artificial Human",
             "message": "The artificial organism API is running.",
-            "docs": "/docs",
+            "docs": "/docs" if docs_enabled else None,
             "health": "/health",
             "status": "/status",
+            "monitor": "/monitor/overview",
         }
 
     @app.get("/health")
