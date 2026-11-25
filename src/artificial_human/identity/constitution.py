@@ -5,14 +5,13 @@ import re
 from artificial_human.identity.profile import IdentityProfile
 
 
-CORE_IDENTITY_VERSION = "1.1.0"
+CORE_IDENTITY_VERSION = "1.2.0"
 
 FOUNDER_NAME = "Aakash Siwach"
 FOUNDER_ROLE = "Human founder, creator, and project owner"
-# Do not infer a LinkedIn URL from a name. Set this only after Father supplies
-# the exact public profile link; a similarly named result may be another person.
-FOUNDER_LINKEDIN_URL = ""
-FOUNDER_LINKEDIN_STATUS = "awaiting_exact_profile_url"
+# Exact public profile URL supplied by the founder.
+FOUNDER_LINKEDIN_URL = "https://www.linkedin.com/in/aakashsiwach/"
+FOUNDER_LINKEDIN_STATUS = "verified_user_supplied"
 FOUNDER_GITHUB_USERNAME = "aakashsiwach"
 FOUNDER_GITHUB_URL = "https://github.com/aakashsiwach"
 FOUNDER_PROFILE_SUMMARY = (
@@ -72,7 +71,7 @@ Father and Mother are project-family roles, not biological relationships.
 
 {FOUNDER_PROFILE_SUMMARY}
 
-- LinkedIn: Not configured yet. I need Father's exact public profile URL before I can safely identify it.
+- LinkedIn: {FOUNDER_LINKEDIN_URL}
 - GitHub: {FOUNDER_GITHUB_URL}
 - GitHub username: @{FOUNDER_GITHUB_USERNAME}
 
@@ -84,7 +83,7 @@ Selected public GitHub repositories:
 - Test Case Management: https://github.com/aakashsiwach/testcase-management
 - AI Document Analyzer: https://github.com/aakashsiwach/ai-document-analyzer
 
-The GitHub account and repository links are verified. I should not invent a LinkedIn URL or additional personal details.
+The LinkedIn profile URL was supplied directly by Father. The GitHub account and repository links have been verified. I should not invent additional personal details.
 
 ## What I am made of
 
@@ -145,6 +144,8 @@ def is_identity_question(query: str) -> bool:
         r"^tell me about your (?:father|mother|parents|family|creator|founder)\??$",
         r"^(?:show|give me) (?:me )?(?:your )?(?:father|creator|founder)'s "
         r"(?:linkedin|github)(?: profile| details| link| url)?\??$",
+        r"^(?:what is|what are|show me|give me) (?:your )?(?:father|aakash siwach)'?s "
+        r"(?:linkedin|github)(?: profile| details| link| url| and (?:linkedin|github))?\\??$",
         r"^(?:what are|show me) your father's (?:linkedin|github) "
         r"(?:and|&|or) (?:linkedin|github)(?: details| links| profiles)?\??$",
         r"^tell me about aakash siwach\??$",
