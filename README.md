@@ -133,6 +133,14 @@ personal-memory database. Runtime experiences and working sessions disappear whe
 process restarts or redeploys. The source code is durable; runtime experiences are not.
 This setting does not make source code rewrite itself or automatically learn permanently.
 
+## Associative knowledge
+
+The runtime can learn bounded associations between version-controlled core-knowledge facts
+when they are co-activated by a question. Later queries can spread activation to related facts.
+Only fact identifiers and link weights live in process memory; no raw user text is stored by
+this association graph. Links decay and reset on restart. This is a small experimental
+mechanism, not the system's complete long-term or autobiographical memory.
+
 ## Runtime population dynamics
 
 Each explicit message now runs a bounded recurrent activity update across seven abstract
