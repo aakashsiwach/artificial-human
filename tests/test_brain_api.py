@@ -496,7 +496,7 @@ def test_sleep_rejection_writes_nothing_and_revocation_clears_pending_proposals(
 
 
 
-def test_sleep_approval_rechecks_new_contradictions_before_persisting(tmp_path) -> None:
+def test_sleep_approval_rejects_proposal_invalidated_by_new_contradiction(tmp_path) -> None:
     organism = ArtificialOrganism(
         owner_id="sleep-conflict-owner",
         database_path=tmp_path / "sleep-conflict.sqlite3",
@@ -544,9 +544,9 @@ def test_sleep_approval_rechecks_new_contradictions_before_persisting(tmp_path) 
         f"/sleep/proposals/{proposal['id']}/review",
         json={"decision": "approved", "note": "Attempt approval after conflict."},
     )
-    assert approved.status_code == 409
+    assert approved.status_code == 404
     assert len(client.get("/memories").json()) == 2
-    assert client.get("/sleep/proposals?status=pending_review").json()["proposals"][0]["id"] == proposal["id"]
+    assert client.get("/sleep/proposals?status=pending_review").json()["proposals"] == []
 
 
 
