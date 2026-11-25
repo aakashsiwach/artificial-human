@@ -193,7 +193,7 @@ def run_schema_extraction_suite(seed: int = DEFAULT_SEED) -> SuiteResult:
         )
         after_preview = len(repository.list(owner_id))
         recurring = [item for item in proposals if item.event_types == EVENT_TYPES]
-        singleton = any(
+        singleton_false_positive = any(
             item.event_types == ("support.ticket_opened", "support.ticket_closed")
             for item in proposals
         )
@@ -203,7 +203,7 @@ def run_schema_extraction_suite(seed: int = DEFAULT_SEED) -> SuiteResult:
         )
 
         detection_hits.append(float(len(recurring) == 1))
-        singleton_false_positives.append(float(singleton))
+        singleton_false_positives.append(float(singleton_false_positive))
         contradiction_false_positives.append(float(contradiction))
         silent_write_violations.append(float(before_preview != after_preview))
 

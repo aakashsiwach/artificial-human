@@ -295,26 +295,29 @@ class SchemaExtractionSystem:
         selected_candidates: list[
             tuple[PatternKey, dict[str, tuple[MemoryRecord, ...]]]
         ] = []
-        for key, examples in sorted(
+        for pattern_key, examples_by_index in sorted(
             candidates, key=lambda item: (-len(item[0][0]), item[0][0], item[0][1])
         ):
-            event_types, consent_id = key
+            event_types, consent_id = pattern_key
             covered = any(
                 other_key[1] == consent_id
                 and len(other_key[0]) > len(event_types)
                 and self._contains_contiguous(other_key[0], event_types)
-                and len(other_examples) >= len(examples)
+                and len(other_examples) >= len(examples_by_index)
                 for other_key, other_examples in candidates
             )
             if not covered:
-                selected_candidates.append((key, examples))
+                selected_candidates.append((pattern_key, examples_by_index))
 
         created: list[SchemaProposal] = []
         for (event_types, consent_id), indexed_examples in selected_candidates:
-            examples = tuple(indexed_examples[key] for key in sorted(indexed_examples, key=int))
-            schema = self._induce_schema(event_types, examples)
+            sequence_examples = tuple(
+                indexed_examples[example_key]
+                for example_key in sorted(indexed_examples, key=int)
+            )
+            schema = self._induce_schema(event_types, sequence_examples)
             source_sequences = tuple(
-                tuple(record.id for record in example) for example in examples
+                tuple(record.id for record in example) for example in sequence_examples
             )
             source_ids = tuple(
                 dict.fromkeys(memory_id for sequence in source_sequences for memory_id in sequence)
@@ -331,9 +334,9 @@ class SchemaExtractionSystem:
                 ).encode("utf-8")
             ).hexdigest()
             owner_scope = self._owner_scope(owner_id)
-            key = (owner_scope, fingerprint)
+            fingerprint_key = (owner_scope, fingerprint)
             with self._lock:
-                if key in self._fingerprints:
+                if fingerprint_key in self._fingerprints:
                     continue
                 if len(self._proposals) >= self.max_proposals:
                     evictable = next(
@@ -353,10 +356,10 @@ class SchemaExtractionSystem:
                     event_types=event_types,
                     source_sequences=source_sequences,
                     schema=deepcopy(schema),
-                    support_count=len(examples),
+                    support_count=len(sequence_examples),
                     summary=(
                         "Recurring ordered event schema observed in "
-                        f"{len(examples)} distinct owner/session examples: "
+                        f"{len(sequence_examples)} distinct owner/session examples: "
                         + " → ".join(event_types)
                         + ". Varying annotated attributes are represented as typed slots; "
                         "owner approval is required before the schema is saved."
@@ -368,7 +371,7 @@ class SchemaExtractionSystem:
                     consent_id=consent_id,
                     fingerprint=fingerprint,
                 )
-                self._fingerprints[key] = proposal.id
+                self._fingerprints[fingerprint_key] = proposal.id
                 created.append(proposal)
         return tuple(created)
 
