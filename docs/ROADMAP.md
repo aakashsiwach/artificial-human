@@ -37,7 +37,8 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Strengthen concept links through co-activation; retrieve related facts through spreading activation.
 - [x] Add bounded link decay and a hard association-count limit.
 - [x] Evaluate associative recall against keyword-only retrieval and random-link baselines ([PR #8](https://github.com/aakashsiwach/artificial-human/pull/8), merged with CI passing).
-- [ ] Add context-sensitive source monitoring, contradiction-sensitive association and interference experiments. (Owner/session-scoped links, request cleanup, and a cross-context leakage benchmark are implemented in PR #9; contradiction and interference experiments remain open.)
+- [x] Add context-sensitive source monitoring with owner/session-scoped links, request cleanup, and a cross-context leakage benchmark (merged in [PR #10](https://github.com/aakashsiwach/artificial-human/pull/10)).
+- [ ] Add contradiction-sensitive association, retrieval-dependent strengthening, and bounded-interference experiments (implementation and deterministic evaluation are in PR #11; keep pending until merged).
 - [ ] Extend beyond source facts to carefully governed volatile episodic representations, with explicit privacy controls.
 
 ### Recurrent activity research track

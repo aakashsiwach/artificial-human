@@ -142,6 +142,52 @@ external credibility or truth of a source, reconcile contradictory records, or
 reproduce biological source-monitoring mechanisms. The facts and probes are
 project-authored, and the test does not use user conversations or personal data.
 
+### Contradiction-sensitive relational memory and interference
+
+The cognitive cycle now includes a bounded, volatile relational graph over opaque
+memory record IDs. It is separate from the source-fact associative graph. The
+architecture first performs owner-scoped, consent-visible memory retrieval, then
+activates one-hop links in the current owner/session context. Associated IDs are
+resolved again through the same owner's supplied records or active-consent
+repository before they can enter attention. Missing, deleted, revoked, or foreign
+IDs are ignored.
+
+Only memories selected by attention participate in co-activation learning. The
+graph uses a bounded positive-link update, context-local decay, a global edge
+budget, and retrieval-dependent strengthening after a link actually completes a
+cue. The link budget intentionally creates a controlled capacity-interference
+condition; it can evict the weakest association when a new relation is learned.
+
+Explicit repository `contradicts` links are supplied to the relational network
+from the current visible retrieval candidates. If a known conflict pair has a
+positive association, the edge is deleted and is not used for activation or
+relearned in that cycle. Both conflicting records remain ordinary retrieval
+evidence; contradiction handling does not choose which record is true. Existing
+hybrid search continues to expand explicit contradictions so they can be shown
+beside one another.
+
+The network stores opaque memory IDs, hashed/non-content context IDs, and scalar
+weights only. It does not store memory text, source labels, owner IDs, or raw
+session IDs. Requests without explicit session IDs are ephemeral and their
+relational context is deleted after the cycle. Session and owner cleanup delete
+relational links along with working and source-fact associative state.
+
+The `associative-dynamics` suite contains nine deterministic project-authored
+probes with two controls:
+- **Contradiction suppression:** learn a positive pair, supply an explicit
+  contradiction pair, and verify that the positive edge is removed and cannot
+  complete the cue.
+- **Capacity interference:** compare networks with identical one-edge capacity
+  and distractor sequence, one with retrieval strengthening disabled and one
+  with strengthening enabled. Repeated cue completion should protect the used
+  target edge against a later distractor relation.
+
+The suite reports contradiction suppression rate, contradiction recall@1,
+target recall after distractors@1, and evicted-link counts. It is a test of
+specified graph operations under synthetic conditions. It does not measure
+human interference, factual source credibility, truth, or biological plasticity.
+It uses opaque test IDs and no user memories.
+
 ### Integrated multi-turn scenarios
 
 | Scenario | Question | Notes |

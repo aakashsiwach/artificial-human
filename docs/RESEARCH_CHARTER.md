@@ -163,6 +163,23 @@ As of 2026-11-24, the following project foundations are merged.
   leakage, and a shared-global control. This tests software context isolation only;
   it does not verify factual source credibility or contradiction resolution.
 
+### Contradiction-sensitive relational associations
+
+- A bounded volatile relational graph links opaque memory IDs only within the
+  current owner/session scope.
+- Learning is based on memories selected by attention, not every retrieved
+  candidate. Successful associative retrieval applies a bounded strengthening
+  increment.
+- Explicit contradiction links remove and block positive associative edges
+  between the conflicting records. Both records remain available as evidence.
+- Associated IDs are re-resolved through the owner's consent-visible records
+  before entering attention; deletion, revocation, and owner/session cleanup
+  prevent stale associations from reviving records.
+- The deterministic `associative-dynamics` suite measures contradiction
+  suppression and one-edge capacity interference against a no-retrieval-
+  strengthening baseline. This remains a software mechanism test, not a
+  biological memory claim.
+
 ### Long-term memory foundation
 
 - Typed memory records with provenance and purpose-specific consent.

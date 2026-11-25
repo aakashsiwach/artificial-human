@@ -10,12 +10,17 @@ from artificial_human.cognition.attention import AttentionCandidate, AttentionSy
 from artificial_human.cognition.executive import ExecutiveControlSystem, ExecutiveState
 from artificial_human.cognition.perception import Percept, PerceptionSystem
 from artificial_human.cognition.prediction import PredictionAssessment, PredictionSystem
+from artificial_human.cognition.relational_memory import RelationalMemoryNetwork
 from artificial_human.cognition.working_memory import (
     WorkingMemory,
     new_working_memory_entry,
 )
 from artificial_human.learning.system import LearningSystem
-from artificial_human.memory.repository import LearningExample, MemoryRecord
+from artificial_human.memory.repository import (
+    LearningExample,
+    MemoryNotFoundError,
+    MemoryRecord,
+)
 from artificial_human.memory.search import HybridMemorySearch
 
 
@@ -30,6 +35,7 @@ class CognitiveCycle:
     working_memory_state: dict[str, object]
     working_memory_context: tuple[dict[str, str], ...]
     retrieval: dict[str, Any] = field(default_factory=dict)
+    associative_memory_state: dict[str, object] = field(default_factory=dict)
 
     @property
     def plan(self) -> GoalPlan:
@@ -75,6 +81,7 @@ class CognitiveCycle:
                 "memory_ids": [item.memory.id for item in self.memories],
                 "retrieval": self.retrieval,
             },
+            "relational_memory": self.associative_memory_state,
             "learning": {
                 "attended_demonstration_count": len(self.demonstrations),
                 "demonstration_ids": [item.id for item, _ in self.demonstrations],
@@ -94,6 +101,7 @@ class CognitiveArchitecture:
         executive: ExecutiveControlSystem | None = None,
         retriever: MemoryRetriever | None = None,
         memory_search: HybridMemorySearch | None = None,
+        relational_memory: RelationalMemoryNetwork | None = None,
         learning: LearningSystem,
     ) -> None:
         self.perception = perception or PerceptionSystem()
@@ -102,6 +110,7 @@ class CognitiveArchitecture:
         self.executive = executive or ExecutiveControlSystem()
         self.retriever = retriever or MemoryRetriever()
         self.memory_search = memory_search
+        self.relational_memory = relational_memory or RelationalMemoryNetwork()
         self.learning = learning
 
     @staticmethod
@@ -116,6 +125,9 @@ class CognitiveArchitecture:
             "perception": "explicit_language_input",
             "attention": "bounded_relevance_and_salience_heuristic",
             "working_memory": "capacity_limited_volatile_workspace",
+            "associative_memory": (
+                "session_scoped_relational_links_with_contradiction_suppression"
+            ),
             "prediction": "lexical_novelty_error_heuristic",
             "executive_control": "goal_decomposition_with_approval_gate",
             "memory": (
@@ -167,6 +179,46 @@ class CognitiveArchitecture:
         ]
         return matches, response.explain()
 
+    @staticmethod
+    def _contradiction_pairs(
+        matches: Sequence[MemoryMatch],
+    ) -> tuple[tuple[str, str], ...]:
+        """Extract explicit, owner-visible contradictions among current candidates."""
+        available = {item.memory.id for item in matches}
+        pairs: set[tuple[str, str]] = set()
+        for match in matches:
+            values = match.explanation.get("conflicts_with", ())
+            if not isinstance(values, (list, tuple, set)):
+                continue
+            for other in values:
+                if isinstance(other, str) and other in available and other != match.memory.id:
+                    pairs.add(
+                        (match.memory.id, other)
+                        if match.memory.id < other else (other, match.memory.id)
+                    )
+        return tuple(sorted(pairs))
+
+    def _associated_record(
+        self,
+        owner_id: str,
+        memory_id: str,
+        supplied_memories: Sequence[MemoryRecord] | None,
+    ) -> MemoryRecord | None:
+        """Resolve an associated ID only inside the same consent-visible owner scope."""
+        if supplied_memories is not None:
+            return next(
+                (
+                    item for item in supplied_memories
+                    if item.id == memory_id and item.owner_id == owner_id
+                ),
+                None,
+            )
+        try:
+            return self.learning.repository.get(owner_id, memory_id)
+        except MemoryNotFoundError:
+            # Deleted, revoked, or foreign IDs are ignored rather than revived.
+            return None
+
     def run(
         self,
         *,
@@ -177,6 +229,7 @@ class CognitiveArchitecture:
         max_memories: int = 5,
         max_demonstrations: int = 3,
         attention_limit: int = 8,
+        association_context_id: str = "global",
     ) -> CognitiveCycle:
         percept = self.perception.perceive(query)
         prior_context = workspace.context(limit=workspace.capacity)
@@ -185,6 +238,72 @@ class CognitiveArchitecture:
         )
 
         retrieved, retrieval = self._retrieve(owner_id, query, memories, max_memories)
+        contradictions = self._contradiction_pairs(retrieved)
+        direct_memory_ids = [item.memory.id for item in retrieved]
+        direct_ids = set(direct_memory_ids)
+        visible_contradictions: set[tuple[str, str]] = set()
+        for link in self.learning.repository.links(owner_id):
+            if link.relation == "contradicts":
+                visible_contradictions.add(
+                    (link.from_memory_id, link.to_memory_id)
+                    if link.from_memory_id < link.to_memory_id
+                    else (link.to_memory_id, link.from_memory_id)
+                )
+        direct_conflicts = {
+            pair for pair in visible_contradictions
+            if pair[0] in direct_ids and pair[1] in direct_ids
+        }
+        contradictions = tuple(sorted(set(contradictions) | direct_conflicts))
+        associated = self.relational_memory.activate(
+            direct_memory_ids,
+            context_id=association_context_id,
+            contradictions=contradictions,
+        )
+        blocked_ids = {memory_id for pair in contradictions for memory_id in pair}
+        strongest_retrieval_score = max(
+            (item.score for item in retrieved),
+            default=0.0,
+        )
+        for activation in associated:
+            if activation.memory_id in direct_ids or activation.memory_id in blocked_ids:
+                continue
+            record = self._associated_record(owner_id, activation.memory_id, memories)
+            if record is None:
+                continue
+            hidden_conflicts = [
+                (direct_id, activation.memory_id)
+                if direct_id < activation.memory_id
+                else (activation.memory_id, direct_id)
+                for direct_id in direct_ids
+                if (
+                    (direct_id, activation.memory_id)
+                    if direct_id < activation.memory_id
+                    else (activation.memory_id, direct_id)
+                ) in visible_contradictions
+            ]
+            if hidden_conflicts:
+                contradictions = tuple(sorted(set(contradictions) | set(hidden_conflicts)))
+                blocked_ids.update({memory_id for pair in hidden_conflicts for memory_id in pair})
+                self.relational_memory.learn(
+                    [],
+                    context_id=association_context_id,
+                    contradictions=hidden_conflicts,
+                )
+                continue
+            retrieved.append(
+                MemoryMatch(
+                    memory=record,
+                    score=max(activation.strength * strongest_retrieval_score * 0.5, 1e-6),
+                    channels=("associative",),
+                    explanation={
+                        "associative": {
+                            "strength": activation.strength,
+                            "source": "same_context_co_retrieval",
+                        },
+                        "conflicts_with": [],
+                    },
+                )
+            )
         examples = self.learning.examples(owner_id, status="approved", limit=500)
         ranked_examples = rank_texts(
             query,
@@ -247,6 +366,18 @@ class CognitiveArchitecture:
             item for item in ranked_demonstrations
             if (item[0].id, "learning_example") in attended_lookup
         )
+        # Learn only from memory candidates that survived attention. Contradictory
+        # pairs remain visible as evidence but never become positive associations.
+        self.relational_memory.learn(
+            [item.memory.id for item in selected_memories],
+            context_id=association_context_id,
+            contradictions=contradictions,
+        )
+        relational_state = {
+            "activated_candidates": len(associated),
+            "explicit_contradiction_pairs": len(contradictions),
+            **self.relational_memory.snapshot(),
+        }
 
         workspace.remember(
             new_working_memory_entry(
@@ -291,6 +422,7 @@ class CognitiveArchitecture:
             attended=attended_trace,
             working_memory_state=workspace.public_state(),
             retrieval=retrieval,
+            associative_memory_state=relational_state,
             working_memory_context=tuple(
                 {
                     "id": item.id,
