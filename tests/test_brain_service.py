@@ -416,7 +416,7 @@ def test_associated_record_is_blocked_by_contradiction_even_when_not_lexically_r
         owner_id="owner",
         query="alpha",
         profile=profile,
-        memories=[alpha],
+        memories=[alpha, gamma],
         session_id="hidden-conflict-session",
     )
 
