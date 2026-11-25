@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from artificial_human.cognition.benchmark.attention_eval import run_attention_suite
+from artificial_human.cognition.benchmark.associative_memory_eval import run_associative_memory_suite
 from artificial_human.cognition.benchmark.common import DEFAULT_SEED, SuiteResult, measured
 from artificial_human.cognition.benchmark.integration_eval import run_integration_suite
 from artificial_human.cognition.benchmark.memory_eval import run_memory_suite
@@ -19,7 +20,9 @@ from artificial_human.cognition.benchmark.prediction_eval import run_prediction_
 from artificial_human.cognition.benchmark.working_memory_eval import run_working_memory_suite
 from artificial_human.memory.embeddings import EmbeddingProvider
 
-SUITES: tuple[str, ...] = ("attention", "working-memory", "prediction", "memory", "integration")
+SUITES: tuple[str, ...] = (
+    "attention", "working-memory", "prediction", "memory", "associative-memory", "integration"
+)
 # Opt-in suites over locally downloaded, independently authored datasets.
 EXTERNAL_SUITES: tuple[str, ...] = ("longmemeval", "digit-span")
 SCHEMA_VERSION = "1.1"
@@ -45,6 +48,7 @@ def _suite_runner(
         "working-memory": lambda: run_working_memory_suite(seed),
         "prediction": lambda: run_prediction_suite(provider),
         "memory": lambda: run_memory_suite(provider),
+        "associative-memory": lambda: run_associative_memory_suite(seed),
         "integration": lambda: run_integration_suite(provider),
         "longmemeval": lambda: longmemeval_suite(
             Path(options["longmemeval_path"]), provider, options.get("limit"), notify),

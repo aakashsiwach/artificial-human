@@ -12,7 +12,7 @@ from typing import Any
 _PURPOSE = """\
 This report measures the cognitive subsystems that exist on `main` today:
 attention, working memory, the lexical prediction/novelty signal, long-term
-memory recall, and the integrated multi-turn cycle. It establishes a
+memory recall, controlled associative cue completion, and the integrated multi-turn cycle. It establishes a
 reproducible baseline *before* new mechanisms are introduced, as Stage 1 of the
 [Research Charter](../RESEARCH_CHARTER.md) requires. No algorithm was changed to
 improve these numbers.
@@ -63,6 +63,7 @@ _DEFINITIONS = """\
 | Working memory | Delayed retention (3 targets, 0–12 distractors, capacities 3/5/7/9, distractor salience lower/equal/higher); similar vs dissimilar distractors; reactivation with updated content; seeded capacity pressure; serial position; serial order; newcomer admission; session isolation | Whether each encoded item remains in the workspace with the expected content |
 | Prediction | 54 authored context/input pairs in 9 categories: exact repetition, near repetition, paraphrase, low-overlap related, unrelated, shared vocabulary with a different sense, contradiction, contextually expected, contextually unexpected | Author label `unexpected` (unrelated, other word sense, contradiction, script violation) vs expected |
 | Memory | Existing synthetic memory benchmark (46 memories, two synthetic owners) plus source-attribution queries | Graded relevance per query, expected source, empty set for irrelevant queries |
+| Associative memory | Nine fixed source-fact pairs; each pair is co-activated during training, then tested with a cue that directly retrieves only its source fact | Whether the declared target fact is retrieved in the top 5 |
 | Integration | Six multi-turn scenarios through `CognitiveArchitecture` (A–F) | Scenario-specific behavioural checks |"""
 
 _BASELINES = """\
@@ -79,7 +80,10 @@ _BASELINES = """\
   `embedding_distance_reference` (1 − maximum cosine to the context) is
   reported as a non-lexical reference, not as a proposed component.
 - **Memory.** Lexical, semantic, hybrid and hybrid + temporal retrieval, plus
-  ablations, as defined by the memory benchmark."""
+  ablations, as defined by the memory benchmark.
+- **Associative memory.** The learned co-activation graph is compared with direct
+  keyword retrieval and a random undirected graph with the same edge budget and
+  mean link strength. The random graph is sampled uniformly over source-fact pairs."""
 
 _METRICS = """\
 - **Precision@K / Recall@K / MRR / nDCG@K.** Standard ranked-retrieval
@@ -101,7 +105,11 @@ _METRICS = """\
   novelty for expected inputs.
 - **Temporal answer accuracy / source attribution accuracy / contradiction
   recall.** Top result is a best-graded answer / top result comes from the
-  expected source / all conflicting memories appear in the top 5."""
+  expected source / all conflicting memories appear in the top 5.
+- **Associative target recall@5 / MRR.** Share of held-out cues that retrieve the
+  declared target in the top 5 / mean reciprocal rank of that target.
+- **False associations per query.** Mean count of top-5 facts that are neither
+  the cue source nor the declared target."""
 
 _LIMITATIONS = """\
 - All datasets are synthetic, English-only and written by this project. They test
@@ -115,6 +123,10 @@ _LIMITATIONS = """\
   Confidence intervals would be wide; small differences are not meaningful.
 - The integration scenarios are few and hand-designed. A pass shows that one
   specified behaviour occurred, not that the behaviour generalises.
+- Associative-memory probes use nine project-authored pairs from a small
+  source-defined corpus. They test controlled cue completion, not naturalistic
+  episodic recall, source monitoring, or human memory. The random-link control
+  is a graph-density control, not a fitted biological baseline.
 - No externally authored dataset is included. Candidates were reviewed but not
   adopted, because of non-commercial licence terms, real user conversations
   among their sources, or mixed per-source licences (see
@@ -426,6 +438,27 @@ def _suite_section(suite: Mapping[str, Any]) -> list[str]:
                              else f"rej {_fmt(entry.get('rejection_rate'))}")
             lines.append(f"| {category} | " + " | ".join(cells) + " |")
         lines.append("")
+    elif name == "associative-memory":
+        graph = suite["extra"]["training_graph"]
+        control = suite["extra"]["random_link_control"]
+        lines += [
+            f"Training graph: {graph['edge_count']} edges across {graph['source_fact_count']} "
+            f"source facts; mean link strength {_fmt(graph['mean_link_strength'])}.",
+            f"Random-link control: {control['repetitions']} "
+            f"seeded graphs with the same edge budget and mean link strength.",
+            "",
+            "| Probe | System | Target rank | Target recall@5 | Target MRR | False associations |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+        for probe, results in suite["by_condition"].items():
+            for system, values in results.items():
+                lines.append(
+                    f"| {probe} | {system} | {_fmt(values.get('target_rank'))} "
+                    f"| {_fmt(values.get('target_recall@5'))} "
+                    f"| {_fmt(values.get('target_mrr'))} "
+                    f"| {_fmt(values.get('false_associations'))} |"
+                )
+        lines.append("")
     if suite["checks"] and name != "integration":
         lines += ["**Checks**", ""] + [
             f"- {'PASS' if item['passed'] else 'FAIL'}: {item['name']}" for item in suite["checks"]
@@ -497,6 +530,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "working-memory": "reserved (capacity-pressure runs); nothing is tuned",
         "prediction": "novelty threshold per system (balanced accuracy)",
         "memory": "semantic similarity threshold",
+        "associative-memory": "none (fixed source-fact probes; no tuning)",
         "integration": "none (fixed scenarios)",
         "longmemeval": "none: every external question is held out",
         "digit-span": "fitting human reference models only (participant-level split)",
@@ -512,7 +546,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "## 6. Metric definitions", "", _METRICS, "",
         "## 7. Results by subsystem", "",
     ]
-    for name in ("attention", "working-memory", "prediction", "memory"):
+    for name in ("attention", "working-memory", "prediction", "memory", "associative-memory"):
         if name in suites:
             lines += _suite_section(suites[name])
     lines += ["## 8. Integrated multi-turn results", ""]

@@ -36,7 +36,7 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Add a bounded volatile association graph over source-defined fact identifiers.
 - [x] Strengthen concept links through co-activation; retrieve related facts through spreading activation.
 - [x] Add bounded link decay and a hard association-count limit.
-- [ ] Evaluate associative recall against keyword-only retrieval and random-link baselines.
+- [ ] Evaluate associative recall against keyword-only retrieval and random-link baselines. (Implementation and green CI are in [PR #8](https://github.com/aakashsiwach/artificial-human/pull/8); keep pending until merge.)
 - [ ] Add context-sensitive source monitoring, contradiction-sensitive association and interference experiments.
 - [ ] Extend beyond source facts to carefully governed volatile episodic representations, with explicit privacy controls.
 
