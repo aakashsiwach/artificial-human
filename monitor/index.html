@@ -68,6 +68,25 @@
           <input id="simulation-day" type="range" min="0" max="280" step="1" value="280" aria-label="Developmental day from 0 to 280">
         </section>
 
+        <section class="panel chat-panel" aria-labelledby="chat-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">INTERACTIVE COGNITIVE INTERFACE</p><h3 id="chat-title">Start a conversation</h3></div>
+            <span id="provider-state" class="subtle-tag">CHECKING MODEL</span>
+          </div>
+          <p id="chat-provider-note" class="chat-note">The language interface will become available when a reasoning model is configured for this instance.</p>
+          <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Conversation">
+            <div class="chat-empty">This session is private to this browser tab. Messages are not automatically saved to long-term memory.</div>
+          </div>
+          <form id="chat-form" class="chat-form">
+            <label class="sr-only" for="chat-input">Your message</label>
+            <textarea id="chat-input" rows="2" maxlength="20000" placeholder="Write a message to Artificial Human…" required disabled></textarea>
+            <div class="chat-actions">
+              <span>Volatile session · no automatic memory writes</span>
+              <div><button id="clear-chat" class="secondary-button" type="button" disabled>Clear session</button><button id="send-chat" class="primary-button" type="submit" disabled>Send <span>→</span></button></div>
+            </div>
+          </form>
+          <p id="chat-error" class="error-message" role="alert" hidden></p>
+        </section>
         <div class="metrics-grid">
           <article class="metric-card panel"><span class="metric-label">DEVELOPMENT PHASE</span><strong id="phase-value" class="metric-value">—</strong><span id="day-value" class="metric-caption">—</span></article>
           <article class="metric-card panel"><span class="metric-label">POPULATIONS</span><strong id="population-value" class="metric-value">—</strong><span class="metric-caption">Abstract neural populations</span></article>
