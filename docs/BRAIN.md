@@ -8,6 +8,20 @@ Artificial Human is intended to be an artificial mind whose architecture is info
 
 The language model is a component used for language generation and deliberation. It is not the architecture itself and must not be treated as a replacement for perception, attention, memory, learning, prediction, executive control, or action selection.
 
+## Associative source-knowledge memory
+
+`cognition/associative_memory.py` maintains a bounded graph whose nodes are the stable
+fact IDs in `cognition/core_knowledge.py`. When a query directly activates multiple facts,
+a co-activation rule strengthens links between them. Later direct activation can spread
+through those links to related source facts. Edge weights decay slightly on subsequent inputs,
+and the graph has a fixed maximum number of links.
+
+Only source fact IDs, scalar weights and counters are stored. Raw text is not retained.
+The graph is process-local and resets on restart. This is a small, measurable associative
+engineering model—not a hippocampus, not general-purpose autobiographical memory, and not
+a claim that the system has learned the contents of an entire human brain. Personal/user
+experiences are a separate memory problem and are deliberately not durable in public mode.
+
 ## Recurrent in-process population dynamics
 
 `cognition/dynamics.py` runs a small fixed-topology recurrent activity model for each
