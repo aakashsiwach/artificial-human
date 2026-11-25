@@ -35,14 +35,22 @@ def run_sleep_consolidation_suite(seed: int = DEFAULT_SEED) -> SuiteResult:
         replay = EpisodicReplayMemory()
         sleep = SleepSystem()
 
-        def add_event(name: str, minute: int) -> MemoryRecord:
-            return repository.add(
-                owner_id=owner_id,
+        def add_event(
+            name: str,
+            minute: int,
+            *,
+            repo: MemoryRepository = repository,
+            owner: str = owner_id,
+            sequence_index: int = index,
+            grant_id: str = consent.id,
+        ) -> MemoryRecord:
+            return repo.add(
+                owner_id=owner,
                 kind=MemoryKind.EPISODIC,
-                content=f"Project event {name} in controlled sequence {index}",
+                content=f"Project event {name} in controlled sequence {sequence_index}",
                 source="synthetic owner event fixture",
-                consent_id=consent.id,
-                occurred_at=f"2026-11-{index + 1:02d}T10:{minute:02d}:00+00:00",
+                consent_id=grant_id,
+                occurred_at=f"2026-11-{sequence_index + 1:02d}T10:{minute:02d}:00+00:00",
             )
 
         recurring_a = add_event("recurring-a", 1)
@@ -56,15 +64,20 @@ def run_sleep_consolidation_suite(seed: int = DEFAULT_SEED) -> SuiteResult:
         )
 
         def record_pair(
-            first: MemoryRecord, second: MemoryRecord, sessions: tuple[str, ...]
+            first: MemoryRecord,
+            second: MemoryRecord,
+            sessions: tuple[str, ...],
+            *,
+            replay_buffer: EpisodicReplayMemory = replay,
+            sequence_index: int = index,
         ) -> None:
             for session in sessions:
-                replay.record_episode(
+                replay_buffer.record_episode(
                     [
                         EpisodicEvent(first.id, first.occurred_at or first.created_at),
                         EpisodicEvent(second.id, second.occurred_at or second.created_at),
                     ],
-                    context_id=f"owner-{index:04d}.session-{session}",
+                    context_id=f"owner-{sequence_index:04d}.session-{session}",
                 )
 
         record_pair(recurring_a, recurring_b, ("a", "b"))

@@ -12,6 +12,7 @@ from artificial_human.cognition.episodic_replay import EpisodicReplayMemory
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.repository import (
     MemoryNotFoundError,
+    MemoryRecord,
     MemoryRepository,
 )
 
