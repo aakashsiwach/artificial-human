@@ -1,19 +1,33 @@
-# Control Room and deployment
+# Control Room, interaction, and deployment
 
-The Control Room is a separate static dashboard under `monitor/`. It connects to the protected, read-only API route `GET /monitor/overview`.
+The Control Room is a separate static dashboard under `monitor/`. It connects to a protected Render API. The dashboard provides an aggregate prenatal-development view and, when a reasoning provider is configured, an authenticated conversation panel.
 
 ## Security model
 
-- Set `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` and `ARTIFICIAL_HUMAN_MONITOR_ONLY=true` on the monitoring service.
-- The Render Blueprint generates a random 256-bit `ARTIFICIAL_HUMAN_API_TOKEN`. Keep it in Render's secret manager; the API fails closed with HTTP 503 if it is missing.
-- Set `ARTIFICIAL_HUMAN_CORS_ORIGINS` to the exact Vercel dashboard origin (comma-separated only when multiple trusted origins are needed).
-- Only `GET /health` and `GET /monitor/overview` are exposed by the Render monitoring service. Other API paths return 404, even with a valid token.
-- `GET /monitor/overview` and any non-preflight protected request require `Authorization: Bearer <token>`.
-- API docs and the OpenAPI schema are disabled in public mode.
-- The dashboard keeps the token in JavaScript memory only. It does not write the token to localStorage, cookies, URL parameters, logs, or telemetry.
-- The monitoring overview only returns the operational status, cognitive subsystem labels, and deterministic prenatal scaffold snapshots. It does not return owner IDs, prompts, memory records, or sensory content.
+- Public deployment mode is enabled with `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true`. In this mode, API docs and the OpenAPI schema are disabled.
+- `ARTIFICIAL_HUMAN_API_TOKEN` is a private bearer secret. Keep it in Render environment settings; never commit it, put it in a URL, or paste it into issue reports.
+- Set `ARTIFICIAL_HUMAN_CORS_ORIGINS` to the exact HTTPS Control Room origin. The current deployment uses `https://artificial-human-control-room.vercel.app`.
+- `/health` is the only unauthenticated route and exists for platform health checks.
+- `ARTIFICIAL_HUMAN_MONITOR_ONLY=true` applies a public route allowlist. The monitoring route `GET /monitor/overview` requires bearer authentication.
+- When `ARTIFICIAL_HUMAN_INTERACTIVE_MODE=true` is also set, three additional authenticated routes are allowed: `GET /brain/status`, `POST /brain/respond`, and `DELETE /brain/sessions/{session_id}`. Every other API route remains unavailable (404), including memory, consent, identity, training, repair, and write-management endpoints.
+- The dashboard holds the bearer token only in JavaScript memory for the current tab. It does not write the token to localStorage, cookies, URL parameters, logs, or telemetry. It clears the token when the page is closed.
+- The monitor overview returns aggregate organism status, cognitive subsystem labels, and deterministic prenatal scaffold snapshots. It does not return owner IDs, prompts, memory records, or sensory content.
 
-Use HTTPS for both dashboard and API. Do not reuse a token from another application. Rotate the token by changing the host secret and reconnecting the dashboard.
+Use HTTPS for both dashboard and API. Do not reuse a token from another application. Rotate the token by changing the Render environment value and redeploying; reconnect the dashboard with the new token.
+
+## Interactive reasoning provider
+
+The conversation panel remains disabled until the API reports a configured reasoning provider. Configure these variables on the Render service:
+
+- `ARTIFICIAL_HUMAN_LLM_BASE_URL`: the OpenAI-compatible API base URL (must use HTTPS for a remote endpoint; local HTTP is permitted only for loopback/local development).
+- `ARTIFICIAL_HUMAN_LLM_MODEL`: the exact model identifier expected by that endpoint.
+- `ARTIFICIAL_HUMAN_LLM_API_KEY`: optional only when the endpoint does not require bearer authentication; otherwise store the key as a Render secret.
+
+Do not put model credentials in the browser. The browser sends its bearer token to the Artificial Human API; the server calls the configured provider.
+
+The conversation endpoint runs the existing explicit cognitive cycle before model generation. It uses a bounded, process-local working-memory session. Conversation turns are not automatically saved to long-term memory, and the public dashboard has no route for adding, reading, exporting, or modifying memories. Working-memory sessions are volatile and may disappear when the free service restarts, sleeps, or deploys. A successful text response is model output coordinated by the software architecture, not evidence of consciousness or biological equivalence.
+
+As of the current free-tier deployment, no model provider is configured yet. The conversation panel therefore reports that the model is not configured instead of fabricating responses. Provider setup is required before the Send control becomes active.
 
 ## Local verification
 
@@ -35,12 +49,14 @@ For local use, public-deployment mode is off by default, so existing API develop
 
 ## Render API
 
-The root `render.yaml` Blueprint creates a free Singapore web service. Review the Blueprint in Render before applying it. Set the required API token and dashboard CORS origin in Render's environment settings before using the monitor. The service's filesystem is ephemeral on the free plan; do not use it for durable personal memory. This first deployment is for aggregate monitoring only.
+The current API service is a separate free Singapore Render web service. It runs from the `feat/monitoring-control-room` branch using `pip install .` and `uvicorn artificial_human.api:app --host 0.0.0.0 --port $PORT`. It does not modify the existing `testcase-api` service.
+
+The root `render.yaml` is deployment configuration for a future Blueprint-based setup; the live service was created directly and is not currently managed by a Blueprint. The free instance has an ephemeral filesystem and sleeps after inactivity. Do not use this deployment for durable personal memory or always-on inference.
 
 ## Vercel dashboard
 
-Import the repository in Vercel and set the project Root Directory to `monitor`. It is a static site with no build step. The `monitor/vercel.json` file adds browser security headers. After the first deployment, copy its exact HTTPS origin into Render's `ARTIFICIAL_HUMAN_CORS_ORIGINS`.
+The Control Room is deployed as a static site with Root Directory `monitor` and no build command. The `monitor/vercel.json` file adds browser security headers. The stable URL is `https://artificial-human-control-room.vercel.app`.
 
 ## Interpretation
 
-The prenatal display lets the operator inspect deterministic snapshots at any day from 0 to 280. The simulation is not automatically advancing and does not persist a developmental history between requests. It is a software abstraction and does not imply biological equivalence, consciousness, or clinical measurements. Its values describe this model's internal parameters only.
+The prenatal display lets the operator inspect deterministic snapshots at any day from 0 to 280. The simulation is not automatically advancing and does not persist a developmental history between requests. It is a software abstraction, not a biological fetal-brain simulator, and does not imply consciousness or clinical measurements. Its values describe this model's internal parameters only.
