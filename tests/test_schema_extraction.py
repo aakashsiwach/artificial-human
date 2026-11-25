@@ -191,7 +191,7 @@ def test_mixed_consent_and_contradictory_examples_are_excluded() -> None:
         repository, replay, first_consent.id, "mixed-a",
         provider="stripe", amount=100, first_minute=1,
     )
-    _record_example(
+    example_b = _record_example(
         repository, replay, second_consent.id, "mixed-b",
         provider="razorpay", amount=175, first_minute=10,
     )
@@ -203,12 +203,21 @@ def test_mixed_consent_and_contradictory_examples_are_excluded() -> None:
         OWNER, example_a[0].id, example_a[1].id, note="Synthetic owner-marked conflict"
     )
 
-    assert extractor.prepare_from_episodes(
+    proposals = extractor.prepare_from_episodes(
         owner_id=OWNER,
         context_prefix=PREFIX,
         episodic_memory=replay,
         repository=repository,
-    ) == ()
+    )
+    # The conflicted first event and the other-consent example must not participate.
+    assert all(proposal.event_types != EVENT_TYPES for proposal in proposals)
+    mixed_consent_ids = {record.id for record in example_b}
+    for proposal in proposals:
+        assert not mixed_consent_ids.intersection(proposal.source_memory_ids)
+        assert all(
+            example_a[0].id not in sequence
+            for sequence in proposal.source_sequences
+        )
 
 
 def test_schema_queue_is_owner_scoped_bounded_and_invalidates_changed_sources() -> None:
