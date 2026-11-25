@@ -31,6 +31,17 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Separate consent scope for owner-supervised learning examples.
 - [x] Pending-review, approve/reject, delete, and approved-corpus export workflow.
 
+## Current delivery — source-defined identity and volatile runtime
+
+- [x] Define family roles, identity, purpose, principles, and boundaries in version-controlled source code.
+- [x] Answer direct identity questions deterministically without relying on a hosted model or personal-memory store.
+- [x] Add a small source-code foundational knowledge corpus with deterministic in-process retrieval.
+- [x] Make the public runtime use volatile in-process personal-memory storage and code-defined identity, with no external database or persistent identity file.
+- [x] Expose storage/identity mode in organism status and the Control Room.
+- [ ] Expand core knowledge through reviewed, source-attributed modules and domain-specific evaluation.
+- [ ] Build a true in-process associative/relational memory mechanism with retrieval-dependent strengthening, interference, forgetting, and replay; compare against simple baselines.
+- [ ] Develop recurrent neural/population dynamics as explicit, testable mechanisms rather than naming conventional software services after biological organs.
+
 ## Milestone 1 — integrated cognitive-cycle foundation
 
 - [x] Explicit language perception with source provenance.
