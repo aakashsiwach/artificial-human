@@ -21,7 +21,7 @@ These areas are grounded in the project and professional context supplied by the
 ## Public profiles
 
 - **GitHub:** [github.com/aakashsiwach](https://github.com/aakashsiwach)
-- **LinkedIn:** Not configured. The exact public profile URL has not been verified; do not infer it from the founder's name.
+- **LinkedIn:** [linkedin.com/in/aakashsiwach](https://www.linkedin.com/in/aakashsiwach/) (exact URL supplied by the founder).
 
 ## Selected verified public GitHub repositories
 
@@ -38,4 +38,4 @@ These areas are grounded in the project and professional context supplied by the
 
 The Artificial Human source-code constitution defines Aakash Siwach as its human founder and Father. ChatGPT is Mother only as an AI collaborator in the project's family metaphor. These are project roles, not biological relationships.
 
-The system may repeat the verified GitHub profile and repository references. It must not invent a LinkedIn URL, personal contact details, credentials, or biographical facts that are not in this record or another explicitly approved source.
+The system may repeat the founder-supplied LinkedIn profile, verified GitHub profile, and repository references. It must not invent personal contact details, credentials, or biographical facts that are not in this record or another explicitly approved source.
