@@ -4,6 +4,10 @@ An experimental artificial mind and software organism grounded in human neurosci
 
 The human brain is the **research foundation**, not a decorative metaphor. The current implementation consists of explicit software mechanisms inspired by selected cognitive functions. It is not a biological neural simulation, a complete human brain, a literal human, or evidence of consciousness.
 
+## Founder
+
+**Aakash Siwach** is the human founder, creator and project owner of Artificial Human (Father in the project's family metaphor). His verified public developer profile is [GitHub @aakashsiwach](https://github.com/aakashsiwach). His LinkedIn URL is intentionally not published until the exact profile is confirmed. See [Founder profile](docs/FOUNDER.md) for his engineering background and selected repositories.
+
 ## Vision
 
 **Project north star:** [Research Charter and Project North Star](docs/RESEARCH_CHARTER.md) is the durable source of truth for the neuroscience foundation, long-term vision, scientific principles, technology strategy, implementation sequence, and context recovery. When a chat or contributor handoff loses context, start there and reconcile it with the roadmap and actual merged code.
@@ -238,6 +242,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Documentation
 
+- [Founder profile — Aakash Siwach](docs/FOUNDER.md)
 - [Prenatal developmental substrate](docs/PRENATAL_DEVELOPMENT.md)
 - [Control Room and monitoring deployment](docs/MONITORING.md)
 
