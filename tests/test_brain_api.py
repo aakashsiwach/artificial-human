@@ -1,3 +1,5 @@
+import time
+
 from fastapi.testclient import TestClient
 
 from artificial_human.brain.providers.base import ChatMessage, Generation
@@ -303,3 +305,21 @@ def test_public_runtime_exposes_only_aggregate_recurrent_dynamics(tmp_path, monk
     assert dynamics["population_count"] == 7
     assert dynamics["state_storage"] == "volatile_process_memory"
     assert "How does memory work?" not in str(dynamics)
+
+
+def test_api_lifespan_advances_idle_population_activity(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="idle-loop-test",
+        database_path=tmp_path / "idle-loop.sqlite3",
+        identity_path=tmp_path / "idle-loop.json",
+        brain_provider=StubProvider(),
+    )
+    app = create_app(organism)
+
+    with TestClient(app) as client:
+        assert client.get("/health").status_code == 200
+        time.sleep(1.15)
+        state = organism.status()["neural_dynamics"]
+        assert state["idle_ticks"] >= 1
+        assert state["inputs_processed"] == 0
+        assert state["integration_steps"] >= 1
