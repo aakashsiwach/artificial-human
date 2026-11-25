@@ -329,7 +329,7 @@ def test_api_lifespan_advances_idle_population_activity(tmp_path) -> None:
         assert state["integration_steps"] >= 1
 
 
-def test_linkedin_identity_question_does_not_guess_a_profile_url(tmp_path) -> None:
+def test_father_linkedin_question_returns_founder_supplied_profile(tmp_path) -> None:
     organism = ArtificialOrganism(
         owner_id="owner",
         database_path=tmp_path / "founder-linkedin.sqlite3",
@@ -357,7 +357,7 @@ def test_founder_linkedin_question_returns_supplied_profile_without_model(tmp_pa
     )
     response = TestClient(create_app(organism)).post(
         "/brain/respond",
-        json={"message": "What is your Father's LinkedIn?"},
+        json={"message": "Give me Aakash Siwach's LinkedIn profile."},
     )
 
     assert response.status_code == 200
