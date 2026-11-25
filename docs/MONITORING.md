@@ -86,3 +86,11 @@ process and its loop; the design does not attempt to defeat platform sleep.
 
 The Control Room's cognitive-system summary also reports the current number of volatile
 associations and co-activation events. It does not display user text or personal memory.
+
+
+## Founder identity display
+
+The Control Room shows Aakash Siwach as the human founder, creator and project owner,
+with his verified GitHub profile and selected public repositories. The LinkedIn link is
+deliberately marked as awaiting confirmation; do not replace it with an inferred URL or
+another person's similarly named profile.
