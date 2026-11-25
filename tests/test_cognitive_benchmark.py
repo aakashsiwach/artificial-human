@@ -241,7 +241,7 @@ def test_report_contains_all_required_sections(tmp_path) -> None:
     assert [path.name for path in paths] == ["cognitive-evaluation-results.json"]
     loaded = json.loads(paths[0].read_text(encoding="utf-8"))
     assert loaded["suites_run"] == ["attention", "working-memory", "prediction", "memory",
-                                    "integration"]
+                                    "associative-memory", "integration"]
     assert paths[0].stat().st_size < 200_000  # compact output
 
 

@@ -73,6 +73,47 @@ The hypotheses below were written while the benchmarks were being built, and som
 
 The existing [memory benchmark](MEMORY.md#10-evaluation) is extended, not duplicated. Dataset v1.1.0 adds four **source attribution** queries (eval split only, so the tuned threshold is unchanged) and three task-level metrics: temporal answer accuracy, source attribution accuracy and contradiction recall@5. Written JSON results are now compact (aggregates plus failing queries). Multi-turn recall and context switching are measured through the full cycle in integration scenarios A and F.
 
+### Associative memory
+
+The associative-memory suite is an offline, deterministic control experiment over
+nine pairs of source-defined facts. For each pair, an authored training cue is
+required to retrieve exactly the source and target facts. A separate test cue is
+required to retrieve only the source fact by direct keyword retrieval. The
+production `AssociativeKnowledgeNetwork` then processes the paired training
+inputs and is evaluated on the held-out cues.
+
+Three systems are compared:
+
+- **Keyword-only:** direct `retrieve_core_knowledge` output, with no graph spreading.
+- **Learned associations:** the production bounded co-activation graph and its
+  one-hop spreading-activation output.
+- **Random-link control:** 512 seeded undirected graphs sampled uniformly over
+  all possible source-fact pairs. Each random graph has the same number of edges
+  and mean link strength as the trained graph; link decay is applied between
+  cue queries.
+
+Primary metrics are target recall@5 and target mean reciprocal rank (MRR).
+False associations per query count top-five facts that are neither the cue source
+nor the declared target. There is no tuning split: all nine authored probes are
+fixed evaluation probes. CI verifies deterministic output and that the learned
+graph retrieves the declared targets better than both controls on this probe set.
+
+This is a small software-mechanism test, not an independent cognitive benchmark.
+The facts and prompts are project-authored, the corpus is source-defined, and the
+queries are deliberately constructed to isolate a known fact pair. The random
+graph controls for link count and mean strength but does not model biological
+connectivity. Results must not be interpreted as evidence of human-like,
+hippocampal, or episodic memory.
+
+**Observed CI results (25 November 2026, seed `20261124`):** across the nine probes,
+learned associations achieved target recall@5 **1.000**, MRR **0.481**, and
+0.111 false associations per query. Keyword-only retrieval achieved recall@5
+0.000 and MRR 0.000. The 512-graph random-link control achieved recall@5 0.085,
+MRR 0.038, and 1.100 false associations per query. All six suite checks passed
+in [CI workflow #343](https://github.com/aakashsiwach/artificial-human/actions/runs/45633697484).
+The generated results are recorded in
+[the cognitive evaluation report](benchmarks/cognitive-evaluation-report.md).
+
 ### Integrated multi-turn scenarios
 
 | Scenario | Question | Notes |
