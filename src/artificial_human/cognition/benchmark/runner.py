@@ -22,16 +22,17 @@ from artificial_human.cognition.benchmark.prediction_eval import run_prediction_
 from artificial_human.cognition.benchmark.working_memory_eval import run_working_memory_suite
 from artificial_human.cognition.benchmark.episodic_replay_eval import run_episodic_replay_suite
 from artificial_human.cognition.benchmark.sleep_consolidation_eval import run_sleep_consolidation_suite
+from artificial_human.cognition.benchmark.schema_extraction_eval import run_schema_extraction_suite
 from artificial_human.memory.embeddings import EmbeddingProvider
 
 SUITES: tuple[str, ...] = (
     "attention", "working-memory", "prediction", "memory", "associative-memory",
     "associative-context", "associative-dynamics", "episodic-replay",
-    "sleep-consolidation", "integration"
+    "sleep-consolidation", "schema-extraction", "integration"
 )
 # Opt-in suites over locally downloaded, independently authored datasets.
 EXTERNAL_SUITES: tuple[str, ...] = ("longmemeval", "digit-span")
-SCHEMA_VERSION = "1.5"
+SCHEMA_VERSION = "1.6"
 
 
 class InvariantViolation(RuntimeError):
@@ -59,6 +60,7 @@ def _suite_runner(
         "associative-dynamics": lambda: run_associative_dynamics_suite(seed),
         "episodic-replay": lambda: run_episodic_replay_suite(seed),
         "sleep-consolidation": lambda: run_sleep_consolidation_suite(seed),
+        "schema-extraction": lambda: run_schema_extraction_suite(seed),
         "integration": lambda: run_integration_suite(provider),
         "longmemeval": lambda: longmemeval_suite(
             Path(options["longmemeval_path"]), provider, options.get("limit"), notify),
