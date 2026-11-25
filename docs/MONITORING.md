@@ -91,6 +91,6 @@ associations and co-activation events. It does not display user text or personal
 ## Founder identity display
 
 The Control Room shows Aakash Siwach as the human founder, creator and project owner,
-with his verified GitHub profile and selected public repositories. The LinkedIn link is
-deliberately marked as awaiting confirmation; do not replace it with an inferred URL or
-another person's similarly named profile.
+with his founder-supplied LinkedIn profile, verified GitHub profile, and selected public
+repositories. Use the exact LinkedIn URL supplied by the founder:
+`https://www.linkedin.com/in/aakashsiwach/`.
