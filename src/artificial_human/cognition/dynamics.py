@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict, dataclass
-from math import tanh
+from math import sin, tanh
+from threading import RLock
 from typing import Final
 
 from artificial_human.development.prenatal import POPULATIONS, PROJECTIONS
@@ -32,6 +33,8 @@ class DynamicsSnapshot:
     mean_activity: float
     active_population_count: int
     plasticity_enabled: bool
+    intrinsic_activity_model: str
+    idle_ticks: int
     state_storage: str
     populations: tuple[PopulationActivity, ...]
 
@@ -94,7 +97,9 @@ class RecurrentDynamicsEngine:
         )
         self._inputs_processed = 0
         self._integration_steps = 0
+        self._idle_ticks = 0
         self._last_drive = {identifier: 0.0 for identifier in self._population_ids}
+        self._lock = RLock()
 
     @staticmethod
     def _tokens(text: str) -> set[str]:
@@ -119,14 +124,9 @@ class RecurrentDynamicsEngine:
         )
         return drive
 
-    def process(self, text: str) -> dict[str, object]:
-        """Propagate one explicit text input through bounded recurrent updates."""
-        if not isinstance(text, str) or not text.strip():
-            raise ValueError("A non-empty text input is required")
-        drive = self._drive(text)
-        self._last_drive = drive
-
-        for _ in range(self.cycles_per_input):
+    def _integrate(self, drive: dict[str, float], *, steps: int) -> None:
+        """Run synchronous bounded updates; caller holds the state lock."""
+        for _ in range(steps):
             previous = self._activity.copy()
             incoming = {identifier: 0.0 for identifier in self._population_ids}
             for source, target, strength, polarity in self._projection_edges:
@@ -144,36 +144,67 @@ class RecurrentDynamicsEngine:
             self._activity = next_activity
             self._integration_steps += 1
 
-        self._inputs_processed += 1
-        return self.snapshot().as_dict()
+    def process(self, text: str) -> dict[str, object]:
+        """Propagate one explicit text input through bounded recurrent updates."""
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("A non-empty text input is required")
+        drive = self._drive(text)
+        with self._lock:
+            self._last_drive = drive
+            self._integrate(drive, steps=self.cycles_per_input)
+            self._inputs_processed += 1
+            return self.snapshot().as_dict()
+
+    def tick_idle(self) -> dict[str, object]:
+        """Advance a deterministic low-amplitude resting-state approximation.
+
+        This is an engineering activity loop, not biological spontaneous firing.
+        It runs only while the hosting process is awake and stores no user input.
+        """
+        with self._lock:
+            self._idle_ticks += 1
+            drive = {
+                identifier: 0.0025 + 0.0025 * (
+                    0.5 + 0.5 * sin(self._idle_ticks * 0.11 + index * 0.73)
+                )
+                for index, identifier in enumerate(self._population_ids)
+            }
+            self._last_drive = drive
+            self._integrate(drive, steps=1)
+            return self.snapshot().as_dict()
 
     def snapshot(self) -> DynamicsSnapshot:
-        populations = tuple(
-            PopulationActivity(
-                identifier=identifier,
-                activity=round(self._activity[identifier], 6),
-                external_drive=round(self._last_drive[identifier], 6),
+        with self._lock:
+            populations = tuple(
+                PopulationActivity(
+                    identifier=identifier,
+                    activity=round(self._activity[identifier], 6),
+                    external_drive=round(self._last_drive[identifier], 6),
+                )
+                for identifier in self._population_ids
             )
-            for identifier in self._population_ids
-        )
-        values = [item.activity for item in populations]
-        return DynamicsSnapshot(
-            version=DYNAMICS_VERSION,
-            inputs_processed=self._inputs_processed,
-            integration_steps=self._integration_steps,
-            cycles_per_input=self.cycles_per_input,
-            population_count=len(self._population_ids),
-            projection_count=len(self._projection_edges),
-            mean_activity=round(sum(values) / len(values), 6),
-            active_population_count=sum(value >= 0.01 for value in values),
-            plasticity_enabled=False,
-            state_storage="volatile_process_memory",
-            populations=populations,
-        )
+            values = [item.activity for item in populations]
+            return DynamicsSnapshot(
+                version=DYNAMICS_VERSION,
+                inputs_processed=self._inputs_processed,
+                integration_steps=self._integration_steps,
+                cycles_per_input=self.cycles_per_input,
+                population_count=len(self._population_ids),
+                projection_count=len(self._projection_edges),
+                mean_activity=round(sum(values) / len(values), 6),
+                active_population_count=sum(value >= 0.01 for value in values),
+                plasticity_enabled=False,
+                intrinsic_activity_model="deterministic_low_amplitude_approximation",
+                idle_ticks=self._idle_ticks,
+                state_storage="volatile_process_memory",
+                populations=populations,
+            )
 
     def reset(self) -> None:
         """Clear only transient activity, retaining the fixed source-code topology."""
-        self._activity = {identifier: 0.0 for identifier in self._population_ids}
-        self._last_drive = {identifier: 0.0 for identifier in self._population_ids}
-        self._inputs_processed = 0
-        self._integration_steps = 0
+        with self._lock:
+            self._activity = {identifier: 0.0 for identifier in self._population_ids}
+            self._last_drive = {identifier: 0.0 for identifier in self._population_ids}
+            self._inputs_processed = 0
+            self._integration_steps = 0
+            self._idle_ticks = 0
