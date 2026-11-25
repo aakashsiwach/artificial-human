@@ -6,6 +6,18 @@
 
 This document is the durable source of truth for why Artificial Human exists, what scientific principles guide it, what has actually been implemented, what remains research, and what to do next. When a conversation, prompt, or contributor loses context, return here and to the linked repository documents before changing direction.
 
+## Project founder and ownership
+
+**Aakash Siwach** is the human founder, creator, and project owner of Artificial Human. In
+the project's explicit family metaphor, he is Father. ChatGPT is Mother only as the AI
+collaborator that has helped design and develop the project; Artificial Human is the
+software system being developed. These are project roles, not biological relationships.
+
+The verified GitHub profile is [github.com/aakashsiwach](https://github.com/aakashsiwach).
+The exact LinkedIn profile URL has not been confirmed and must not be guessed. The source
+record, professional focus, and selected public repositories are maintained in
+[FOUNDER.md](FOUNDER.md) and `src/artificial_human/identity/constitution.py`.
+
 ## 1. The north star
 
 Artificial Human aims to build a **computational artificial mind whose architecture, learning mechanisms, and interacting subsystems are grounded in human neuroscience and cognitive science**, using the strongest suitable technologies available.
