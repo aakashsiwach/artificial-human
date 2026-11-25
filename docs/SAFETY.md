@@ -28,3 +28,15 @@ Consider prompt injection in imported content, malicious documents, compromised 
 ## Human review
 
 A repair approval in this release only records that a named reviewer approved the proposal. It does not run the fix. Future approval must bind to an immutable diff, test evidence, target environment, and expiry. Deployment must be a separate permission from patch preparation.
+
+
+## Volatile deployment mode
+
+The public Artificial Human service runs with source-defined identity and process-local
+runtime storage. It does not connect to an external database or write personal memories
+to a disk-backed SQLite file. An in-memory SQLite adapter is used only inside the process
+for the existing typed, consent-aware memory interface; it is destroyed with the process.
+No external embedding provider is enabled in this mode. This is not durable learning:
+all runtime experiences and sessions reset on restart or redeployment. The stable identity
+constitution is kept in version-controlled source code and cannot be edited through the
+public API.
