@@ -31,6 +31,15 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Separate consent scope for owner-supervised learning examples.
 - [x] Pending-review, approve/reject, delete, and approved-corpus export workflow.
 
+### Recurrent activity research track
+
+- [x] Add a process-local recurrent population activity engine with fixed abstract topology, bounded updates, activity leak, inhibitory projection, and content-free telemetry.
+- [x] Integrate activity updates into every cognitive response, including deterministic identity responses.
+- [x] Report aggregate population activity and cycle counts in organism status.
+- [ ] Compare recurrent update rules and stability under controlled inputs and no-input decay.
+- [ ] Add external cognitive tasks that test whether recurrent state improves sequence recall, context integration, or prediction over a non-recurrent baseline.
+- [ ] Add reviewed, reward-gated plasticity only after a falsifiable learning hypothesis and regression suite exist.
+
 ## Current delivery — source-defined identity and volatile runtime
 
 - [x] Define family roles, identity, purpose, principles, and boundaries in version-controlled source code.
