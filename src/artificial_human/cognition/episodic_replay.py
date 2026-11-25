@@ -226,15 +226,15 @@ class EpisodicReplayMemory:
                     if pair in blocked:
                         self._strengths.pop(key, None)
                         continue
-                    strength = self._strengths.get(key)
-                    if strength is None:
+                    replay_strength = self._strengths.get(key)
+                    if replay_strength is None:
                         continue
                     candidate = TemporalReplay(
                         memory_id=neighbour.memory_id,
                         cue_memory_id=event.memory_id,
                         relation=relation,
                         distance=1,
-                        strength=round(strength, 6),
+                        strength=round(replay_strength, 6),
                     )
                     current = candidates.get(neighbour.memory_id)
                     if current is None or candidate.strength > current.strength:
