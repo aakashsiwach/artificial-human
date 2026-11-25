@@ -8,7 +8,7 @@ from typing import Any, Literal
 from artificial_human.brain.providers.base import ChatMessage, ChatProvider
 from artificial_human.brain.retrieval import MemoryRetriever, rank_texts
 from artificial_human.cognition.architecture import CognitiveArchitecture
-from artificial_human.cognition.core_knowledge import retrieve_core_knowledge
+from artificial_human.cognition.associative_memory import AssociativeKnowledgeNetwork
 from artificial_human.cognition.dynamics import RecurrentDynamicsEngine
 from artificial_human.cognition.working_memory import WorkingMemory, WorkingMemorySessions
 from artificial_human.identity.constitution import (
@@ -49,6 +49,7 @@ class BrainService:
         architecture: CognitiveArchitecture | None = None,
         working_memory_sessions: WorkingMemorySessions | None = None,
         dynamics: RecurrentDynamicsEngine | None = None,
+        knowledge_network: AssociativeKnowledgeNetwork | None = None,
     ) -> None:
         self.provider = provider
         self.learning = learning
@@ -59,6 +60,7 @@ class BrainService:
         )
         self.working_memory_sessions = working_memory_sessions or WorkingMemorySessions()
         self.dynamics = dynamics or RecurrentDynamicsEngine()
+        self.knowledge_network = knowledge_network or AssociativeKnowledgeNetwork()
 
     @staticmethod
     def _system_prompt(profile: IdentityProfile, mode: BrainMode) -> str:
@@ -121,6 +123,7 @@ class BrainService:
         # Every input drives a bounded recurrent activity cycle. Raw text is not
         # retained by the dynamics engine; only aggregate population state remains.
         dynamics_state = self.dynamics.process(query)
+        knowledge_activations = self.knowledge_network.process(query)
         # Identity is a source-code-defined constitutional fact, not an LLM guess
         # and not a database lookup. Answer direct identity questions deterministically.
         if is_identity_question(query):
@@ -149,6 +152,7 @@ class BrainService:
                         "reason": "deterministic constitutional response",
                     },
                     "recurrent_dynamics": dynamics_state,
+                    "associative_memory": self.knowledge_network.snapshot(),
                 },
                 session_id=session_id,
             )
@@ -200,16 +204,19 @@ class BrainService:
         plan_steps = [step.description for step in cycle.plan.steps]
         cognitive_trace = cycle.trace()
         cognitive_trace["recurrent_dynamics"] = dynamics_state
-        core_facts = retrieve_core_knowledge(query)
         core_knowledge_payload = [
             {
-                "fact_id": fact.fact_id,
-                "topic": fact.topic,
-                "statement": fact.statement,
+                "fact_id": activation.fact.fact_id,
+                "topic": activation.fact.topic,
+                "statement": activation.fact.statement,
                 "source": "version_controlled_source_code",
+                "activation": activation.activation,
+                "directly_activated": activation.directly_activated,
+                "spread_activation": activation.spread_activation,
             }
-            for fact in core_facts
+            for activation in knowledge_activations
         ]
+        cognitive_trace["associative_memory"] = self.knowledge_network.snapshot()
         context = (
             "CURRENT SENSORY INPUT:\n"
             f"{cycle.percept.content}\n\n"
