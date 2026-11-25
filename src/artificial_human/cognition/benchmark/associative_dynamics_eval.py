@@ -88,8 +88,17 @@ def run_associative_dynamics_suite(seed: int = DEFAULT_SEED) -> SuiteResult:
         reinforced_found = float(any(item.memory_id == target for item in reinforced_result))
         baseline_retention.append(baseline_found)
         reinforced_retention.append(reinforced_found)
-        baseline_evictions.append(float(baseline_state["evicted_links"]))
-        reinforced_evictions.append(float(reinforced_state["evicted_links"]))
+        baseline_evicted = baseline_state["evicted_links"]
+        reinforced_evicted = reinforced_state["evicted_links"]
+        if (
+            isinstance(baseline_evicted, bool)
+            or not isinstance(baseline_evicted, (int, float))
+            or isinstance(reinforced_evicted, bool)
+            or not isinstance(reinforced_evicted, (int, float))
+        ):
+            raise ValueError("Relational memory eviction counters must be numeric")
+        baseline_evictions.append(float(baseline_evicted))
+        reinforced_evictions.append(float(reinforced_evicted))
         by_probe[f"probe_{index + 1:02d}"] = {
             "contradiction": {
                 "target_recalled": contradiction_hits[-1],
