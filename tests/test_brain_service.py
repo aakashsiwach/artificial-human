@@ -155,6 +155,7 @@ def test_associative_knowledge_links_coactivated_source_facts_and_spreads_activa
         owner_id="owner",
         query="Explain attention, memory, and cognitive architecture together.",
         profile=IdentityProfile(owner_id="owner"),
+        session_id="knowledge-session",
     )
     first_state = first.cognitive_trace["associative_memory"]
     assert first_state["source_fact_count"] >= 10
@@ -166,6 +167,7 @@ def test_associative_knowledge_links_coactivated_source_facts_and_spreads_activa
         owner_id="owner",
         query="What is attention?",
         profile=IdentityProfile(owner_id="owner"),
+        session_id="knowledge-session",
     )
     context = provider.messages[1].content
     assert "TRUSTED SOURCE-CODE FOUNDATIONAL KNOWLEDGE" in context
@@ -185,3 +187,82 @@ def test_associative_network_reset_forgets_learned_links_but_keeps_code_facts() 
     assert state["association_count"] == 0
     assert state["inputs_processed"] == 0
     assert state["source_fact_count"] >= 10
+
+
+
+def test_associative_links_are_owner_scoped_and_session_clear_deletes_them() -> None:
+    repository = MemoryRepository(":memory:")
+    provider = RecordingProvider()
+    brain = BrainService(provider, LearningSystem(repository))
+
+    brain.respond(
+        owner_id="owner-a",
+        query="purpose mother",
+        profile=IdentityProfile(owner_id="owner-a"),
+        session_id="shared-session-label",
+    )
+    same_owner = brain.respond(
+        owner_id="owner-a",
+        query="purpose",
+        profile=IdentityProfile(owner_id="owner-a"),
+        session_id="shared-session-label",
+    )
+    same_owner_prompt = provider.messages[1].content
+    assert "identity.family_roles" in same_owner_prompt
+    assert '"association_context": "current_session"' in same_owner_prompt
+    assert "shared-session-label" not in same_owner_prompt
+
+    other_owner = brain.respond(
+        owner_id="owner-b",
+        query="purpose",
+        profile=IdentityProfile(owner_id="owner-b"),
+        session_id="shared-session-label",
+    )
+    other_owner_prompt = provider.messages[1].content
+    assert "identity.family_roles" not in other_owner_prompt
+    assert "shared-session-label" not in other_owner_prompt
+    assert same_owner.cognitive_trace["associative_memory_context"] == "session"
+    assert other_owner.cognitive_trace["associative_memory_context"] == "session"
+
+    # Clearing a session removes both its bounded workspace and associative links.
+    assert brain.clear_session("owner-a", "shared-session-label") is True
+    assert brain.knowledge_network.snapshot()["association_context_count"] == 1
+    assert brain.clear_session("owner-b", "shared-session-label") is True
+    assert brain.knowledge_network.snapshot()["association_count"] == 0
+
+
+def test_associative_contexts_without_sessions_are_ephemeral() -> None:
+    repository = MemoryRepository(":memory:")
+    brain = BrainService(RecordingProvider(), LearningSystem(repository))
+
+    brain.respond(
+        owner_id="owner",
+        query="purpose mother",
+        profile=IdentityProfile(owner_id="owner"),
+    )
+    snapshot = brain.knowledge_network.snapshot()
+    assert snapshot["association_context_count"] == 0
+    assert snapshot["association_count"] == 0
+
+
+def test_clear_owner_sessions_also_forgets_associative_contexts() -> None:
+    repository = MemoryRepository(":memory:")
+    brain = BrainService(RecordingProvider(), LearningSystem(repository))
+
+    for query, owner, session in (
+        ("purpose mother", "owner-a", "session-a"),
+        ("purpose mother", "owner-a", "session-b"),
+        ("purpose mother", "owner-b", "session-c"),
+    ):
+        brain.respond(
+            owner_id=owner,
+            query=query,
+            profile=IdentityProfile(owner_id=owner),
+            session_id=session,
+        )
+
+    assert brain.knowledge_network.snapshot()["association_context_count"] == 3
+    assert brain.clear_owner_sessions("owner-a") >= 2
+    snapshot = brain.knowledge_network.snapshot()
+    assert snapshot["association_context_count"] == 1
+    assert snapshot["association_count"] > 0

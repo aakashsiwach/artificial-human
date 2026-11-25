@@ -147,6 +147,32 @@ class AssociativeKnowledgeNetwork:
                 "retains_user_text": False,
             }
 
+    def forget_context(self, context_id: str) -> bool:
+        """Delete every learned association belonging to one context."""
+        self._validate_context_id(context_id)
+        with self._lock:
+            selected = [key for key in self._links if key[0] == context_id]
+            for key in selected:
+                del self._links[key]
+            return bool(selected)
+
+    def forget_contexts(self, context_prefix: str) -> int:
+        """Delete links for all contexts sharing a validated non-content prefix."""
+        if (
+            not isinstance(context_prefix, str)
+            or not context_prefix
+            or len(context_prefix) > 64
+            or not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", context_prefix)
+        ):
+            raise ValueError("context_prefix must be a short lowercase non-content prefix")
+        with self._lock:
+            selected = [
+                key for key in self._links if key[0].startswith(context_prefix)
+            ]
+            for key in selected:
+                del self._links[key]
+            return len(selected)
+
     def reset(self) -> None:
         """Clear all learned links and counters without changing source facts."""
         with self._lock:

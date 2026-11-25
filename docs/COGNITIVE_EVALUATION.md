@@ -114,6 +114,34 @@ in [CI workflow #343](https://github.com/aakashsiwach/artificial-human/actions/r
 The generated results are recorded in
 [the cognitive evaluation report](benchmarks/cognitive-evaluation-report.md).
 
+### Context-scoped association and source monitoring
+
+The runtime associative network partitions learned links by a non-content context
+identifier. For a named conversation, the identifier combines a truncated hash of
+the owner ID with a truncated hash of the session ID. Raw owner/session identifiers
+and prompt text are not stored in the graph. Spreading activation is restricted to
+links from the matching context; decay is advanced only when that context receives
+an input, so activity in another session neither activates nor ages its links.
+
+Requests without an explicit session use a random request scope that is deleted
+immediately after the current input is processed. Explicit session deletion removes
+both the working-memory workspace and its associative links. Owner-wide session
+clearing removes all associative scopes associated with that owner. The graph keeps
+one global link-count budget, so capacity pressure can evict a weak link from any
+context.
+
+The `associative-context` suite trains the same nine fixed fact-pair probes in
+separate contexts. It compares cue completion inside the training context, leakage
+when the same cue is issued in a different context, and a shared-global graph
+control that deliberately has no context partition. Primary measures are
+same-context target recall@5 and cross-context leakage@5. The suite also checks
+that context cleanup deletes the learned links.
+
+This is a narrow software source-context boundary. It does not establish the
+external credibility or truth of a source, reconcile contradictory records, or
+reproduce biological source-monitoring mechanisms. The facts and probes are
+project-authored, and the test does not use user conversations or personal data.
+
 ### Integrated multi-turn scenarios
 
 | Scenario | Question | Notes |
