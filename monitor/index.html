@@ -55,9 +55,18 @@
 
       <section id="dashboard" class="dashboard" hidden>
         <div class="section-heading">
-          <div><p class="eyebrow">LIVE SNAPSHOT</p><h2>Development overview</h2></div>
+          <div><p class="eyebrow">MODEL SNAPSHOT</p><h2>Development overview</h2></div>
           <p id="last-updated" class="muted">Waiting for first snapshot</p>
         </div>
+
+        <section class="timeline-panel panel">
+          <div class="timeline-copy">
+            <p class="eyebrow">DEVELOPMENT SIMULATOR</p>
+            <label for="simulation-day">Choose gestational day <output id="simulation-day-value" for="simulation-day">280 / 280</output></label>
+            <p>This selects a deterministic model snapshot. It does not advance or save development automatically.</p>
+          </div>
+          <input id="simulation-day" type="range" min="0" max="280" step="1" value="280" aria-label="Developmental day from 0 to 280">
+        </section>
 
         <div class="metrics-grid">
           <article class="metric-card panel"><span class="metric-label">DEVELOPMENT PHASE</span><strong id="phase-value" class="metric-value">—</strong><span id="day-value" class="metric-caption">—</span></article>
