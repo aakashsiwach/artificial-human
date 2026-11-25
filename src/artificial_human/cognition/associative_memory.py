@@ -56,7 +56,7 @@ class AssociativeKnowledgeNetwork:
 
     @staticmethod
     def _link_key(first: str, second: str) -> tuple[str, str]:
-        return tuple(sorted((first, second)))
+        return (first, second) if first <= second else (second, first)
 
     def process(self, query: str, *, limit: int = 5) -> tuple[KnowledgeActivation, ...]:
         """Retrieve facts, learn co-activation links, then spread activation."""
