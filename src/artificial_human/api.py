@@ -351,6 +351,11 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             boundaries=tuple(payload.boundaries),
             communication_preferences=payload.communication_preferences,
         )
+        if organism_ref.identity_repository is None:
+            raise HTTPException(
+                status_code=409,
+                detail="The source-code identity constitution is read-only in volatile runtime mode.",
+            )
         try:
             organism_ref.identity_repository.save(profile)
         except (OSError, ValueError) as error:
