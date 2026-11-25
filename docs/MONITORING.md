@@ -17,17 +17,30 @@ Use HTTPS for both dashboard and API. Do not reuse a token from another applicat
 
 ## Interactive reasoning provider
 
-The conversation panel remains disabled until the API reports a configured reasoning provider. Configure these variables on the Render service:
+The conversation panel remains disabled until the API reports a fully configured reasoning provider, including its credential when required. The current deployment is prepared for Groq's free-tier GPT-OSS 120B reasoning model:
 
-- `ARTIFICIAL_HUMAN_LLM_BASE_URL`: the OpenAI-compatible API base URL (must use HTTPS for a remote endpoint; local HTTP is permitted only for loopback/local development).
-- `ARTIFICIAL_HUMAN_LLM_MODEL`: the exact model identifier expected by that endpoint.
-- `ARTIFICIAL_HUMAN_LLM_API_KEY`: optional only when the endpoint does not require bearer authentication; otherwise store the key as a Render secret.
+| Render environment variable | Value |
+| --- | --- |
+| `ARTIFICIAL_HUMAN_LLM_BASE_URL` | `https://api.groq.com/openai/v1` |
+| `ARTIFICIAL_HUMAN_LLM_MODEL` | `openai/gpt-oss-120b` |
+| `ARTIFICIAL_HUMAN_LLM_REASONING_EFFORT` | `medium` |
+| `ARTIFICIAL_HUMAN_LLM_MAX_OUTPUT_TOKENS` | `1200` |
+| `ARTIFICIAL_HUMAN_LLM_API_KEY` | Your private Groq API key (required; keep it as a Render environment secret) |
 
-Do not put model credentials in the browser. The browser sends its bearer token to the Artificial Human API; the server calls the configured provider.
+To activate it:
+
+1. Create a free GroqCloud account and generate an API key at [GroqCloud API Keys](https://console.groq.com/keys).
+2. Open the Render service's **Environment** settings: [artificial-human-monitor-api](https://dashboard.render.com/web/srv-dc37evbrjlhs73f1sgv0).
+3. Add the key as `ARTIFICIAL_HUMAN_LLM_API_KEY`. Do not paste it into the dashboard or into chat.
+4. Save the environment changes and let Render redeploy. Reopen the Control Room and check that it shows **MODEL READY**.
+
+The API key must be created by the account owner; it cannot safely be generated on the user's behalf. The API key is never sent to the browser. The browser sends its separate Artificial Human bearer token to the server; the server calls Groq.
+
+Groq currently documents GPT-OSS 120B as a reasoning model. Its published free-tier limits are 30 requests per minute, 1,000 requests per day, 8,000 tokens per minute, and 200,000 tokens per day; these are account/model limits and can change. Review the [model list](https://console.groq.com/docs/models), [reasoning documentation](https://console.groq.com/docs/reasoning), and [rate limits](https://console.groq.com/docs/rate-limits) before sustained use.
 
 The conversation endpoint runs the existing explicit cognitive cycle before model generation. It uses a bounded, process-local working-memory session. Conversation turns are not automatically saved to long-term memory, and the public dashboard has no route for adding, reading, exporting, or modifying memories. Working-memory sessions are volatile and may disappear when the free service restarts, sleeps, or deploys. A successful text response is model output coordinated by the software architecture, not evidence of consciousness or biological equivalence.
 
-As of the current free-tier deployment, no model provider is configured yet. The conversation panel therefore reports that the model is not configured instead of fabricating responses. Provider setup is required before the Send control becomes active.
+The Render service is preconfigured with the Groq endpoint, GPT-OSS 120B model ID, medium reasoning effort, and a 1,200-token output cap. It remains intentionally not ready until the account owner's Groq API key is stored as the private Render environment variable shown above. The dashboard distinguishes this missing-key state and does not fabricate responses.
 
 ## Local verification
 
