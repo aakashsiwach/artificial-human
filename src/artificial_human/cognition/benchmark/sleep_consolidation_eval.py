@@ -121,8 +121,18 @@ def run_sleep_consolidation_suite(seed: int = DEFAULT_SEED) -> SuiteResult:
                 metadata={"consolidation_proposal_id": matching[0].id},
             )
             approved_memory_id = derived.id
+            reviewed = sleep.review(
+                owner_id,
+                matching[0].id,
+                decision="approved",
+                reviewer=owner_id,
+                note="Synthetic owner-review benchmark approval",
+                consolidated_memory_id=derived.id,
+            )
             provenance_ok = (
-                derived.kind is MemoryKind.SEMANTIC
+                reviewed.status == "approved"
+                and reviewed.consolidated_memory_id == derived.id
+                and derived.kind is MemoryKind.SEMANTIC
                 and derived.epistemic_status == "inferred"
                 and derived.metadata.get("consolidation_source_memory_ids")
                 == [recurring_a.id, recurring_b.id]

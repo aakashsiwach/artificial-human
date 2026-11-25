@@ -655,6 +655,8 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Memory not found") from error
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
+        organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
+        organism_ref.sleep.forget_memory(organism_ref.owner_id, payload.other_memory_id)
         return _link_payload(link)
 
     @app.delete("/memories/{memory_id}")
@@ -887,36 +889,44 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         organism_ref = get_organism()
         owner_id = organism_ref.owner_id
         try:
-            proposal, consent_id = organism_ref.sleep.proposal_context(owner_id, proposal_id)
             consolidated_payload: dict[str, Any] | None = None
-            memory_id: str | None = None
             if payload.decision == "approved":
-                record, outcome = organism_ref.long_term_memory.add_consolidated_memory(
-                    owner_id=owner_id,
-                    source_memory_ids=proposal.source_memory_ids,
-                    content=proposal.summary,
-                    source=f"owner-approved sleep consolidation:{proposal.id}",
-                    consent_id=consent_id,
-                    metadata={
-                        "consolidation_proposal_id": proposal.id,
-                        "recurrence_count": proposal.recurrence_count,
-                        "reviewer_role": "owner",
-                        "review_note": payload.note,
-                    },
+                def persist_approved_memory(proposal, consent_id: str) -> str:
+                    nonlocal consolidated_payload
+                    record, outcome = organism_ref.long_term_memory.add_consolidated_memory(
+                        owner_id=owner_id,
+                        source_memory_ids=proposal.source_memory_ids,
+                        content=proposal.summary,
+                        source=f"owner-approved sleep consolidation:{proposal.id}",
+                        consent_id=consent_id,
+                        metadata={
+                            "consolidation_proposal_id": proposal.id,
+                            "recurrence_count": proposal.recurrence_count,
+                            "reviewer_role": "owner",
+                            "review_note": payload.note,
+                        },
+                    )
+                    consolidated_payload = {
+                        **_memory_payload(record),
+                        "index": _index_payload(outcome),
+                    }
+                    return record.id
+
+                reviewed, _ = organism_ref.sleep.approve_with(
+                    owner_id,
+                    proposal_id,
+                    reviewer=owner_id,
+                    note=payload.note,
+                    persist=persist_approved_memory,
                 )
-                memory_id = record.id
-                consolidated_payload = {
-                    **_memory_payload(record),
-                    "index": _index_payload(outcome),
-                }
-            reviewed = organism_ref.sleep.review(
-                owner_id,
-                proposal_id,
-                decision=payload.decision,
-                reviewer=owner_id,
-                note=payload.note,
-                consolidated_memory_id=memory_id,
-            )
+            else:
+                reviewed = organism_ref.sleep.review(
+                    owner_id,
+                    proposal_id,
+                    decision="rejected",
+                    reviewer=owner_id,
+                    note=payload.note,
+                )
         except KeyError as error:
             raise HTTPException(status_code=404, detail="Consolidation proposal not found") from error
         except MemoryNotFoundError as error:

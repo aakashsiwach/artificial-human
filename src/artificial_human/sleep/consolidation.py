@@ -221,6 +221,43 @@ class SleepSystem:
             ]
         return tuple(selected[:limit])
 
+    def approve_with(
+        self,
+        owner_id: str,
+        proposal_id: str,
+        *,
+        reviewer: str,
+        note: str = "",
+        persist: Callable[[ConsolidationProposal, str], str],
+    ) -> tuple[ConsolidationProposal, str]:
+        """Persist and mark approval under one queue lock to prevent duplicate writes.
+
+        The callback must atomically revalidate consent and source records in the
+        repository. The queue lock serializes concurrent approvals for this
+        process; after the callback succeeds, the proposal is marked approved
+        before another request can observe it as pending.
+        """
+        if not reviewer.strip():
+            raise ValueError("reviewer is required")
+        with self._lock:
+            stored = self._proposals.get(proposal_id)
+            if stored is None or stored.owner_scope != self._owner_scope(owner_id):
+                raise KeyError(proposal_id)
+            if stored.proposal.status != "pending_review":
+                raise ValueError("Only pending proposals can be reviewed")
+            memory_id = persist(stored.proposal, stored.consent_id)
+            if not isinstance(memory_id, str) or not memory_id:
+                raise ValueError("Approval persistence must return a memory identifier")
+            reviewed = replace(
+                stored.proposal,
+                status="approved",
+                reviewed_at=datetime.now(UTC).isoformat(),
+                review_note=note[:2_000],
+                consolidated_memory_id=memory_id,
+            )
+            self._proposals[proposal_id] = replace(stored, proposal=reviewed)
+            return reviewed, memory_id
+
     def review(
         self,
         owner_id: str,

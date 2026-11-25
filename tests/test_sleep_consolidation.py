@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
+import time
+
 from artificial_human.cognition.episodic_replay import EpisodicEvent, EpisodicReplayMemory
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.repository import MemoryRepository
@@ -208,3 +212,54 @@ def test_consolidation_queue_is_bounded_without_discarding_pending_reviews() -> 
     assert len(proposals) == 1
     assert sleep.snapshot(OWNER)["pending_review"] == 1
     assert len(sleep.list_proposals(OWNER, limit=100)) == 1
+
+
+
+def test_concurrent_approval_requests_persist_only_once() -> None:
+    repository = MemoryRepository(":memory:")
+    consent = repository.grant_consent(OWNER)
+    replay = EpisodicReplayMemory()
+    sleep = SleepSystem()
+    first = _memory(repository, consent.id, "First event", 1)
+    second = _memory(repository, consent.id, "Second event", 2)
+    _record_pair(replay, first, second, "session-a", "session-b")
+    proposal = sleep.prepare_from_episodes(
+        owner_id=OWNER,
+        context_prefix=PREFIX,
+        episodic_memory=replay,
+        repository=repository,
+    )[0]
+    calls = 0
+    calls_lock = Lock()
+
+    def persist(_proposal, _consent_id: str) -> str:
+        nonlocal calls
+        with calls_lock:
+            calls += 1
+        time.sleep(0.02)
+        return "derived-memory"
+
+    def approve() -> str:
+        reviewed, memory_id = sleep.approve_with(
+            OWNER,
+            proposal.id,
+            reviewer=OWNER,
+            note="Parallel approval",
+            persist=persist,
+        )
+        assert reviewed.status == "approved"
+        return memory_id
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(approve) for _ in range(2)]
+        results = []
+        failures = []
+        for future in futures:
+            try:
+                results.append(future.result())
+            except ValueError as error:
+                failures.append(str(error))
+
+    assert results == ["derived-memory"]
+    assert len(failures) == 1
+    assert calls == 1

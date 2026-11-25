@@ -545,3 +545,97 @@ def test_sleep_approval_rechecks_new_contradictions_before_persisting(tmp_path) 
     assert approved.status_code == 409
     assert len(client.get("/memories").json()) == 2
     assert client.get("/sleep/proposals?status=pending_review").json()["proposals"][0]["id"] == proposal["id"]
+
+
+
+def test_sleep_proposal_cannot_be_approved_twice(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="sleep-double-approval",
+        database_path=tmp_path / "sleep-double.sqlite3",
+        identity_path=tmp_path / "sleep-double-identity.json",
+        brain_provider=StubProvider(),
+        embedding_provider=None,
+    )
+    client = TestClient(create_app(organism))
+    consent = client.post("/consents", json={"purpose": "personal_memory"}).json()
+    records = [
+        client.post("/memories", json={
+            "kind": "episodic",
+            "content": content,
+            "source": "owner event log",
+            "consent_id": consent["id"],
+            "occurred_at": occurred_at,
+        }).json()
+        for content, occurred_at in (
+            ("Repeated first event", "2026-11-25T10:01:00+00:00"),
+            ("Repeated second event", "2026-11-25T10:02:00+00:00"),
+        )
+    ]
+    replay = organism.cognitive_brain.architecture.episodic_memory
+    for session_id in ("double-approval-one", "double-approval-two"):
+        replay.record_episode(
+            [
+                EpisodicEvent(records[0]["id"], records[0]["occurred_at"]),
+                EpisodicEvent(records[1]["id"], records[1]["occurred_at"]),
+            ],
+            context_id=organism.cognitive_brain._associative_context_id(
+                organism.owner_id, session_id
+            ),
+        )
+    proposal = client.post("/sleep/preview").json()["proposals"][0]
+    first = client.post(
+        f"/sleep/proposals/{proposal['id']}/review",
+        json={"decision": "approved", "note": "Approved once."},
+    )
+    assert first.status_code == 200
+    assert len(client.get("/memories").json()) == 3
+
+    second = client.post(
+        f"/sleep/proposals/{proposal['id']}/review",
+        json={"decision": "approved", "note": "Duplicate approval attempt."},
+    )
+    assert second.status_code == 409
+    assert len(client.get("/memories").json()) == 3
+
+
+def test_new_contradiction_invalidates_pending_consolidation_proposal(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="sleep-invalidate-conflict",
+        database_path=tmp_path / "sleep-invalidate.sqlite3",
+        identity_path=tmp_path / "sleep-invalidate-identity.json",
+        brain_provider=StubProvider(),
+        embedding_provider=None,
+    )
+    client = TestClient(create_app(organism))
+    consent = client.post("/consents", json={"purpose": "personal_memory"}).json()
+    records = [
+        client.post("/memories", json={
+            "kind": "episodic",
+            "content": content,
+            "source": "owner event log",
+            "consent_id": consent["id"],
+            "occurred_at": occurred_at,
+        }).json()
+        for content, occurred_at in (
+            ("Potentially recurring event A", "2026-11-25T10:01:00+00:00"),
+            ("Potentially recurring event B", "2026-11-25T10:02:00+00:00"),
+        )
+    ]
+    replay = organism.cognitive_brain.architecture.episodic_memory
+    for session_id in ("invalidate-one", "invalidate-two"):
+        replay.record_episode(
+            [
+                EpisodicEvent(records[0]["id"], records[0]["occurred_at"]),
+                EpisodicEvent(records[1]["id"], records[1]["occurred_at"]),
+            ],
+            context_id=organism.cognitive_brain._associative_context_id(
+                organism.owner_id, session_id
+            ),
+        )
+    proposal = client.post("/sleep/preview").json()["proposals"][0]
+    contradiction = client.post(
+        f"/memories/{records[0]['id']}/contradictions",
+        json={"other_memory_id": records[1]["id"], "note": "Owner identified conflict."},
+    )
+    assert contradiction.status_code == 201
+    assert client.get("/sleep/proposals?status=pending_review").json()["proposals"] == []
