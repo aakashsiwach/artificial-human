@@ -86,6 +86,30 @@
       tile.append(safeNode("div", "system-state", pretty(state)));
       systems.append(tile);
     });
+    const dynamics = payload.organism?.neural_dynamics;
+    if (dynamics && Array.isArray(dynamics.populations)) {
+      const summary = safeNode("article", "system-tile");
+      summary.append(safeNode("div", "system-name", "recurrent activity"));
+      summary.append(safeNode(
+        "div",
+        "system-state",
+        Number(dynamics.inputs_processed || 0).toLocaleString() + " inputs · "
+          + Number(dynamics.integration_steps || 0).toLocaleString() + " updates · "
+          + dynamics.active_population_count + "/" + dynamics.population_count + " active"
+      ));
+      systems.append(summary);
+      dynamics.populations.forEach((population) => {
+        const tile = safeNode("article", "system-tile");
+        tile.append(safeNode("div", "system-name", "activity · " + pretty(population.identifier)));
+        const track = safeNode("div", "bar-track");
+        const fill = safeNode("div", "bar-fill");
+        fill.style.width = Math.max(0, Math.min(100, Number(population.activity || 0) * 100)) + "%";
+        track.append(fill);
+        tile.append(track);
+        tile.append(safeNode("div", "system-state", (Number(population.activity || 0) * 100).toFixed(1) + "%"));
+        systems.append(tile);
+      });
+    }
     const runtime = payload.organism?.runtime || {};
     [
       ["identity source", runtime.identity_source || "unknown"],
