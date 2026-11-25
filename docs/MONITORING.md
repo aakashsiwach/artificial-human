@@ -82,3 +82,7 @@ its lifespan is active. User messages also trigger bounded recurrent updates. Bo
 and session state exist only in process memory. This is an inspectable software dynamics
 experiment, not biological spontaneous neural firing. Render free-tier suspension pauses the
 process and its loop; the design does not attempt to defeat platform sleep.
+
+
+The Control Room's cognitive-system summary also reports the current number of volatile
+associations and co-activation events. It does not display user text or personal memory.
