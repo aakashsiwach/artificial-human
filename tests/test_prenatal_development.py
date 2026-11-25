@@ -65,6 +65,7 @@ def test_advance_matures_populations_and_preserves_structure() -> None:
     assert middle.populations[0].maturity > initial.populations[0].maturity
     assert term.age_days == GESTATION_DAYS
     assert term.phase == PrenatalPhase.LATE_GESTATION.value
+    assert all(0.0 < item.maturity < 1.0 for item in term.populations)
     assert brain.structure_signature() == initial_signature
     assert term.total_plasticity_updates > 0
 
