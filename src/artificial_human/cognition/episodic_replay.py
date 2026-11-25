@@ -173,6 +173,29 @@ class EpisodicReplayMemory:
                 )
         return True
 
+    def episodes_for_context_prefix(
+        self, context_prefix: str
+    ) -> tuple[tuple[str, tuple[EpisodicEvent, ...]], ...]:
+        """Return bounded episode snapshots for one hashed owner-context prefix.
+
+        Context identifiers are returned only to in-process consolidation code so
+        it can require recurrence across distinct sessions. They are hashes, not
+        raw owner IDs, session IDs, prompts, or memory content.
+        """
+        if (
+            not isinstance(context_prefix, str)
+            or not context_prefix
+            or len(context_prefix) > 64
+            or not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", context_prefix)
+        ):
+            raise ValueError("context_prefix must be a short lowercase non-content prefix")
+        return tuple(
+            (context_id, episode.events)
+            for context_id, episodes in self._episodes.items()
+            if context_id.startswith(context_prefix)
+            for episode in episodes
+        )
+
     def replay(
         self,
         cue_memory_ids: tuple[str, ...] | list[str],

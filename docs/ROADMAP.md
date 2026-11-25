@@ -26,7 +26,7 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Deterministic goal planning skeleton.
 - [x] Health signal detection and incident creation.
 - [x] Reviewable regeneration proposals.
-- [x] Sleep/consolidation review proposals.
+- [x] Add a bounded, process-local proposal queue with owner-only review status and explicit approval/rejection.
 - [x] Local API, CLI, tests, and CI.
 - [x] Separate consent scope for owner-supervised learning examples.
 - [x] Pending-review, approve/reject, delete, and approved-corpus export workflow.
@@ -38,8 +38,8 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Add bounded link decay and a hard association-count limit.
 - [x] Evaluate associative recall against keyword-only retrieval and random-link baselines ([PR #8](https://github.com/aakashsiwach/artificial-human/pull/8), merged with CI passing).
 - [x] Add context-sensitive source monitoring with owner/session-scoped links, request cleanup, and a cross-context leakage benchmark (merged in [PR #10](https://github.com/aakashsiwach/artificial-human/pull/10)).
-- [ ] Add contradiction-sensitive association, retrieval-dependent strengthening, and bounded-interference experiments (implementation and deterministic evaluation are in PR #11; keep pending until merged).
-- [ ] Extend beyond source facts to carefully governed volatile episodic representations, with explicit privacy controls. (Owner/session-scoped temporal episode formation and cue-driven neighbour replay are implemented in PR #12; pending merge and CI.)
+- [x] Add contradiction-sensitive association, retrieval-dependent strengthening, and bounded-interference experiments ([PR #11](https://github.com/aakashsiwach/artificial-human/pull/11), merged).
+- [x] Extend beyond source facts to carefully governed volatile episodic representations, with explicit privacy controls ([PR #12](https://github.com/aakashsiwach/artificial-human/pull/12), merged).
 
 ### Recurrent activity research track
 
@@ -59,7 +59,7 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Make the public runtime use volatile in-process personal-memory storage and code-defined identity, with no external database or persistent identity file.
 - [x] Expose storage/identity mode in organism status and the Control Room.
 - [ ] Expand core knowledge through reviewed, source-attributed modules and domain-specific evaluation.
-- [ ] Build a true in-process associative/relational memory mechanism with retrieval-dependent strengthening, interference, forgetting, and replay; compare against simple baselines. (Relational strengthening and interference merged in PR #11; temporal episodic sequence formation and cue-driven replay implemented in PR #12, pending merge.)
+- [x] Build a bounded in-process relational/episodic memory mechanism with retrieval-dependent strengthening, interference, forgetting, and replay, and compare against simple baselines (PRs #11 and #12, merged).
 - [ ] Develop recurrent neural/population dynamics as explicit, testable mechanisms rather than naming conventional software services after biological organs.
 
 ## Milestone 1 — integrated cognitive-cycle foundation
@@ -105,7 +105,7 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [ ] Add associative and relational memory, source reconciliation, and contradiction handling. (Contradictions are now preserved, linked and surfaced; reconciliation, source credibility and associative graphs are not implemented.)
 - [ ] Add memory dynamics: retrieval-dependent strengthening, decay/interference, and contiguity-based temporal cueing, each evaluated against the current static retrieval.
 - [ ] Replace English keyword temporal-intent rules with an evaluated parser; extend the memory benchmark with externally authored, larger held-out data.
-- [ ] Investigate sleep-stage-inspired offline replay and owner-reviewed memory consolidation. (PR #12 adds cue-driven temporal replay during the cognitive cycle; it does not implement sleep-stage simulation or autonomous consolidation.)
+- [ ] Investigate sleep-stage-inspired offline replay and systems consolidation. PR #13 adds manually triggered replay-pattern proposals and owner-reviewed inferred-memory creation; it does not simulate sleep stages or run an autonomous sleep cycle.
 - [ ] Compare symbolic, predictive-processing, global-workspace, and neural-network approaches.
 - [ ] Evaluate each mechanism against baselines and held-out cognitive tasks.
 - [ ] Experiment with neural/spiking models only where they produce testable benefits.

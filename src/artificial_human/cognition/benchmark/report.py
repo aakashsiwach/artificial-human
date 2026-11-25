@@ -13,7 +13,7 @@ _PURPOSE = """\
 This report measures the cognitive subsystems that exist on `main` today:
 attention, working memory, the lexical prediction/novelty signal, long-term
 memory recall, controlled associative cue completion, context-scoped source monitoring,
-temporal episodic replay, and the integrated multi-turn cycle. It establishes a
+temporal episodic replay, owner-reviewed consolidation, and the integrated multi-turn cycle. It establishes a
 reproducible baseline *before* new mechanisms are introduced, as Stage 1 of the
 [Research Charter](../RESEARCH_CHARTER.md) requires. No algorithm was changed to
 improve these numbers.
@@ -68,6 +68,7 @@ _DEFINITIONS = """\
 | Associative context | Nine source-fact pairs trained in separate contexts, then queried in the same context, a different context, and a shared global graph | Same-context target recall@5 and cross-context leakage@5 |
 | Associative dynamics | Nine paired contradiction and distractor-interference probes over opaque record IDs | Contradiction suppression rate and target recall after a capacity-limited distractor sequence |
 | Episodic replay | Nine four-event sequences; cue each middle event and retrieve its immediate temporal neighbours | Exact neighbour recall@2, MRR, false replay rate, cross-context leakage |
+| Sleep consolidation | Nine event-pair probes with repeated, single-session, and contradicted patterns | Recurring-pattern proposal rate, false-positive rates, silent-write violations, approved provenance |
 | Integration | Six multi-turn scenarios through `CognitiveArchitecture` (A–F) | Scenario-specific behavioural checks |"""
 
 _BASELINES = """\
@@ -90,7 +91,10 @@ _BASELINES = """\
   mean link strength. The random graph is sampled uniformly over source-fact pairs.
 - **Episodic replay.** Adjacent-event cue completion is compared with a no-replay
   baseline and a wrong owner/session context control. The test uses fixed
-  project-authored event sequences and opaque identifiers."""
+  project-authored event sequences and opaque identifiers.
+- **Sleep consolidation.** Repeated adjacent episodic transitions are compared with
+  one-session and explicit-contradiction controls. Preview must not write memory;
+  an approved proposal must retain inferred status and its source identifiers."""
 
 _METRICS = """\
 - **Precision@K / Recall@K / MRR / nDCG@K.** Standard ranked-retrieval
@@ -128,6 +132,14 @@ _METRICS = """\
   the stored event sequence.
 - **Cross-context replay leakage@2.** Share of cues that recover an event from a
   sequence stored under another owner/session context; lower is better.
+- **Recurring-pattern proposal rate.** Share of controlled repeated transitions
+  across distinct sessions that create an owner-reviewable proposal.
+- **Consolidation false-positive rates.** Share of singleton or explicitly
+  contradictory source pairs that are incorrectly proposed.
+- **Silent-write violation rate.** Share of previews that modify persistent memory
+  before an explicit owner approval.
+- **Approved provenance rate.** Share of approved proposals persisted as inferred
+  semantic memories with source-memory IDs retained in provenance metadata.
 - **False associations per query.** Mean count of top-5 facts that are neither
   the cue source nor the declared target."""
 
@@ -497,6 +509,19 @@ def _suite_section(suite: Mapping[str, Any]) -> list[str]:
                 f"| {_fmt(shared['target_recall@5'])} |"
             )
         lines.append("")
+    elif name == "sleep-consolidation":
+        replay = suite["systems"]["replay_pattern_detection"]
+        review = suite["systems"]["owner_review"]
+        lines += [
+            f"Recurring-pattern proposal rate: {_fmt(replay['recurring_pattern_proposal_rate'])}; "
+            f"singleton false-positive rate: {_fmt(replay['singleton_false_positive_rate'])}; "
+            f"contradiction false-positive rate: "
+            f"{_fmt(replay['contradiction_false_positive_rate'])}.",
+            f"Silent-write violation rate: {_fmt(review['silent_write_violation_rate'])}; "
+            f"approved inferred-memory provenance rate: "
+            f"{_fmt(review['approved_inferred_provenance_rate'])}.",
+            "",
+        ]
     elif name == "episodic-replay":
         systems = suite["systems"]
         lines += [
@@ -614,6 +639,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "associative-context": "none (fixed source-fact/context probes; no tuning)",
         "associative-dynamics": "none (fixed contradiction/interference probes; no tuning)",
         "episodic-replay": "none (fixed temporal-sequence probes; no tuning)",
+        "sleep-consolidation": "none (fixed recurrence/approval probes; no tuning)",
         "integration": "none (fixed scenarios)",
         "longmemeval": "none: every external question is held out",
         "digit-span": "fitting human reference models only (participant-level split)",
@@ -631,7 +657,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     ]
     for name in ("attention", "working-memory", "prediction", "memory",
                  "associative-memory", "associative-context", "associative-dynamics",
-                 "episodic-replay"):
+                 "episodic-replay", "sleep-consolidation"):
         if name in suites:
             lines += _suite_section(suites[name])
     lines += ["## 8. Integrated multi-turn results", ""]

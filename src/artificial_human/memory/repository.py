@@ -473,6 +473,78 @@ class MemoryRepository:
                 epistemic_status=epistemic_status,
             )
 
+    def add_consolidated_memory(
+        self,
+        *,
+        owner_id: str,
+        source_memory_ids: Sequence[str],
+        content: str,
+        source: str,
+        consent_id: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> MemoryRecord:
+        """Atomically persist an inferred synthesis from still-visible episodic evidence.
+
+        All source records must remain visible to the same owner, be episodic, and
+        share the active consent grant used for the derived record. Any explicit
+        contradiction between source records rejects the write. Provenance is
+        embedded in metadata so the synthesis can be audited or deleted later.
+        """
+        selected = tuple(dict.fromkeys(source_memory_ids))
+        if len(selected) < 2 or len(selected) != len(source_memory_ids):
+            raise ValueError("At least two unique source memories are required")
+        if not all(isinstance(item, str) and item for item in selected):
+            raise ValueError("Source memory identifiers must be non-empty strings")
+        placeholders = ", ".join("?" for _ in selected)
+        with self._connect() as connection:
+            rows = connection.execute(
+                f"""SELECT m.* FROM memories m
+                    JOIN consents c ON c.id = m.consent_id
+                    WHERE m.owner_id = ? AND m.id IN ({placeholders})
+                      AND c.active = 1 AND c.purpose = 'personal_memory'""",
+                (owner_id, *selected),
+            ).fetchall()
+            by_id = {row["id"]: row for row in rows}
+            if set(by_id) != set(selected):
+                raise MemoryNotFoundError("One or more consolidation sources are unavailable")
+            records = [self._row_to_record(by_id[memory_id]) for memory_id in selected]
+            if any(item.kind is not MemoryKind.EPISODIC for item in records):
+                raise ValueError("Consolidation sources must all be episodic memories")
+            if any(item.consent_id != consent_id for item in records):
+                raise ConsentRequiredError(
+                    "All source memories must share the active consolidation consent"
+                )
+            conflict = connection.execute(
+                f"""SELECT 1 FROM memory_links
+                    WHERE owner_id = ? AND relation = 'contradicts'
+                      AND from_memory_id IN ({placeholders})
+                      AND to_memory_id IN ({placeholders})
+                    LIMIT 1""",
+                (owner_id, *selected, *selected),
+            ).fetchone()
+            if conflict is not None:
+                raise ValueError("Contradictory memories cannot be consolidated together")
+            enriched = {
+                **(metadata or {}),
+                "consolidation_source_memory_ids": list(selected),
+                "consolidation_source_count": len(selected),
+                "consolidation_review_required": False,
+            }
+            return self._insert_memory(
+                connection,
+                owner_id=owner_id,
+                kind=MemoryKind.SEMANTIC,
+                content=content,
+                source=source,
+                consent_id=consent_id,
+                metadata=enriched,
+                occurred_at=None,
+                valid_from=None,
+                valid_to=None,
+                fact_key=None,
+                epistemic_status="inferred",
+            )
+
     _VISIBLE: Final = """SELECT m.* FROM memories m
                          JOIN consents c ON c.id = m.consent_id
                          WHERE m.owner_id = ? AND c.active = 1

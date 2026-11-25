@@ -81,6 +81,7 @@ Full details, configuration, limitations and the comparison with biological memo
 - **Memory:** the long-term memory benchmark above.
 - **Associative memory:** source-context isolation, contradiction suppression, and bounded-interference controls.
 - **Episodic replay:** nine four-event sequences, immediate-neighbour recall, a no-replay baseline, and cross-context leakage checks.
+- **Sleep consolidation:** recurring-pattern detection, one-session and contradiction controls, non-mutating preview, and inferred-memory provenance after approval.
 - **Integration:** six multi-turn scenarios through the full cognitive cycle.
 
 ```bash
@@ -154,6 +155,27 @@ through the owner's live consent-visible repository. These volatile graphs and e
 are cleared with their session and reset on restart. They are software retrieval mechanisms,
 not a complete autobiographical memory or biological hippocampal simulation.
 
+## Sleep-inspired memory consolidation
+
+The sleep subsystem scans the bounded episodic replay history when the owner explicitly
+requests a preview. It proposes only directed adjacent-event patterns observed in at least
+two distinct owner/session contexts. Single-session patterns, explicitly contradictory
+pairs, mixed-consent sources, deleted records, and records that are no longer visible are
+excluded.
+
+- `POST /sleep/preview` discovers and queues reviewable candidates; it does not write a
+  memory or change existing records.
+- `GET /sleep/proposals` lists the current owner's bounded proposal queue.
+- `POST /sleep/proposals/{id}/review` accepts an explicit `approved` or `rejected`
+  decision. Rejection writes nothing. Approval atomically rechecks active consent, source
+  visibility, episodic type, shared consent, and contradictions, then stores an **inferred**
+  semantic memory with source-memory IDs and review provenance.
+- Proposals are process-local and disappear on restart. They are invalidated when a source
+  memory is corrected, superseded, deleted, or its consent is revoked.
+
+This is a manually triggered pattern detector and owner-review workflow, not a simulated
+sleep cycle, automatic learning, or proof of biological systems consolidation.
+
 ## Runtime population dynamics
 
 Each explicit message now runs a bounded recurrent activity update across seven abstract
@@ -188,6 +210,7 @@ The provider API key must be created by the account owner in GroqCloud. Do not p
 - `GET /brain/cognition/status` — inspect the implemented subsystems.
 - `GET /brain/status` — inspect model-provider configuration.
 - `DELETE /brain/sessions/{session_id}` — clear a volatile working-memory session.
+- `POST /sleep/preview`, `GET /sleep/proposals`, and `POST /sleep/proposals/{id}/review` — detect and review replay-derived consolidation candidates.
 
 Example:
 
@@ -224,7 +247,7 @@ CLI equivalents: `artificial-human memory-search`, `memory-index status|rebuild`
 - Reproducible, offline cognitive evaluation of attention, working memory, prediction/novelty, memory and multi-turn behaviour.
 - Internal event bus, priority queue, and declared resource budgets.
 - Health signal policies and anomaly-to-incident flow.
-- Reviewable repair proposals and sleep/consolidation previews.
+- Reviewable repair proposals and owner-approved, provenance-preserving memory consolidation.
 - FastAPI endpoints, CLI simulation, tests, and GitHub Actions CI.
 
 ## First-run personalisation

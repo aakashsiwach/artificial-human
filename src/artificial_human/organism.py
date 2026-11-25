@@ -131,7 +131,7 @@ class ArtificialOrganism:
                 "sensory": "manual_input_only",
                 "immune": "ready",
                 "regeneration": "proposal_only",
-                "sleep": "review_only",
+                "sleep": "replay_pattern_detection_owner_review",
                 "circulation": "ready",
                 "metabolism": "bounded_declared_work",
                 "nervous_system": "in_process",
@@ -148,6 +148,7 @@ class ArtificialOrganism:
             "associative_memory": self.cognitive_brain.knowledge_network.snapshot(),
             "relational_memory": self.cognitive_brain.architecture.relational_memory.snapshot(),
             "episodic_memory": self.cognitive_brain.architecture.episodic_memory.snapshot(),
+            "sleep_consolidation": self.sleep.snapshot(self.owner_id),
             "immune_cells": [
                 "dendritic", "neutrophil", "macrophage", "b_cell_memory", "t_cell_verifier"
             ],
