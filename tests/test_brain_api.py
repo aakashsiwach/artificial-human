@@ -533,6 +533,7 @@ def test_sleep_approval_rechecks_new_contradictions_before_persisting(tmp_path) 
 
     preview = client.post("/sleep/preview").json()
     assert len(preview["proposals"]) == 1
+    proposal = preview["proposals"][0]
     contradiction = client.post(
         f"/memories/{records[0]['id']}/contradictions",
         json={"other_memory_id": records[1]["id"], "note": "Owner identified a conflict."},
@@ -633,7 +634,8 @@ def test_new_contradiction_invalidates_pending_consolidation_proposal(tmp_path) 
                 organism.owner_id, session_id
             ),
         )
-    proposal = client.post("/sleep/preview").json()["proposals"][0]
+    preview = client.post("/sleep/preview").json()
+    assert len(preview["proposals"]) == 1
     contradiction = client.post(
         f"/memories/{records[0]['id']}/contradictions",
         json={"other_memory_id": records[1]["id"], "note": "Owner identified conflict."},
