@@ -210,11 +210,30 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             return await call_next(request)
         if request.url.path == "/health":
             return await call_next(request)
-        if monitor_only and request.url.path != "/monitor/overview":
-            return JSONResponse(
-                status_code=404,
-                content={"detail": "This deployment only exposes read-only monitoring."},
+        if monitor_only:
+            monitor_route = request.method == "GET" and request.url.path == "/monitor/overview"
+            interactive_route = (
+                os.getenv("ARTIFICIAL_HUMAN_INTERACTIVE_MODE", "").lower()
+                in {"1", "true", "yes"}
+                and (
+                    (request.method == "GET" and request.url.path == "/brain/status")
+                    or (request.method == "POST" and request.url.path == "/brain/respond")
+                    or (
+                        request.method == "DELETE"
+                        and request.url.path.startswith("/brain/sessions/")
+                    )
+                )
             )
+            if not monitor_route and not interactive_route:
+                return JSONResponse(
+                    status_code=404,
+                    content={
+                        "detail": (
+                            "This deployment exposes only monitoring and its explicitly "
+                            "enabled interactive endpoints."
+                        )
+                    },
+                )
         expected = os.getenv("ARTIFICIAL_HUMAN_API_TOKEN", "")
         if not expected:
             return JSONResponse(
