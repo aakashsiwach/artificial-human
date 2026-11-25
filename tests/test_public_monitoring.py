@@ -44,12 +44,14 @@ def test_public_deployment_requires_bearer_token_and_hides_docs(
     client = _client(tmp_path)
 
     assert client.get("/health").status_code == 200
-    assert client.get("/docs").status_code == 404
-    assert client.get("/openapi.json").status_code == 404
+    assert client.get("/docs").status_code == 401
+    assert client.get("/openapi.json").status_code == 401
     assert client.get("/monitor/overview").status_code == 401
     assert client.get("/status").status_code == 401
 
     headers = {"Authorization": "Bearer monitor-test-secret"}
+    assert client.get("/docs", headers=headers).status_code == 404
+    assert client.get("/openapi.json", headers=headers).status_code == 404
     assert client.get("/monitor/overview", headers=headers).status_code == 200
     assert client.get("/status", headers=headers).status_code == 200
 
