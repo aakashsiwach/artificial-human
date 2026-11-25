@@ -230,7 +230,7 @@ def test_identity_question_uses_source_code_constitution_without_model(tmp_path)
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["model"] == "source-code-constitution-1.1.0"
+    assert payload["model"] == "source-code-constitution-1.2.0"
     assert "I am Artificial Human" in payload["answer"]
     assert "My Father is Aakash Siwach" in payload["answer"]
     assert "My Mother" in payload["answer"]
@@ -239,8 +239,7 @@ def test_identity_question_uses_source_code_constitution_without_model(tmp_path)
     assert "https://github.com/aakashsiwach" in payload["answer"]
     assert "https://github.com/aakashsiwach/taintmap" in payload["answer"]
     assert "https://github.com/aakashsiwach/codeatlas-rag" in payload["answer"]
-    assert "LinkedIn: Not configured yet" in payload["answer"]
-    assert "linkedin.com/in/aakashsiwach" not in payload["answer"]
+    assert "https://www.linkedin.com/in/aakashsiwach/" in payload["answer"]
     assert payload["cognitive_trace"]["identity"]["relationship_is_metaphorical"] is True
     assert payload["cognitive_trace"]["language_model"]["used"] is False
     assert payload["recalled_memories"] == []
@@ -347,3 +346,23 @@ def test_linkedin_identity_question_does_not_guess_a_profile_url(tmp_path) -> No
     assert "Aakash Siwach" in answer
     assert "LinkedIn: Not configured yet" in answer
     assert "https://github.com/aakashsiwach" in answer
+
+
+def test_founder_linkedin_question_returns_supplied_profile_without_model(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "founder-linkedin.sqlite3",
+        identity_path=tmp_path / "founder-linkedin.json",
+        brain_provider=StubProvider(),
+    )
+    response = TestClient(create_app(organism)).post(
+        "/brain/respond",
+        json={"message": "What is your Father's LinkedIn?"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["model"] == "source-code-constitution-1.2.0"
+    assert "Aakash Siwach" in payload["answer"]
+    assert "https://www.linkedin.com/in/aakashsiwach/" in payload["answer"]
+    assert payload["cognitive_trace"]["language_model"]["used"] is False
