@@ -31,6 +31,36 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Separate consent scope for owner-supervised learning examples.
 - [x] Pending-review, approve/reject, delete, and approved-corpus export workflow.
 
+### Associative memory research track
+
+- [x] Add a bounded volatile association graph over source-defined fact identifiers.
+- [x] Strengthen concept links through co-activation; retrieve related facts through spreading activation.
+- [x] Add bounded link decay and a hard association-count limit.
+- [ ] Evaluate associative recall against keyword-only retrieval and random-link baselines.
+- [ ] Add context-sensitive source monitoring, contradiction-sensitive association and interference experiments.
+- [ ] Extend beyond source facts to carefully governed volatile episodic representations, with explicit privacy controls.
+
+### Recurrent activity research track
+
+- [x] Add a process-local recurrent population activity engine with fixed abstract topology, bounded updates, activity leak, inhibitory projection, and content-free telemetry.
+- [x] Integrate activity updates into every cognitive response, including deterministic identity responses.
+- [x] Report aggregate population activity and cycle counts in organism status.
+- [x] Run a low-amplitude deterministic idle-activity approximation while the API process is awake; stop with process suspension/shutdown.
+- [ ] Compare recurrent update rules and stability under controlled inputs and no-input decay.
+- [ ] Add external cognitive tasks that test whether recurrent state improves sequence recall, context integration, or prediction over a non-recurrent baseline.
+- [ ] Add reviewed, reward-gated plasticity only after a falsifiable learning hypothesis and regression suite exist.
+
+## Current delivery — source-defined identity and volatile runtime
+
+- [x] Define family roles, identity, purpose, principles, and boundaries in version-controlled source code.
+- [x] Answer direct identity questions deterministically without relying on a hosted model or personal-memory store.
+- [x] Add a small source-code foundational knowledge corpus with deterministic in-process retrieval.
+- [x] Make the public runtime use volatile in-process personal-memory storage and code-defined identity, with no external database or persistent identity file.
+- [x] Expose storage/identity mode in organism status and the Control Room.
+- [ ] Expand core knowledge through reviewed, source-attributed modules and domain-specific evaluation.
+- [ ] Build a true in-process associative/relational memory mechanism with retrieval-dependent strengthening, interference, forgetting, and replay; compare against simple baselines.
+- [ ] Develop recurrent neural/population dynamics as explicit, testable mechanisms rather than naming conventional software services after biological organs.
+
 ## Milestone 1 — integrated cognitive-cycle foundation
 
 - [x] Explicit language perception with source provenance.

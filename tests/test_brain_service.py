@@ -83,3 +83,105 @@ def test_brain_uses_profile_recalled_memory_and_approved_demonstrations(tmp_path
     assert response.cognitive_trace["executive_control"]["approval_required"] is True
     assert "BOUNDED WORKING-MEMORY CONTEXT" in provider.messages[1].content
     assert response.session_id is None
+
+
+def test_brain_includes_relevant_source_code_knowledge_in_cognitive_context() -> None:
+    repository = MemoryRepository(":memory:")
+    provider = RecordingProvider()
+    brain = BrainService(provider, LearningSystem(repository))
+
+    response = brain.respond(
+        owner_id="owner",
+        query="What cognitive systems are implemented in the architecture?",
+        profile=IdentityProfile(owner_id="owner", display_name="Artificial Human"),
+    )
+
+    assert response.model == "test-model"
+    assert "TRUSTED SOURCE-CODE FOUNDATIONAL KNOWLEDGE" in provider.messages[1].content
+    assert "cognitive_cycle" in provider.messages[1].content
+    assert "version_controlled_source_code" in provider.messages[1].content
+
+
+def test_brain_runs_recurrent_dynamics_and_includes_state_in_context() -> None:
+    repository = MemoryRepository(":memory:")
+    provider = RecordingProvider()
+    brain = BrainService(provider, LearningSystem(repository))
+
+    first = brain.respond(
+        owner_id="owner",
+        query="How does episodic memory work and why?",
+        profile=IdentityProfile(owner_id="owner"),
+    )
+    dynamics = first.cognitive_trace["recurrent_dynamics"]
+
+    assert dynamics["version"] == "recurrent-population-dynamics-v1"
+    assert dynamics["inputs_processed"] == 1
+    assert dynamics["integration_steps"] == 8
+    assert dynamics["population_count"] == 7
+    assert dynamics["projection_count"] == 10
+    assert dynamics["plasticity_enabled"] is False
+    assert dynamics["state_storage"] == "volatile_process_memory"
+    assert dynamics["active_population_count"] > 0
+    assert "RECURRENT ABSTRACT POPULATION ACTIVITY" in provider.messages[1].content
+
+    second = brain.respond(
+        owner_id="owner",
+        query="Plan the next implementation steps safely.",
+        profile=IdentityProfile(owner_id="owner"),
+    )
+    assert second.cognitive_trace["recurrent_dynamics"]["inputs_processed"] == 2
+    assert second.cognitive_trace["recurrent_dynamics"]["integration_steps"] == 16
+
+
+def test_brain_dynamics_state_can_be_reset() -> None:
+    repository = MemoryRepository(":memory:")
+    brain = BrainService(RecordingProvider(), LearningSystem(repository))
+    brain.dynamics.process("Explain recurrent activity.")
+    brain.dynamics.reset()
+    snapshot = brain.dynamics.snapshot().as_dict()
+
+    assert snapshot["inputs_processed"] == 0
+    assert snapshot["integration_steps"] == 0
+    assert snapshot["mean_activity"] == 0.0
+    assert all(item["activity"] == 0.0 for item in snapshot["populations"])
+
+
+def test_associative_knowledge_links_coactivated_source_facts_and_spreads_activation() -> None:
+    repository = MemoryRepository(":memory:")
+    provider = RecordingProvider()
+    brain = BrainService(provider, LearningSystem(repository))
+
+    first = brain.respond(
+        owner_id="owner",
+        query="Explain attention, memory, and cognitive architecture together.",
+        profile=IdentityProfile(owner_id="owner"),
+    )
+    first_state = first.cognitive_trace["associative_memory"]
+    assert first_state["source_fact_count"] >= 10
+    assert first_state["association_count"] > 0
+    assert first_state["coactivations"] > 0
+    assert first_state["retains_user_text"] is False
+
+    second = brain.respond(
+        owner_id="owner",
+        query="What is attention?",
+        profile=IdentityProfile(owner_id="owner"),
+    )
+    context = provider.messages[1].content
+    assert "TRUSTED SOURCE-CODE FOUNDATIONAL KNOWLEDGE" in context
+    assert "spread_activation" in context
+    assert second.cognitive_trace["associative_memory"]["inputs_processed"] == 2
+    assert second.cognitive_trace["associative_memory"]["state_storage"] == "volatile_process_memory"
+
+
+def test_associative_network_reset_forgets_learned_links_but_keeps_code_facts() -> None:
+    repository = MemoryRepository(":memory:")
+    brain = BrainService(RecordingProvider(), LearningSystem(repository))
+    brain.knowledge_network.process("Explain attention, memory, and cognition together.")
+    assert brain.knowledge_network.snapshot()["association_count"] > 0
+
+    brain.knowledge_network.reset()
+    state = brain.knowledge_network.snapshot()
+    assert state["association_count"] == 0
+    assert state["inputs_processed"] == 0
+    assert state["source_fact_count"] >= 10

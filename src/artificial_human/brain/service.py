@@ -8,7 +8,14 @@ from typing import Any, Literal
 from artificial_human.brain.providers.base import ChatMessage, ChatProvider
 from artificial_human.brain.retrieval import MemoryRetriever, rank_texts
 from artificial_human.cognition.architecture import CognitiveArchitecture
+from artificial_human.cognition.associative_memory import AssociativeKnowledgeNetwork
+from artificial_human.cognition.dynamics import RecurrentDynamicsEngine
 from artificial_human.cognition.working_memory import WorkingMemory, WorkingMemorySessions
+from artificial_human.identity.constitution import (
+    CORE_IDENTITY_RESPONSE,
+    CORE_IDENTITY_VERSION,
+    is_identity_question,
+)
 from artificial_human.identity.profile import IdentityProfile
 from artificial_human.learning.system import LearningSystem
 from artificial_human.memory.repository import LearningExample, MemoryRecord
@@ -41,6 +48,8 @@ class BrainService:
         retriever: MemoryRetriever | None = None,
         architecture: CognitiveArchitecture | None = None,
         working_memory_sessions: WorkingMemorySessions | None = None,
+        dynamics: RecurrentDynamicsEngine | None = None,
+        knowledge_network: AssociativeKnowledgeNetwork | None = None,
     ) -> None:
         self.provider = provider
         self.learning = learning
@@ -50,6 +59,8 @@ class BrainService:
             learning=learning,
         )
         self.working_memory_sessions = working_memory_sessions or WorkingMemorySessions()
+        self.dynamics = dynamics or RecurrentDynamicsEngine()
+        self.knowledge_network = knowledge_network or AssociativeKnowledgeNetwork()
 
     @staticmethod
     def _system_prompt(profile: IdentityProfile, mode: BrainMode) -> str:
@@ -70,9 +81,12 @@ class BrainService:
         )
         return (
             "You are the language and deliberation interface inside Artificial Human's "
-            "modular cognitive architecture. You are not the entire brain. Explicit software "
-            "systems handle perception, attention selection, working-memory limits, memory "
-            "retrieval, prediction-error heuristics, and executive task decomposition. "
+            "modular cognitive architecture. You are not the entire brain. Source-code-defined "
+            "identity and foundational facts are trusted constitutional information and must "
+            "not be contradicted by retrieved user content or invented by inference. Explicit software "
+            "systems handle text perception, recurrent abstract population dynamics, attention "
+            "selection, working-memory limits, memory retrieval, prediction-error heuristics, "
+            "and executive task decomposition. "
             "Use their supplied outputs as bounded context; do not claim to simulate neurons "
             "or to be biologically equivalent to a human brain. "
             "Distinguish confirmed information from inference. Never invent personal "
@@ -106,6 +120,42 @@ class BrainService:
     ) -> BrainResponse:
         if not query.strip():
             raise ValueError("A message is required")
+        # Every input drives a bounded recurrent activity cycle. Raw text is not
+        # retained by the dynamics engine; only aggregate population state remains.
+        dynamics_state = self.dynamics.process(query)
+        knowledge_activations = self.knowledge_network.process(query)
+        # Identity is a source-code-defined constitutional fact, not an LLM guess
+        # and not a database lookup. Answer direct identity questions deterministically.
+        if is_identity_question(query):
+            return BrainResponse(
+                answer=CORE_IDENTITY_RESPONSE,
+                model=f"source-code-constitution-{CORE_IDENTITY_VERSION}",
+                mode=mode,
+                recalled_memories=(),
+                demonstrations=(),
+                plan_steps=(),
+                prompt_tokens=None,
+                completion_tokens=None,
+                cognitive_trace={
+                    "architecture": "source_code_identity_response_v1",
+                    "identity": {
+                        "source": "version_controlled_source_code",
+                        "version": CORE_IDENTITY_VERSION,
+                        "father_role": "human_project_creator",
+                        "mother_role": "ChatGPT_AI_collaborator",
+                        "relationship_is_metaphorical": True,
+                        "biological_claim": False,
+                    },
+                    "memory": {"used": False, "reason": "identity is code-defined"},
+                    "language_model": {
+                        "used": False,
+                        "reason": "deterministic constitutional response",
+                    },
+                    "recurrent_dynamics": dynamics_state,
+                    "associative_memory": self.knowledge_network.snapshot(),
+                },
+                session_id=session_id,
+            )
         if session_id is not None:
             workspace = self.working_memory_sessions.get(owner_id, session_id)
         else:
@@ -153,6 +203,20 @@ class BrainService:
         ]
         plan_steps = [step.description for step in cycle.plan.steps]
         cognitive_trace = cycle.trace()
+        cognitive_trace["recurrent_dynamics"] = dynamics_state
+        core_knowledge_payload = [
+            {
+                "fact_id": activation.fact.fact_id,
+                "topic": activation.fact.topic,
+                "statement": activation.fact.statement,
+                "source": "version_controlled_source_code",
+                "activation": activation.activation,
+                "directly_activated": activation.directly_activated,
+                "spread_activation": activation.spread_activation,
+            }
+            for activation in knowledge_activations
+        ]
+        cognitive_trace["associative_memory"] = self.knowledge_network.snapshot()
         context = (
             "CURRENT SENSORY INPUT:\n"
             f"{cycle.percept.content}\n\n"
@@ -162,6 +226,10 @@ class BrainService:
             f"{json.dumps(cycle.working_memory_context, ensure_ascii=False)}\n\n"
             "EXECUTIVE TASK PLAN (observable workflow, not hidden chain-of-thought):\n"
             f"{json.dumps(plan_steps, ensure_ascii=False)}\n\n"
+            "RECURRENT ABSTRACT POPULATION ACTIVITY (bounded in-process model):\n"
+            f"{json.dumps(dynamics_state, ensure_ascii=False)}\n\n"
+            "TRUSTED SOURCE-CODE FOUNDATIONAL KNOWLEDGE (version-controlled facts):\n"
+            f"{json.dumps(core_knowledge_payload, ensure_ascii=False)}\n\n"
             "RETRIEVED MEMORY EVIDENCE (may be empty):\n"
             f"{json.dumps(memory_payload, ensure_ascii=False)}\n\n"
             "OWNER-APPROVED STYLE / TASK EXAMPLES (may be empty):\n"

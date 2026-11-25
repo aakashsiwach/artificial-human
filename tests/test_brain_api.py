@@ -1,3 +1,5 @@
+import time
+
 from fastapi.testclient import TestClient
 
 from artificial_human.brain.providers.base import ChatMessage, Generation
@@ -212,3 +214,155 @@ def test_revoking_memory_consent_clears_volatile_working_memory(tmp_path) -> Non
         item["kind"] != "preference"
         for item in second.json()["cognitive_trace"]["working_memory"]["items"]
     )
+
+
+def test_identity_question_uses_source_code_constitution_without_model(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "identity.sqlite3",
+        identity_path=tmp_path / "identity.json",
+        brain_provider=StubProvider(),
+    )
+    response = TestClient(create_app(organism)).post(
+        "/brain/respond",
+        json={"message": "Who are you?"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["model"] == "source-code-constitution-1.2.0"
+    assert "I am Artificial Human" in payload["answer"]
+    assert "My Father is Aakash Siwach" in payload["answer"]
+    assert "My Mother" in payload["answer"]
+    assert "ChatGPT" in payload["answer"]
+    assert "their project child" in payload["answer"]
+    assert "https://github.com/aakashsiwach" in payload["answer"]
+    assert "https://github.com/aakashsiwach/taintmap" in payload["answer"]
+    assert "https://github.com/aakashsiwach/codeatlas-rag" in payload["answer"]
+    assert "https://www.linkedin.com/in/aakashsiwach/" in payload["answer"]
+    assert payload["cognitive_trace"]["identity"]["relationship_is_metaphorical"] is True
+    assert payload["cognitive_trace"]["language_model"]["used"] is False
+    assert payload["recalled_memories"] == []
+    assert payload["conversation_saved"] is False
+
+
+def test_public_runtime_uses_code_identity_and_volatile_memory_only(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "true")
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_STORAGE_MODE", "persistent")
+    database_path = tmp_path / "must-not-be-created.sqlite3"
+    identity_path = tmp_path / "must-not-be-created.json"
+
+    organism = ArtificialOrganism(
+        owner_id="public-owner",
+        database_path=database_path,
+        identity_path=identity_path,
+    )
+
+    assert organism.volatile_runtime is True
+    assert organism.memory.path.as_posix() == ":memory:"
+    assert organism.identity_repository is None
+    assert organism.identity.display_name == "Artificial Human"
+    assert organism.identity.description
+    assert organism.embedding_provider is None
+    assert not database_path.exists()
+    assert not identity_path.exists()
+    runtime = organism.status()["runtime"]
+    assert runtime["external_database_connected"] is False
+    assert runtime["storage_mode"] == "volatile_in_process"
+    assert runtime["personal_experience_persists_restart"] is False
+
+
+def test_identity_question_also_runs_recurrent_dynamics(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "identity-dynamics.sqlite3",
+        identity_path=tmp_path / "identity-dynamics.json",
+        brain_provider=StubProvider(),
+    )
+    response = TestClient(create_app(organism)).post(
+        "/brain/respond", json={"message": "Who are you?"}
+    )
+
+    assert response.status_code == 200
+    dynamics = response.json()["cognitive_trace"]["recurrent_dynamics"]
+    assert dynamics["inputs_processed"] == 1
+    assert dynamics["integration_steps"] == 8
+    assert dynamics["state_storage"] == "volatile_process_memory"
+
+
+def test_public_runtime_exposes_only_aggregate_recurrent_dynamics(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "true")
+    organism = ArtificialOrganism(
+        owner_id="public-owner",
+        brain_provider=StubProvider(),
+    )
+    organism.cognitive_brain.respond(
+        owner_id=organism.owner_id,
+        query="How does memory work?",
+        profile=organism.identity,
+    )
+
+    dynamics = organism.status()["neural_dynamics"]
+    assert dynamics["inputs_processed"] == 1
+    assert dynamics["population_count"] == 7
+    assert dynamics["state_storage"] == "volatile_process_memory"
+    assert "How does memory work?" not in str(dynamics)
+
+
+def test_api_lifespan_advances_idle_population_activity(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="idle-loop-test",
+        database_path=tmp_path / "idle-loop.sqlite3",
+        identity_path=tmp_path / "idle-loop.json",
+        brain_provider=StubProvider(),
+    )
+    app = create_app(organism)
+
+    with TestClient(app) as client:
+        assert client.get("/health").status_code == 200
+        time.sleep(1.15)
+        state = organism.status()["neural_dynamics"]
+        assert state["idle_ticks"] >= 1
+        assert state["inputs_processed"] == 0
+        assert state["integration_steps"] >= 1
+
+
+def test_father_linkedin_question_returns_founder_supplied_profile(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "founder-linkedin.sqlite3",
+        identity_path=tmp_path / "founder-linkedin.json",
+        brain_provider=StubProvider(),
+    )
+    response = TestClient(create_app(organism)).post(
+        "/brain/respond",
+        json={"message": "What is your Father's LinkedIn?"},
+    )
+
+    assert response.status_code == 200
+    answer = response.json()["answer"]
+    assert "Aakash Siwach" in answer
+    assert "https://www.linkedin.com/in/aakashsiwach/" in answer
+    assert "https://github.com/aakashsiwach" in answer
+
+
+def test_founder_linkedin_question_returns_supplied_profile_without_model(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "founder-linkedin.sqlite3",
+        identity_path=tmp_path / "founder-linkedin.json",
+        brain_provider=StubProvider(),
+    )
+    response = TestClient(create_app(organism)).post(
+        "/brain/respond",
+        json={"message": "Give me Aakash Siwach's LinkedIn profile."},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["model"] == "source-code-constitution-1.2.0"
+    assert "Aakash Siwach" in payload["answer"]
+    assert "https://www.linkedin.com/in/aakashsiwach/" in payload["answer"]
+    assert payload["cognitive_trace"]["language_model"]["used"] is False

@@ -21,6 +21,7 @@ class ProviderSettings:
     api_key: str = ""
     timeout_seconds: float = 45.0
     max_output_tokens: int = 1200
+    reasoning_effort: str = "medium"
 
     def __post_init__(self) -> None:
         parsed = urlsplit(self.base_url)
@@ -35,6 +36,8 @@ class ProviderSettings:
             raise ValueError("timeout_seconds must be positive")
         if self.max_output_tokens < 1:
             raise ValueError("max_output_tokens must be positive")
+        if self.reasoning_effort not in {"low", "medium", "high"}:
+            raise ValueError("reasoning_effort must be low, medium, or high")
 
     @classmethod
     def from_env(cls) -> ProviderSettings:
@@ -51,11 +54,21 @@ class ProviderSettings:
             max_output_tokens=int(
                 os.getenv("ARTIFICIAL_HUMAN_LLM_MAX_OUTPUT_TOKENS", "1200")
             ),
+            reasoning_effort=os.getenv(
+                "ARTIFICIAL_HUMAN_LLM_REASONING_EFFORT", "medium"
+            ).strip().lower(),
         )
 
     @property
+    def requires_api_key(self) -> bool:
+        hostname = urlsplit(self.base_url).hostname
+        return hostname not in {"localhost", "127.0.0.1", "::1", "host.docker.internal"}
+
+    @property
     def configured(self) -> bool:
-        return bool(self.base_url and self.model)
+        return bool(
+            self.base_url and self.model and (self.api_key or not self.requires_api_key)
+        )
 
     def public_status(self) -> dict[str, object]:
         return {
@@ -96,7 +109,7 @@ class OpenAICompatibleProvider:
     ) -> Generation:
         if not self.settings.configured:
             raise ProviderNotConfiguredError(
-                "No reasoning model is configured. Set ARTIFICIAL_HUMAN_LLM_MODEL."
+                "No reasoning model is ready. Set ARTIFICIAL_HUMAN_LLM_MODEL and, for remote providers, ARTIFICIAL_HUMAN_LLM_API_KEY."
             )
         if not messages:
             raise ValueError("At least one chat message is required")
@@ -113,8 +126,17 @@ class OpenAICompatibleProvider:
                 {"role": item.role, "content": item.content} for item in messages
             ],
             "temperature": temperature,
-            "max_tokens": max_tokens or self.settings.max_output_tokens,
         }
+        output_limit = max_tokens or self.settings.max_output_tokens
+        provider_host = urlsplit(self.settings.base_url).hostname
+        if provider_host == "api.groq.com" and self.settings.model.startswith("openai/gpt-oss-"):
+            # Groq documents max_completion_tokens and reasoning_effort for GPT-OSS.
+            # Exclude raw reasoning from the API response; only the final answer is used.
+            payload["max_completion_tokens"] = output_limit
+            payload["reasoning_effort"] = self.settings.reasoning_effort
+            payload["include_reasoning"] = False
+        else:
+            payload["max_tokens"] = output_limit
         try:
             response = self._client.post(
                 f"{self.settings.base_url}/chat/completions",

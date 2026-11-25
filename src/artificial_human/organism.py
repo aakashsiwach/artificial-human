@@ -12,7 +12,9 @@ from artificial_human.brain.retrieval import MemoryRetriever
 from artificial_human.brain.service import BrainService
 from artificial_human.circulation.scheduler import WorkScheduler
 from artificial_human.cognition.architecture import CognitiveArchitecture
+from artificial_human.cognition.dynamics import RecurrentDynamicsEngine
 from artificial_human.core.events import EventBus
+from artificial_human.identity.constitution import core_identity_profile
 from artificial_human.identity.repository import IdentityRepository
 from artificial_human.immune.engine import ImmuneSystem
 from artificial_human.learning import LearningSystem
@@ -42,24 +44,39 @@ class ArtificialOrganism:
         self.owner_id: str = (
             owner_id or os.getenv("ARTIFICIAL_HUMAN_OWNER_ID") or "local-owner"
         )
-        self.identity_repository = IdentityRepository(self.owner_id, identity_path)
-        self.identity = self.identity_repository.load()
-        self.memory = MemoryRepository(database_path)
+        public_deployment = os.getenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "").lower() in {
+            "1", "true", "yes",
+        }
+        requested_storage = os.getenv("ARTIFICIAL_HUMAN_STORAGE_MODE", "").strip().lower()
+        self.volatile_runtime = public_deployment or requested_storage == "volatile"
+        if self.volatile_runtime:
+            # No file-backed identity, SQLite database, or external vector service
+            # is used in the public runtime. Foundational identity lives in source.
+            self.identity_repository: IdentityRepository | None = None
+            self.identity = core_identity_profile(self.owner_id)
+            self.memory = MemoryRepository(":memory:")
+            self.embedding_provider = None
+        else:
+            self.identity_repository = IdentityRepository(self.owner_id, identity_path)
+            self.identity = self.identity_repository.load()
+            self.memory = MemoryRepository(database_path)
+            # Semantic indexing is off unless explicitly configured; see docs/MEMORY.md.
+            self.embedding_provider = (
+                embedding_provider_from_env() if embedding_provider == "env" else embedding_provider
+            )
         self.learning = LearningSystem(self.memory)
-        # Semantic indexing is off unless explicitly configured; see docs/MEMORY.md.
-        self.embedding_provider = (
-            embedding_provider_from_env() if embedding_provider == "env" else embedding_provider
-        )
         self.long_term_memory = LongTermMemory(
             self.memory, self.embedding_provider, search_config or SearchConfig.from_env()
         )
         self.brain = Planner()
         self.chat_provider = brain_provider or OpenAICompatibleProvider()
+        self.neural_dynamics = RecurrentDynamicsEngine()
         retriever = MemoryRetriever()
         self.cognitive_brain = BrainService(
             self.chat_provider,
             self.learning,
             retriever,
+            dynamics=self.neural_dynamics,
             architecture=CognitiveArchitecture(
                 retriever=retriever,
                 memory_search=self.long_term_memory.search_engine,
@@ -76,12 +93,15 @@ class ArtificialOrganism:
 
     def reasoning_status(self) -> dict[str, object]:
         if isinstance(self.chat_provider, OpenAICompatibleProvider):
-            return self.chat_provider.status()
-        return {
-            "provider": "custom",
-            "configured": True,
-            "authentication_configured": None,
-        }
+            provider_status = self.chat_provider.status()
+        else:
+            provider_status = {
+                "provider": "custom",
+                "configured": True,
+                "authentication_configured": None,
+            }
+        provider_status["neural_dynamics"] = self.neural_dynamics.snapshot().as_dict()
+        return provider_status
 
     def status(self) -> dict[str, Any]:
         reasoning = self.reasoning_status()
@@ -93,7 +113,16 @@ class ArtificialOrganism:
             "systems": {
                 "brain": "cognitive_cycle_ready" if reasoning["configured"] else "cognitive_cycle_ready_provider_not_configured",
                 "identity": "ready",
-                "memory": "ready_consent_required",
+                "memory": (
+                    "volatile_in_process_no_external_database"
+                    if self.volatile_runtime
+                    else "ready_consent_required"
+                ),
+                "storage": (
+                    "volatile_process_memory_restart_resets_state"
+                    if self.volatile_runtime
+                    else "local_persistent_storage"
+                ),
                 "memory_retrieval": (
                     "hybrid_lexical_semantic_temporal"
                     if self.embedding_provider is not None
@@ -108,7 +137,15 @@ class ArtificialOrganism:
                 "nervous_system": "in_process",
             },
             "reasoning_provider": reasoning,
+            "runtime": {
+                "storage_mode": "volatile_in_process" if self.volatile_runtime else "local_persistent",
+                "external_database_connected": False,
+                "personal_experience_persists_restart": not self.volatile_runtime,
+                "identity_source": "version_controlled_source_code" if self.volatile_runtime else "local_owner_profile",
+            },
             "cognitive_systems": self.cognitive_brain.architecture.status(),
+            "neural_dynamics": self.neural_dynamics.snapshot().as_dict(),
+            "associative_memory": self.cognitive_brain.knowledge_network.snapshot(),
             "immune_cells": [
                 "dendritic", "neutrophil", "macrophage", "b_cell_memory", "t_cell_verifier"
             ],

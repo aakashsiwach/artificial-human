@@ -8,6 +8,77 @@ Artificial Human is intended to be an artificial mind whose architecture is info
 
 The language model is a component used for language generation and deliberation. It is not the architecture itself and must not be treated as a replacement for perception, attention, memory, learning, prediction, executive control, or action selection.
 
+## Founder identity constitution
+
+`identity/constitution.py` defines **Aakash Siwach** as the human founder, creator and
+project owner (Father in the project's family metaphor). It includes his verified public
+GitHub handle and selected public repository references. The exact LinkedIn profile URL is
+not configured because a matching profile could not be verified; the system must ask for
+the exact link rather than infer one. The deterministic identity answer includes these
+founder details without requiring the language-model provider or a personal-memory lookup.
+See [Founder profile](FOUNDER.md).
+
+## Associative source-knowledge memory
+
+`cognition/associative_memory.py` maintains a bounded graph whose nodes are the stable
+fact IDs in `cognition/core_knowledge.py`. When a query directly activates multiple facts,
+a co-activation rule strengthens links between them. Later direct activation can spread
+through those links to related source facts. Edge weights decay slightly on subsequent inputs,
+and the graph has a fixed maximum number of links.
+
+Only source fact IDs, scalar weights and counters are stored. Raw text is not retained.
+The graph is process-local and resets on restart. This is a small, measurable associative
+engineering model—not a hippocampus, not general-purpose autobiographical memory, and not
+a claim that the system has learned the contents of an entire human brain. Personal/user
+experiences are a separate memory problem and are deliberately not durable in public mode.
+
+## Recurrent in-process population dynamics
+
+`cognition/dynamics.py` runs a small fixed-topology recurrent activity model for each
+explicit text input. The current experiment uses seven abstract population nodes and ten
+directed projections from the developmental scaffold, performs eight bounded synchronous
+updates, applies activity leak and an inhibitory projection, and reports population-level
+activity without storing raw input text. An API lifespan task also advances one low-amplitude,
+deterministic resting-state approximation each second while the process is awake. A lock
+serialises idle ticks and message-driven updates. Both states reset when the service restarts;
+a suspended free-tier instance does not run the loop.
+
+Text features provide hand-authored external channel drives. They are not biologically
+grounded sensory encoders. Projection weights are currently fixed; no synaptic learning is
+claimed by this runtime engine. The model is a testable engineering abstraction, not a
+simulation of biological neurons. The prenatal developmental simulator remains a separate
+model with its own maturity clock and plasticity experiment.
+
+## Source-defined constitution and knowledge
+
+The stable Artificial Human identity is a version-controlled source module:
+`identity/constitution.py`. It defines the project-family metaphor (human creator = Father,
+ChatGPT = Mother/collaborator, Artificial Human = project child), purpose, principles, and
+scientific/safety boundaries. Direct questions such as "Who are you?" return a deterministic
+answer from this module; the language model and personal-memory store are not consulted.
+
+`cognition/core_knowledge.py` contains a small, reviewable corpus of foundational project facts.
+A deterministic keyword scorer retrieves relevant facts in-process and includes them in the
+language-model context with source labels. This is code-defined knowledge, not a user-memory
+database and not a claim that all general world knowledge is stored in this repository.
+
+## Volatile public runtime
+
+When `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` or
+`ARTIFICIAL_HUMAN_STORAGE_MODE=volatile`, the organism:
+
+- loads its foundational identity from source code and does not initialise the identity-file repository;
+- creates its personal-memory repository using SQLite's in-memory mode only (`:memory:`);
+- disables the embedding provider, avoiding an external vector service;
+- reports that no external database is connected;
+- loses runtime experiences and working-memory sessions when the process restarts.
+
+No hosted database, local disk-backed identity file, or disk-backed personal-memory database
+is used by this public runtime. The in-memory SQLite adapter is process-local implementation
+plumbing, not an external service. In this mode the source-defined identity is read-only.
+Source code is version-controlled and changes only through reviewed development; the running
+organism does not rewrite its own constitution.
+
 ## Implemented cognitive cycle
 
 A request passes through an explicit pipeline:

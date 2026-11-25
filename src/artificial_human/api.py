@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict, replace
 from datetime import datetime
+import hmac
+import os
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from artificial_human.brain.evaluation import evaluate_text_similarity
@@ -14,6 +20,7 @@ from artificial_human.brain.providers.base import (
 )
 from artificial_human.brain.service import BrainMode
 from artificial_human.core.models import MemoryKind
+from artificial_human.development.prenatal import GESTATION_DAYS, PrenatalBrain
 from artificial_human.identity.profile import IdentityProfile
 from artificial_human.memory.index import IndexOutcome
 from artificial_human.memory.repository import (
@@ -171,24 +178,115 @@ class BrainEvaluationRequest(BaseModel):
 
 
 def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
+    runtime_organism = organism or ArtificialOrganism()
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        async def idle_activity_loop() -> None:
+            while True:
+                await asyncio.sleep(1.0)
+                # Run the deterministic activity step off the event loop.
+                # The engine serialises access with its internal lock.
+                await asyncio.to_thread(runtime_organism.neural_dynamics.tick_idle)
+
+        task = asyncio.create_task(idle_activity_loop(), name="artificial-human-idle-activity")
+        try:
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
+    public_deployment = os.getenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "").lower() in {
+        "1", "true", "yes",
+    }
+    monitor_only = os.getenv("ARTIFICIAL_HUMAN_MONITOR_ONLY", "").lower() in {
+        "1", "true", "yes",
+    }
+    docs_enabled = not public_deployment
     app = FastAPI(
         title="Artificial Human",
         version="0.1.0",
-        description="Local-first experimental artificial organism. Keep this API on loopback.",
+        description="Experimental artificial organism API. Public deployments require bearer auth.",
+        lifespan=lifespan,
+        docs_url="/docs" if docs_enabled else None,
+        redoc_url="/redoc" if docs_enabled else None,
+        openapi_url="/openapi.json" if docs_enabled else None,
     )
-    app.state.organism = organism or ArtificialOrganism()
+    configured_origins = os.getenv(
+        "ARTIFICIAL_HUMAN_CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    )
+    allowed_origins = [item.strip() for item in configured_origins.split(",") if item.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
+
+    @app.middleware("http")
+    async def protect_public_deployment(request: Any, call_next: Any) -> Any:
+        if not public_deployment or request.method == "OPTIONS":
+            return await call_next(request)
+        if request.url.path == "/health":
+            return await call_next(request)
+        if monitor_only:
+            monitor_route = request.method == "GET" and request.url.path == "/monitor/overview"
+            interactive_route = (
+                os.getenv("ARTIFICIAL_HUMAN_INTERACTIVE_MODE", "").lower()
+                in {"1", "true", "yes"}
+                and (
+                    (request.method == "GET" and request.url.path == "/brain/status")
+                    or (request.method == "POST" and request.url.path == "/brain/respond")
+                    or (
+                        request.method == "DELETE"
+                        and request.url.path.startswith("/brain/sessions/")
+                    )
+                )
+            )
+            if not monitor_route and not interactive_route:
+                return JSONResponse(
+                    status_code=404,
+                    content={
+                        "detail": (
+                            "This deployment exposes only monitoring and its explicitly "
+                            "enabled interactive endpoints."
+                        )
+                    },
+                )
+        expected = os.getenv("ARTIFICIAL_HUMAN_API_TOKEN", "")
+        if not expected:
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Public API authentication is not configured."},
+            )
+        scheme, _, supplied = request.headers.get("authorization", "").partition(" ")
+        if scheme.lower() != "bearer" or not hmac.compare_digest(supplied, expected):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "A valid bearer token is required."},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return await call_next(request)
+
+    app.state.public_deployment = public_deployment
+    app.state.monitor_only = monitor_only
+    app.state.organism = runtime_organism
 
     def get_organism() -> ArtificialOrganism:
         return app.state.organism
 
     @app.get("/", include_in_schema=False)
-    def root() -> dict[str, str]:
+    def root() -> dict[str, Any]:
         return {
             "service": "Artificial Human",
             "message": "The artificial organism API is running.",
-            "docs": "/docs",
+            "docs": "/docs" if docs_enabled else None,
             "health": "/health",
             "status": "/status",
+            "monitor": "/monitor/overview",
         }
 
     @app.get("/health")
@@ -197,7 +295,33 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
 
     @app.get("/status")
     def status() -> dict[str, Any]:
-        return get_organism().status()
+        payload = get_organism().status()
+        payload.pop("owner_id", None)
+        return payload
+
+    @app.get("/monitor/overview")
+    def monitor_overview(
+        days: int = Query(default=GESTATION_DAYS, ge=0, le=GESTATION_DAYS),
+        seed: int = Query(default=7, ge=0, le=2_147_483_647),
+    ) -> dict[str, Any]:
+        """Read-only operational snapshot; never returns prompts or memory content."""
+        organism_ref = get_organism()
+        organism_status = organism_ref.status()
+        organism_status.pop("owner_id", None)
+        prenatal = PrenatalBrain(seed=seed)
+        prenatal.advance(days)
+        return {
+            "observed_at": datetime.now().astimezone().isoformat(),
+            "organism": organism_status,
+            "cognitive_systems": organism_ref.cognitive_brain.architecture.status(),
+            "development": {
+                "prenatal": prenatal.snapshot().as_dict(),
+                "note": (
+                    "Deterministic engineering snapshot, not a biological fetal-brain model. "
+                    "No exposure history or stimulus content is returned."
+                ),
+            },
+        }
 
     @app.post("/brain/evaluate-style")
     def brain_evaluate_style(payload: BrainEvaluationRequest) -> dict[str, Any]:
@@ -249,6 +373,11 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             boundaries=tuple(payload.boundaries),
             communication_preferences=payload.communication_preferences,
         )
+        if organism_ref.identity_repository is None:
+            raise HTTPException(
+                status_code=409,
+                detail="The source-code identity constitution is read-only in volatile runtime mode.",
+            )
         try:
             organism_ref.identity_repository.save(profile)
         except (OSError, ValueError) as error:

@@ -4,6 +4,10 @@ An experimental artificial mind and software organism grounded in human neurosci
 
 The human brain is the **research foundation**, not a decorative metaphor. The current implementation consists of explicit software mechanisms inspired by selected cognitive functions. It is not a biological neural simulation, a complete human brain, a literal human, or evidence of consciousness.
 
+## Founder
+
+**Aakash Siwach** is the human founder, creator and project owner of Artificial Human (Father in the project's family metaphor). His verified public developer profile is [GitHub @aakashsiwach](https://github.com/aakashsiwach). His LinkedIn URL is intentionally not published until the exact profile is confirmed. See [Founder profile](docs/FOUNDER.md) for his engineering background and selected repositories.
+
 ## Vision
 
 **Project north star:** [Research Charter and Project North Star](docs/RESEARCH_CHARTER.md) is the durable source of truth for the neuroscience foundation, long-term vision, scientific principles, technology strategy, implementation sequence, and context recovery. When a chat or contributor handoff loses context, start there and reconcile it with the roadmap and actual merged code.
@@ -115,9 +119,44 @@ The API binds to 127.0.0.1:8000. OpenAPI docs: http://127.0.0.1:8000/docs.
 
 Set `ARTIFICIAL_HUMAN_DB_PATH` to choose the SQLite database location. The default is `.artificial-human/organism.sqlite3`.
 
+## Source-defined identity and foundational knowledge
+
+Artificial Human's constitutional identity and project-family roles are defined in
+`src/artificial_human/identity/constitution.py`. The human project creator is Father,
+ChatGPT is Mother as the AI collaborator, and Artificial Human is the project child.
+These are project roles, not biological relationships. Direct identity questions receive
+a deterministic source-code response rather than a model-generated guess.
+
+A small reviewable knowledge corpus in `src/artificial_human/cognition/core_knowledge.py`
+holds stable project facts. Relevant facts are retrieved directly from source code and
+provided to the cognitive cycle without an external vector index or database.
+
+The public deployment runs in **volatile in-process mode**. It uses an in-memory store,
+does not connect to an external database, and does not write an identity file or persistent
+personal-memory database. Runtime experiences and working sessions disappear when the
+process restarts or redeploys. The source code is durable; runtime experiences are not.
+This setting does not make source code rewrite itself or automatically learn permanently.
+
+## Associative knowledge
+
+The runtime can learn bounded associations between version-controlled core-knowledge facts
+when they are co-activated by a question. Later queries can spread activation to related facts.
+Only fact identifiers and link weights live in process memory; no raw user text is stored by
+this association graph. Links decay and reset on restart. This is a small experimental
+mechanism, not the system's complete long-term or autobiographical memory.
+
+## Runtime population dynamics
+
+Each explicit message now runs a bounded recurrent activity update across seven abstract
+population nodes and ten directed projections. The current model retains only aggregate
+activity in process memory, uses fixed weights, and resets on restart. A one-second,
+low-amplitude resting-state approximation runs only while the API process is awake. It does
+not retain raw input text, train weights, or claim to simulate biological neurons. A suspended
+free-tier instance does not execute the loop. See [Brain and intelligence](docs/BRAIN.md).
+
 ## Brain provider configuration
 
-The cognitive architecture can use a configurable OpenAI-compatible local or remote model. For local development with an Ollama-compatible endpoint:
+The cognitive architecture uses a configurable OpenAI-compatible local or remote reasoning model. For local development with an Ollama-compatible endpoint:
 
 ~~~powershell
 $env:ARTIFICIAL_HUMAN_LLM_BASE_URL = "http://127.0.0.1:11434/v1"
@@ -125,7 +164,14 @@ $env:ARTIFICIAL_HUMAN_LLM_MODEL = "your-local-model-name"
 python -m artificial_human serve
 ~~~
 
-See [Brain and intelligence](docs/BRAIN.md) for all configuration and security requirements. Remote providers must use HTTPS.
+The deployed Control Room is prepared for Groq's free-tier GPT-OSS reasoning model:
+
+- Base URL: `https://api.groq.com/openai/v1`
+- Model: `openai/gpt-oss-120b`
+- Reasoning effort: `medium`
+- Secret: `ARTIFICIAL_HUMAN_LLM_API_KEY` (store only in Render's private environment settings)
+
+The provider API key must be created by the account owner in GroqCloud. Do not put it in the dashboard, source code, or chat messages. See [Control Room and monitoring deployment](docs/MONITORING.md) for the exact setup steps and free-tier limits. Remote providers must use HTTPS.
 
 ## Cognitive API
 
@@ -190,11 +236,15 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 - No generated code or shell command is executed by the cognitive cycle.
 - Regeneration creates review proposals; it does not modify source code, merge, or deploy.
 - External actions require a separate approval mechanism.
-- The local API has no authentication. Keep it bound to loopback; do not expose it to a network.
+- Local API mode remains unauthenticated for development. Keep it bound to loopback.
+- Public monitoring deployments must set `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true`, `ARTIFICIAL_HUMAN_MONITOR_ONLY=true`, and a high-entropy `ARTIFICIAL_HUMAN_API_TOKEN`; only `/health` and the protected `/monitor/overview` are exposed, and API docs are disabled.
+- Configure `ARTIFICIAL_HUMAN_CORS_ORIGINS` with the exact trusted dashboard origin. See [Control Room and monitoring deployment](docs/MONITORING.md).
 
 ## Documentation
 
+- [Founder profile — Aakash Siwach](docs/FOUNDER.md)
 - [Prenatal developmental substrate](docs/PRENATAL_DEVELOPMENT.md)
+- [Control Room and monitoring deployment](docs/MONITORING.md)
 
 - [AI contributor instructions](AGENTS.md)
 - [Claude Code instructions](CLAUDE.md)
