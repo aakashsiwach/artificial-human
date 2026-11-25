@@ -12,6 +12,7 @@ from artificial_human.brain.retrieval import MemoryRetriever
 from artificial_human.brain.service import BrainService
 from artificial_human.circulation.scheduler import WorkScheduler
 from artificial_human.cognition.architecture import CognitiveArchitecture
+from artificial_human.cognition.dynamics import RecurrentDynamicsEngine
 from artificial_human.core.events import EventBus
 from artificial_human.identity.constitution import core_identity_profile
 from artificial_human.identity.repository import IdentityRepository
@@ -69,11 +70,13 @@ class ArtificialOrganism:
         )
         self.brain = Planner()
         self.chat_provider = brain_provider or OpenAICompatibleProvider()
+        self.neural_dynamics = RecurrentDynamicsEngine()
         retriever = MemoryRetriever()
         self.cognitive_brain = BrainService(
             self.chat_provider,
             self.learning,
             retriever,
+            dynamics=self.neural_dynamics,
             architecture=CognitiveArchitecture(
                 retriever=retriever,
                 memory_search=self.long_term_memory.search_engine,
@@ -90,12 +93,15 @@ class ArtificialOrganism:
 
     def reasoning_status(self) -> dict[str, object]:
         if isinstance(self.chat_provider, OpenAICompatibleProvider):
-            return self.chat_provider.status()
-        return {
-            "provider": "custom",
-            "configured": True,
-            "authentication_configured": None,
-        }
+            provider_status = self.chat_provider.status()
+        else:
+            provider_status = {
+                "provider": "custom",
+                "configured": True,
+                "authentication_configured": None,
+            }
+        provider_status["neural_dynamics"] = self.neural_dynamics.snapshot().as_dict()
+        return provider_status
 
     def status(self) -> dict[str, Any]:
         reasoning = self.reasoning_status()
@@ -138,6 +144,7 @@ class ArtificialOrganism:
                 "identity_source": "version_controlled_source_code" if self.volatile_runtime else "local_owner_profile",
             },
             "cognitive_systems": self.cognitive_brain.architecture.status(),
+            "neural_dynamics": self.neural_dynamics.snapshot().as_dict(),
             "immune_cells": [
                 "dendritic", "neutrophil", "macrophage", "b_cell_memory", "t_cell_verifier"
             ],
