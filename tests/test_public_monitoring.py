@@ -65,3 +65,15 @@ def test_public_deployment_fails_closed_when_token_is_missing(
 
     assert client.get("/health").status_code == 200
     assert client.get("/monitor/overview").status_code == 503
+
+def test_monitor_only_deployment_hides_every_other_api_route(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "true")
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_MONITOR_ONLY", "true")
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_API_TOKEN", "monitor-test-secret")
+    client = _client(tmp_path)
+    headers = {"Authorization": "Bearer monitor-test-secret"}
+
+    assert client.get("/health").status_code == 200
+    assert client.get("/monitor/overview", headers=headers).status_code == 200
+    assert client.get("/status", headers=headers).status_code == 404
+    assert client.get("/consents", headers=headers).status_code == 404
