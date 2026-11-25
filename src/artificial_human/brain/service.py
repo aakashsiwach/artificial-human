@@ -71,6 +71,11 @@ class BrainService:
         return f"owner-{owner_digest}.session-"
 
     @classmethod
+    def episodic_context_prefix(cls, owner_id: str) -> str:
+        """Return the non-content context prefix used to find this owner's episodes."""
+        return cls._associative_owner_context_prefix(owner_id)
+
+    @classmethod
     def _associative_context_id(cls, owner_id: str, session_id: str | None) -> str:
         """Return a hashed owner/session scope; never retain raw identifiers."""
         if session_id is None:

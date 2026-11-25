@@ -180,6 +180,26 @@ As of 2026-11-24, the following project foundations are merged.
   strengthening baseline. This remains a software mechanism test, not a
   biological memory claim.
 
+### Replay-driven, owner-reviewed consolidation
+
+- The owner can explicitly scan the volatile episodic replay buffer for directed
+  adjacent-event transitions repeated across at least two distinct session contexts.
+- Pattern candidates must resolve to owner-visible episodic records under one active
+  consent grant. Explicit contradictions, mixed-consent pairs, deleted records, and
+  revoked evidence are excluded.
+- Detection creates a bounded, process-local proposal only. Preview never writes or
+  rewrites persistent memory.
+- Rejection records a review decision without a memory write. Approval rechecks all
+  evidence and consent invariants atomically, then creates an inferred semantic memory
+  with source IDs, recurrence count, and reviewer provenance.
+- Pending proposals are invalidated when their source evidence is corrected, superseded,
+  deleted, or its consent is revoked. The proposal queue is volatile and does not survive
+  a process restart.
+- The `sleep-consolidation` benchmark measures recurrence detection, singleton and
+  contradiction false positives, silent-write prevention, and approved provenance.
+- This is manually triggered pattern discovery and owner review, not a simulated sleep
+  cycle, REM/NREM replay, or evidence of biological systems consolidation.
+
 ### Long-term memory foundation
 
 - Typed memory records with provenance and purpose-specific consent.

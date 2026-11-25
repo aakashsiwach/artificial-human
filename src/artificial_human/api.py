@@ -107,6 +107,11 @@ class ReindexRequest(BaseModel):
     full: bool = False
 
 
+class ConsolidationReviewRequest(BaseModel):
+    decision: Literal["approved", "rejected"]
+    note: str = Field(default="", max_length=2_000)
+
+
 def _optional_time(value: str | None) -> datetime | None:
     return parse_timestamp(value) if value else None
 
@@ -452,7 +457,9 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         changed = get_organism().memory.revoke_consent(get_organism().owner_id, consent_id)
         if not changed:
             raise HTTPException(status_code=404, detail="Active consent not found")
-        get_organism().cognitive_brain.clear_owner_sessions(get_organism().owner_id)
+        organism_ref = get_organism()
+        organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
+        organism_ref.sleep.clear_consent(organism_ref.owner_id, consent_id)
         return {"revoked": True}
 
     @app.post("/memories", status_code=201)
@@ -608,6 +615,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
+        organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
         return {**_memory_payload(record), "index": _index_payload(outcome)}
 
     @app.post("/memories/{memory_id}/supersede", status_code=201)
@@ -628,6 +636,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
+        organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
         return {
             "memory": _memory_payload(record),
             "supersedes": memory_id,
@@ -653,7 +662,9 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         deleted = get_organism().memory.delete(get_organism().owner_id, memory_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Memory not found")
-        get_organism().cognitive_brain.clear_owner_sessions(get_organism().owner_id)
+        organism_ref = get_organism()
+        organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
+        organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
         return {"deleted": True}
 
     @app.delete("/memories")
@@ -663,6 +674,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         sessions_cleared = organism_ref.cognitive_brain.clear_owner_sessions(
             organism_ref.owner_id
         )
+        organism_ref.sleep.clear_owner(organism_ref.owner_id)
         return {"deleted": count, "sessions_cleared": sessions_cleared}
 
     @app.post("/training/examples", status_code=201)
@@ -813,15 +825,118 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     @app.post("/sleep/preview")
     def sleep_preview() -> dict[str, Any]:
         organism_ref = get_organism()
-        records = organism_ref.memory.list(organism_ref.owner_id, limit=500)
-        proposal = organism_ref.sleep.prepare(records)
-        if proposal is None:
-            return {"proposal": None, "reason": "At least two consented memories are needed."}
+        proposals = organism_ref.sleep.prepare_from_episodes(
+            owner_id=organism_ref.owner_id,
+            context_prefix=organism_ref.cognitive_brain.episodic_context_prefix(
+                organism_ref.owner_id
+            ),
+            episodic_memory=organism_ref.cognitive_brain.architecture.episodic_memory,
+            repository=organism_ref.memory,
+        )
+        payloads = [
+            {
+                "id": item.id,
+                "source_memory_ids": item.source_memory_ids,
+                "summary": item.summary,
+                "recurrence_count": item.recurrence_count,
+                "status": item.status,
+                "created_at": item.created_at,
+            }
+            for item in proposals
+        ]
+        return {
+            "proposals": payloads,
+            "proposal": payloads[0] if payloads else None,
+            "reason": None if payloads else (
+                "No adjacent episodic pattern was repeated across enough distinct sessions."
+            ),
+            "status": organism_ref.sleep.snapshot(organism_ref.owner_id),
+        }
+
+    @app.get("/sleep/proposals")
+    def list_sleep_proposals(
+        status: Literal["pending_review", "approved", "rejected"] | None = None,
+        limit: int = Query(default=50, ge=1, le=100),
+    ) -> dict[str, Any]:
+        organism_ref = get_organism()
+        proposals = organism_ref.sleep.list_proposals(
+            organism_ref.owner_id, status=status, limit=limit
+        )
+        return {
+            "proposals": [
+                {
+                    "id": item.id,
+                    "source_memory_ids": item.source_memory_ids,
+                    "summary": item.summary,
+                    "recurrence_count": item.recurrence_count,
+                    "status": item.status,
+                    "created_at": item.created_at,
+                    "reviewed_at": item.reviewed_at,
+                    "review_note": item.review_note,
+                    "consolidated_memory_id": item.consolidated_memory_id,
+                }
+                for item in proposals
+            ],
+            "status": organism_ref.sleep.snapshot(organism_ref.owner_id),
+        }
+
+    @app.post("/sleep/proposals/{proposal_id}/review")
+    def review_sleep_proposal(
+        proposal_id: str, payload: ConsolidationReviewRequest
+    ) -> dict[str, Any]:
+        organism_ref = get_organism()
+        owner_id = organism_ref.owner_id
+        try:
+            proposal, consent_id = organism_ref.sleep.proposal_context(owner_id, proposal_id)
+            consolidated_payload: dict[str, Any] | None = None
+            memory_id: str | None = None
+            if payload.decision == "approved":
+                record, outcome = organism_ref.long_term_memory.add_consolidated_memory(
+                    owner_id=owner_id,
+                    source_memory_ids=proposal.source_memory_ids,
+                    content=proposal.summary,
+                    source=f"owner-approved sleep consolidation:{proposal.id}",
+                    consent_id=consent_id,
+                    metadata={
+                        "consolidation_proposal_id": proposal.id,
+                        "recurrence_count": proposal.recurrence_count,
+                        "reviewer_role": "owner",
+                        "review_note": payload.note,
+                    },
+                )
+                memory_id = record.id
+                consolidated_payload = {
+                    **_memory_payload(record),
+                    "index": _index_payload(outcome),
+                }
+            reviewed = organism_ref.sleep.review(
+                owner_id,
+                proposal_id,
+                decision=payload.decision,
+                reviewer=owner_id,
+                note=payload.note,
+                consolidated_memory_id=memory_id,
+            )
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Consolidation proposal not found") from error
+        except MemoryNotFoundError as error:
+            raise HTTPException(
+                status_code=409,
+                detail="One or more source memories are no longer consent-visible",
+            ) from error
+        except ConsentRequiredError as error:
+            raise HTTPException(status_code=403, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
         return {
             "proposal": {
-                "id": proposal.id, "source_memory_ids": proposal.source_memory_ids,
-                "summary": proposal.summary, "status": proposal.status,
-            }
+                "id": reviewed.id,
+                "status": reviewed.status,
+                "reviewed_at": reviewed.reviewed_at,
+                "review_note": reviewed.review_note,
+                "consolidated_memory_id": reviewed.consolidated_memory_id,
+            },
+            "memory": consolidated_payload,
         }
 
     return app

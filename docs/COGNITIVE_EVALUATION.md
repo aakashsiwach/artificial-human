@@ -226,6 +226,44 @@ consolidation. The runtime replay is cue-driven and occurs during an ordinary
 cognitive cycle; sleep-stage-inspired offline replay and owner-reviewed
 consolidation remain open research tasks.
 
+### Replay-driven, owner-reviewed memory consolidation
+
+The sleep subsystem is a manually triggered analysis over the bounded episodic replay
+buffer. It searches for the same **directed adjacent-event transition** appearing in at
+least two distinct hashed owner/session contexts. A candidate is excluded if its sources
+are not both consent-visible episodic records under the same active consent grant, if an
+explicit contradiction link connects the pair, or if a source was deleted or revoked.
+
+The detector creates a bounded, process-local `ConsolidationProposal`. Its short summary
+contains source excerpts for owner review, source memory IDs, a recurrence count, and a
+pending status. It does not write a new memory, alter source records, rewrite replay
+sequences, or change existing associations. Re-running preview is idempotent for an
+already queued candidate. Pending proposals are not silently evicted to make room; a full
+queue skips additional proposals until an item is reviewed or invalidated.
+
+The owner may list proposals and explicitly approve or reject one:
+- **Reject:** changes only the proposal status; no memory is written.
+- **Approve:** the repository performs a single transaction that rechecks source visibility,
+  active consent, episodic type, shared consent grant, and contradiction links. It then
+  creates one semantic memory with `epistemic_status="inferred"`, stores the source IDs,
+  recurrence count and reviewer metadata, and indexes the result where configured.
+
+A proposal is invalidated when one of its source memories is corrected, superseded or
+deleted, or when its consent grant is revoked. The proposal queue is volatile and is
+cleared on process restart; an approved derived semantic memory follows the ordinary
+memory consent, provenance, export and deletion rules.
+
+The `sleep-consolidation` evaluation contains nine controlled datasets. Each includes a
+recurring pair repeated in two sessions, a single-session pair, and a contradictory pair
+repeated in two sessions. It measures recurring-pattern proposal rate, singleton and
+contradiction false-positive rates, preview-time silent writes, and source provenance on
+approved inferred memories. It runs offline with project-authored synthetic event records.
+
+This is a review workflow over replay history, not a sleep-stage simulation. It does not
+implement REM/NREM dynamics, offline replay during biological sleep, autonomous knowledge
+rewriting, or human systems consolidation. The word “sleep” labels the research direction,
+not a claim of biological equivalence.
+
 ### Integrated multi-turn scenarios
 
 | Scenario | Question | Notes |

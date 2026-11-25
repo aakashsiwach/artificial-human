@@ -41,6 +41,26 @@ class LongTermMemory:
         record = self.repository.add(**fields)
         return record, self.index.index_memory(record.owner_id, record.id)
 
+    def add_consolidated_memory(
+        self,
+        *,
+        owner_id: str,
+        source_memory_ids: list[str] | tuple[str, ...],
+        content: str,
+        source: str,
+        consent_id: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[MemoryRecord, IndexOutcome]:
+        record = self.repository.add_consolidated_memory(
+            owner_id=owner_id,
+            source_memory_ids=source_memory_ids,
+            content=content,
+            source=source,
+            consent_id=consent_id,
+            metadata=metadata,
+        )
+        return record, self.index.index_memory(owner_id, record.id)
+
     def correct(
         self, owner_id: str, memory_id: str, **changes: Any
     ) -> tuple[MemoryRecord, IndexOutcome | None]:
