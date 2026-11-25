@@ -36,6 +36,7 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [x] Add a process-local recurrent population activity engine with fixed abstract topology, bounded updates, activity leak, inhibitory projection, and content-free telemetry.
 - [x] Integrate activity updates into every cognitive response, including deterministic identity responses.
 - [x] Report aggregate population activity and cycle counts in organism status.
+- [x] Run a low-amplitude deterministic idle-activity approximation while the API process is awake; stop with process suspension/shutdown.
 - [ ] Compare recurrent update rules and stability under controlled inputs and no-input decay.
 - [ ] Add external cognitive tasks that test whether recurrent state improves sequence recall, context integration, or prediction over a non-recurrent baseline.
 - [ ] Add reviewed, reward-gated plasticity only after a falsifiable learning hypothesis and regression suite exist.
