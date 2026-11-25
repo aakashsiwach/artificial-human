@@ -73,3 +73,12 @@ The Control Room is deployed as a static site with Root Directory `monitor` and 
 ## Interpretation
 
 The prenatal display lets the operator inspect deterministic snapshots at any day from 0 to 280. The simulation is not automatically advancing and does not persist a developmental history between requests. It is a software abstraction, not a biological fetal-brain simulator, and does not imply consciousness or clinical measurements. Its values describe this model's internal parameters only.
+
+
+## Volatile recurrent activity loop
+
+The API process runs a small deterministic idle-activity approximation once per second while
+its lifespan is active. User messages also trigger bounded recurrent updates. Both activity
+and session state exist only in process memory. This is an inspectable software dynamics
+experiment, not biological spontaneous neural firing. Render free-tier suspension pauses the
+process and its loop; the design does not attempt to defeat platform sleep.
