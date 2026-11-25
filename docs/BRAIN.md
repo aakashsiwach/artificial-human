@@ -8,6 +8,16 @@ Artificial Human is intended to be an artificial mind whose architecture is info
 
 The language model is a component used for language generation and deliberation. It is not the architecture itself and must not be treated as a replacement for perception, attention, memory, learning, prediction, executive control, or action selection.
 
+## Founder identity constitution
+
+`identity/constitution.py` defines **Aakash Siwach** as the human founder, creator and
+project owner (Father in the project's family metaphor). It includes his verified public
+GitHub handle and selected public repository references. The exact LinkedIn profile URL is
+not configured because a matching profile could not be verified; the system must ask for
+the exact link rather than infer one. The deterministic identity answer includes these
+founder details without requiring the language-model provider or a personal-memory lookup.
+See [Founder profile](FOUNDER.md).
+
 ## Associative source-knowledge memory
 
 `cognition/associative_memory.py` maintains a bounded graph whose nodes are the stable
