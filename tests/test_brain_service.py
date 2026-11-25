@@ -100,3 +100,47 @@ def test_brain_includes_relevant_source_code_knowledge_in_cognitive_context() ->
     assert "TRUSTED SOURCE-CODE FOUNDATIONAL KNOWLEDGE" in provider.messages[1].content
     assert "cognitive_cycle" in provider.messages[1].content
     assert "version_controlled_source_code" in provider.messages[1].content
+
+
+def test_brain_runs_recurrent_dynamics_and_includes_state_in_context() -> None:
+    repository = MemoryRepository(":memory:")
+    provider = RecordingProvider()
+    brain = BrainService(provider, LearningSystem(repository))
+
+    first = brain.respond(
+        owner_id="owner",
+        query="How does episodic memory work and why?",
+        profile=IdentityProfile(owner_id="owner"),
+    )
+    dynamics = first.cognitive_trace["recurrent_dynamics"]
+
+    assert dynamics["version"] == "recurrent-population-dynamics-v1"
+    assert dynamics["inputs_processed"] == 1
+    assert dynamics["integration_steps"] == 8
+    assert dynamics["population_count"] == 7
+    assert dynamics["projection_count"] == 10
+    assert dynamics["plasticity_enabled"] is False
+    assert dynamics["state_storage"] == "volatile_process_memory"
+    assert dynamics["active_population_count"] > 0
+    assert "RECURRENT ABSTRACT POPULATION ACTIVITY" in provider.messages[1].content
+
+    second = brain.respond(
+        owner_id="owner",
+        query="Plan the next implementation steps safely.",
+        profile=IdentityProfile(owner_id="owner"),
+    )
+    assert second.cognitive_trace["recurrent_dynamics"]["inputs_processed"] == 2
+    assert second.cognitive_trace["recurrent_dynamics"]["integration_steps"] == 16
+
+
+def test_brain_dynamics_state_can_be_reset() -> None:
+    repository = MemoryRepository(":memory:")
+    brain = BrainService(RecordingProvider(), LearningSystem(repository))
+    brain.dynamics.process("Explain recurrent activity.")
+    brain.dynamics.reset()
+    snapshot = brain.dynamics.snapshot().as_dict()
+
+    assert snapshot["inputs_processed"] == 0
+    assert snapshot["integration_steps"] == 0
+    assert snapshot["mean_activity"] == 0.0
+    assert all(item["activity"] == 0.0 for item in snapshot["populations"])
