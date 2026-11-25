@@ -4,10 +4,11 @@ The Control Room is a separate static dashboard under `monitor/`. It connects to
 
 ## Security model
 
-- Set `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` on every public API deployment.
+- Set `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` and `ARTIFICIAL_HUMAN_MONITOR_ONLY=true` on the monitoring service.
 - The Render Blueprint generates a random 256-bit `ARTIFICIAL_HUMAN_API_TOKEN`. Keep it in Render's secret manager; the API fails closed with HTTP 503 if it is missing.
 - Set `ARTIFICIAL_HUMAN_CORS_ORIGINS` to the exact Vercel dashboard origin (comma-separated only when multiple trusted origins are needed).
-- All routes except `GET /health` and CORS preflight require `Authorization: Bearer <token>`.
+- Only `GET /health` and `GET /monitor/overview` are exposed by the Render monitoring service. Other API paths return 404, even with a valid token.
+- `GET /monitor/overview` and any non-preflight protected request require `Authorization: Bearer <token>`.
 - API docs and the OpenAPI schema are disabled in public mode.
 - The dashboard keeps the token in JavaScript memory only. It does not write the token to localStorage, cookies, URL parameters, logs, or telemetry.
 - The monitoring overview only returns the operational status, cognitive subsystem labels, and deterministic prenatal scaffold snapshots. It does not return owner IDs, prompts, memory records, or sensory content.
