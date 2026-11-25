@@ -12,7 +12,9 @@ from artificial_human.cognition.core_knowledge import (
 )
 
 
-ASSOCIATIVE_MEMORY_VERSION: Final[str] = "source-knowledge-association-v1"
+ASSOCIATIVE_MEMORY_VERSION: Final[str] = "source-knowledge-association-v2"
+DEFAULT_ASSOCIATION_CONTEXT_ID: Final[str] = "global"
+_CONTEXT_ID_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,15 +23,24 @@ class KnowledgeActivation:
     activation: float
     directly_activated: bool
     spread_activation: float
+    association_context_id: str | None = None
 
 
 class AssociativeKnowledgeNetwork:
     """A bounded in-process associative graph over source-defined facts.
 
-    Only source fact identifiers and association weights are retained. User text,
-    personal details, and raw prompts are never stored by this network. Co-activation
-    strengthens an undirected link with a bounded Hebbian-style rule; links decay
-    slowly on subsequent inputs. This is an engineering abstraction, not a model
+    Links are partitioned by a caller-supplied, non-content context identifier.
+    Spreading activation only follows links learned in the matching context.
+    This prevents an association learned in one conversation from silently
+    influencing a different conversation.
+
+    Only source fact identifiers, context identifiers, and association weights
+    are retained. Context identifiers must be short non-content labels; callers
+    should hash opaque session IDs rather than pass raw user-provided values.
+    User text, personal details, and raw prompts are never stored by this network.
+
+    The total link budget remains global, so capacity pressure can evict a weak
+    link from another context. This is an engineering abstraction, not a model
     of hippocampal tissue or proof of biological memory.
     """
 
@@ -50,21 +61,39 @@ class AssociativeKnowledgeNetwork:
         self.decay = decay
         self.max_links = max_links
         self._facts = {item.fact_id: item for item in CORE_KNOWLEDGE}
-        self._links: dict[tuple[str, str], float] = {}
+        # Key: (context_id, lexically_sorted_fact_id_a, lexically_sorted_fact_id_b).
+        self._links: dict[tuple[str, str, str], float] = {}
         self._coactivations = 0
         self._inputs_processed = 0
         self._lock = RLock()
 
     @staticmethod
-    def _link_key(first: str, second: str) -> tuple[str, str]:
-        return (first, second) if first <= second else (second, first)
+    def _validate_context_id(context_id: str) -> None:
+        if not isinstance(context_id, str) or not _CONTEXT_ID_PATTERN.fullmatch(context_id):
+            raise ValueError(
+                "context_id must be a 1-64 character lowercase identifier "
+                "containing only letters, digits, dots, underscores, or hyphens"
+            )
 
-    def process(self, query: str, *, limit: int = 5) -> tuple[KnowledgeActivation, ...]:
-        """Retrieve facts, learn co-activation links, then spread activation."""
+    @staticmethod
+    def _link_key(context_id: str, first: str, second: str) -> tuple[str, str, str]:
+        left, right = (first, second) if first <= second else (second, first)
+        return context_id, left, right
+
+    def process(
+        self,
+        query: str,
+        *,
+        limit: int = 5,
+        context_id: str = DEFAULT_ASSOCIATION_CONTEXT_ID,
+    ) -> tuple[KnowledgeActivation, ...]:
+        """Retrieve facts, learn scoped co-activation links, then spread within scope."""
         if not 1 <= limit <= 20:
             raise ValueError("limit must be between 1 and 20")
+        self._validate_context_id(context_id)
         if not query.strip():
             return ()
+
         direct_facts = retrieve_core_knowledge(query, limit=limit)
         direct = {
             fact.fact_id: max(0.25, 1.0 - (position * 0.12))
@@ -73,26 +102,31 @@ class AssociativeKnowledgeNetwork:
         with self._lock:
             self._inputs_processed += 1
 
-            # Forgetting/interference is bounded and applies to every new input,
-            # including inputs that do not match any source-defined fact.
-            self._links = {
-                key: strength * self.decay
-                for key, strength in self._links.items()
-                if strength * self.decay >= 0.001
-            }
+            # Interference/forgetting advances only within the active context.
+            # Unrelated conversations do not age one another's associations.
+            decayed_links: dict[tuple[str, str, str], float] = {}
+            for key, strength in self._links.items():
+                if key[0] != context_id:
+                    decayed_links[key] = strength
+                    continue
+                decayed = strength * self.decay
+                if decayed >= 0.001:
+                    decayed_links[key] = decayed
+            self._links = decayed_links
+
             if not direct:
                 return ()
 
             identifiers = list(direct)
             for index, first in enumerate(identifiers):
                 for second in identifiers[index + 1:]:
-                    key = self._link_key(first, second)
+                    key = self._link_key(context_id, first, second)
                     current = self._links.get(key, 0.0)
                     updated = current + (
                         self.learning_rate * direct[first] * direct[second] * (1.0 - current)
                     )
                     if key not in self._links and len(self._links) >= self.max_links:
-                        weakest = min(self._links, key=lambda item: self._links[item])
+                        weakest = min(self._links, key=lambda item: (self._links[item], item))
                         if self._links[weakest] >= updated:
                             continue
                         del self._links[weakest]
@@ -100,7 +134,9 @@ class AssociativeKnowledgeNetwork:
                     self._coactivations += 1
 
             spread: dict[str, float] = {}
-            for (first, second), strength in self._links.items():
+            for (link_context, first, second), strength in self._links.items():
+                if link_context != context_id:
+                    continue
                 if first in direct and second not in direct:
                     spread[second] = max(
                         spread.get(second, 0.0), direct[first] * strength
@@ -127,6 +163,9 @@ class AssociativeKnowledgeNetwork:
                     activation=round(activations[fact_id], 6),
                     directly_activated=fact_id in direct,
                     spread_activation=round(spread.get(fact_id, 0.0), 6),
+                    association_context_id=(
+                        context_id if spread.get(fact_id, 0.0) > 0.0 else None
+                    ),
                 )
                 for fact_id in ranked
             )
@@ -134,10 +173,13 @@ class AssociativeKnowledgeNetwork:
     def snapshot(self) -> dict[str, object]:
         with self._lock:
             strengths = tuple(self._links.values())
+            contexts = {key[0] for key in self._links}
             return {
                 "version": ASSOCIATIVE_MEMORY_VERSION,
                 "source_fact_count": len(self._facts),
                 "association_count": len(self._links),
+                "association_context_count": len(contexts),
+                "context_isolation": "spread_activation_within_matching_context",
                 "coactivations": self._coactivations,
                 "inputs_processed": self._inputs_processed,
                 "mean_association_strength": (
