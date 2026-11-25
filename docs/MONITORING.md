@@ -5,7 +5,7 @@ The Control Room is a separate static dashboard under `monitor/`. It connects to
 ## Security model
 
 - Set `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` on every public API deployment.
-- Set a unique, high-entropy `ARTIFICIAL_HUMAN_API_TOKEN` in the host's secret manager. The API fails closed with HTTP 503 when this is missing.
+- The Render Blueprint generates a random 256-bit `ARTIFICIAL_HUMAN_API_TOKEN`. Keep it in Render's secret manager; the API fails closed with HTTP 503 if it is missing.
 - Set `ARTIFICIAL_HUMAN_CORS_ORIGINS` to the exact Vercel dashboard origin (comma-separated only when multiple trusted origins are needed).
 - All routes except `GET /health` and CORS preflight require `Authorization: Bearer <token>`.
 - API docs and the OpenAPI schema are disabled in public mode.
@@ -42,4 +42,4 @@ Import the repository in Vercel and set the project Root Directory to `monitor`.
 
 ## Interpretation
 
-The prenatal display is a deterministic software abstraction and does not imply biological equivalence, consciousness, or clinical measurements. Its values describe this model's internal parameters only.
+The prenatal display lets the operator inspect deterministic snapshots at any day from 0 to 280. The simulation is not automatically advancing and does not persist a developmental history between requests. It is a software abstraction and does not imply biological equivalence, consciousness, or clinical measurements. Its values describe this model's internal parameters only.
