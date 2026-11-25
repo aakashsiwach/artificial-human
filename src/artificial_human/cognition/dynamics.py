@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict, dataclass
-from math import isfinite, tanh
+from math import tanh
 from typing import Final
 
 from artificial_human.development.prenatal import POPULATIONS, PROJECTIONS
