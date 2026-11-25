@@ -145,7 +145,7 @@ def is_identity_question(query: str) -> bool:
         r"^(?:show|give me) (?:me )?(?:your )?(?:father|creator|founder)'s "
         r"(?:linkedin|github)(?: profile| details| link| url)?\??$",
         r"^(?:what is|show me|give me) (?:your )?(?:father|aakash siwach)'?s "
-        r"(?:linkedin|github)(?: profile| details| link| url)?\??$",
+        r"(?:linkedin|github)(?: profile| details| link| url)?[?.]?$",
         r"^(?:what are|show me) your father's (?:linkedin|github) "
         r"(?:and|&|or) (?:linkedin|github)(?: details| links| profiles)?\??$",
         r"^tell me about aakash siwach\??$",
