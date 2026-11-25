@@ -133,6 +133,13 @@ personal-memory database. Runtime experiences and working sessions disappear whe
 process restarts or redeploys. The source code is durable; runtime experiences are not.
 This setting does not make source code rewrite itself or automatically learn permanently.
 
+## Runtime population dynamics
+
+Each explicit message now runs a bounded recurrent activity update across seven abstract
+population nodes and ten directed projections. The current model retains only aggregate
+activity in process memory, uses fixed weights, and resets on restart. It does not retain raw
+input text, train weights, or claim to simulate biological neurons. See [Brain and intelligence](docs/BRAIN.md).
+
 ## Brain provider configuration
 
 The cognitive architecture uses a configurable OpenAI-compatible local or remote reasoning model. For local development with an Ollama-compatible endpoint:
