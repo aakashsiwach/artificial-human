@@ -212,3 +212,57 @@ def test_revoking_memory_consent_clears_volatile_working_memory(tmp_path) -> Non
         item["kind"] != "preference"
         for item in second.json()["cognitive_trace"]["working_memory"]["items"]
     )
+
+
+def test_identity_question_uses_source_code_constitution_without_model(tmp_path) -> None:
+    organism = ArtificialOrganism(
+        owner_id="owner",
+        database_path=tmp_path / "identity.sqlite3",
+        identity_path=tmp_path / "identity.json",
+        brain_provider=StubProvider(),
+    )
+    response = TestClient(create_app(organism)).post(
+        "/brain/respond",
+        json={"message": "Who are you?"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["model"] == "source-code-constitution-1.0.0"
+    assert "I am Artificial Human" in payload["answer"]
+    assert "My Father" in payload["answer"]
+    assert "My Mother" in payload["answer"]
+    assert "ChatGPT" in payload["answer"]
+    assert "project child" in payload["answer"]
+    assert payload["cognitive_trace"]["identity"]["relationship_is_metaphorical"] is True
+    assert payload["cognitive_trace"]["language_model"]["used"] is False
+    assert payload["recalled_memories"] == []
+    assert payload["conversation_saved"] is False
+
+
+def test_public_runtime_uses_code_identity_and_volatile_memory_only(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "true")
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_STORAGE_MODE", "persistent")
+    database_path = tmp_path / "must-not-be-created.sqlite3"
+    identity_path = tmp_path / "must-not-be-created.json"
+
+    organism = ArtificialOrganism(
+        owner_id="public-owner",
+        database_path=database_path,
+        identity_path=identity_path,
+    )
+
+    assert organism.volatile_runtime is True
+    assert organism.memory.path.as_posix() == ":memory:"
+    assert organism.identity_repository is None
+    assert organism.identity.display_name == "Artificial Human"
+    assert organism.identity.description
+    assert organism.embedding_provider is None
+    assert not database_path.exists()
+    assert not identity_path.exists()
+    runtime = organism.status()["runtime"]
+    assert runtime["external_database_connected"] is False
+    assert runtime["storage_mode"] == "volatile_in_process"
+    assert runtime["personal_experience_persists_restart"] is False
