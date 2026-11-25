@@ -144,3 +144,44 @@ def test_brain_dynamics_state_can_be_reset() -> None:
     assert snapshot["integration_steps"] == 0
     assert snapshot["mean_activity"] == 0.0
     assert all(item["activity"] == 0.0 for item in snapshot["populations"])
+
+
+def test_associative_knowledge_links_coactivated_source_facts_and_spreads_activation() -> None:
+    repository = MemoryRepository(":memory:")
+    provider = RecordingProvider()
+    brain = BrainService(provider, LearningSystem(repository))
+
+    first = brain.respond(
+        owner_id="owner",
+        query="Explain attention, memory, and cognitive architecture together.",
+        profile=IdentityProfile(owner_id="owner"),
+    )
+    first_state = first.cognitive_trace["associative_memory"]
+    assert first_state["source_fact_count"] >= 10
+    assert first_state["association_count"] > 0
+    assert first_state["coactivations"] > 0
+    assert first_state["retains_user_text"] is False
+
+    second = brain.respond(
+        owner_id="owner",
+        query="What is attention?",
+        profile=IdentityProfile(owner_id="owner"),
+    )
+    context = provider.messages[1].content
+    assert "TRUSTED SOURCE-CODE FOUNDATIONAL KNOWLEDGE" in context
+    assert "spread_activation" in context
+    assert second.cognitive_trace["associative_memory"]["inputs_processed"] == 2
+    assert second.cognitive_trace["associative_memory"]["state_storage"] == "volatile_process_memory"
+
+
+def test_associative_network_reset_forgets_learned_links_but_keeps_code_facts() -> None:
+    repository = MemoryRepository(":memory:")
+    brain = BrainService(RecordingProvider(), LearningSystem(repository))
+    brain.knowledge_network.process("Explain attention, memory, and cognition together.")
+    assert brain.knowledge_network.snapshot()["association_count"] > 0
+
+    brain.knowledge_network.reset()
+    state = brain.knowledge_network.snapshot()
+    assert state["association_count"] == 0
+    assert state["inputs_processed"] == 0
+    assert state["source_fact_count"] >= 10
