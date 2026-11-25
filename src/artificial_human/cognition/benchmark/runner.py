@@ -14,6 +14,7 @@ from typing import Any
 from artificial_human.cognition.benchmark.attention_eval import run_attention_suite
 from artificial_human.cognition.benchmark.associative_memory_eval import run_associative_memory_suite
 from artificial_human.cognition.benchmark.associative_context_eval import run_associative_context_suite
+from artificial_human.cognition.benchmark.associative_dynamics_eval import run_associative_dynamics_suite
 from artificial_human.cognition.benchmark.common import DEFAULT_SEED, SuiteResult, measured
 from artificial_human.cognition.benchmark.integration_eval import run_integration_suite
 from artificial_human.cognition.benchmark.memory_eval import run_memory_suite
@@ -23,11 +24,11 @@ from artificial_human.memory.embeddings import EmbeddingProvider
 
 SUITES: tuple[str, ...] = (
     "attention", "working-memory", "prediction", "memory", "associative-memory",
-    "associative-context", "integration"
+    "associative-context", "associative-dynamics", "integration"
 )
 # Opt-in suites over locally downloaded, independently authored datasets.
 EXTERNAL_SUITES: tuple[str, ...] = ("longmemeval", "digit-span")
-SCHEMA_VERSION = "1.2"
+SCHEMA_VERSION = "1.3"
 
 
 class InvariantViolation(RuntimeError):
@@ -52,6 +53,7 @@ def _suite_runner(
         "memory": lambda: run_memory_suite(provider),
         "associative-memory": lambda: run_associative_memory_suite(seed),
         "associative-context": lambda: run_associative_context_suite(seed),
+        "associative-dynamics": lambda: run_associative_dynamics_suite(seed),
         "integration": lambda: run_integration_suite(provider),
         "longmemeval": lambda: longmemeval_suite(
             Path(options["longmemeval_path"]), provider, options.get("limit"), notify),

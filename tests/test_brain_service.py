@@ -1,9 +1,11 @@
 from artificial_human.brain.providers.base import ChatMessage, Generation
 from artificial_human.brain.service import BrainService
 from artificial_human.core.models import MemoryKind
+from artificial_human.cognition.architecture import CognitiveArchitecture
 from artificial_human.identity.profile import IdentityProfile
 from artificial_human.learning.system import LearningSystem
 from artificial_human.memory.repository import MemoryRepository
+from artificial_human.memory.search import HybridMemorySearch
 
 
 class RecordingProvider:
@@ -274,3 +276,153 @@ def test_clear_owner_sessions_also_forgets_associative_contexts() -> None:
     snapshot = brain.knowledge_network.snapshot()
     assert snapshot["association_context_count"] == 1
     assert snapshot["association_count"] > 0
+
+
+
+def test_relational_memory_recalls_co_retrieved_memories_in_the_same_session() -> None:
+    repository = MemoryRepository(":memory:")
+    consent = repository.grant_consent("owner")
+    alpha = repository.add(
+        owner_id="owner",
+        kind=MemoryKind.EPISODIC,
+        content="alpha service integration detail",
+        source="owner statement",
+        consent_id=consent.id,
+    )
+    beta = repository.add(
+        owner_id="owner",
+        kind=MemoryKind.EPISODIC,
+        content="beta cache configuration detail",
+        source="owner statement",
+        consent_id=consent.id,
+    )
+    learning = LearningSystem(repository)
+    architecture = CognitiveArchitecture(
+        memory_search=HybridMemorySearch(repository),
+        learning=learning,
+    )
+    brain = BrainService(RecordingProvider(), learning, architecture=architecture)
+    profile = IdentityProfile(owner_id="owner")
+
+    first = brain.respond(
+        owner_id="owner",
+        query="alpha beta",
+        profile=profile,
+        session_id="relational-session",
+    )
+    assert {item["memory_id"] for item in first.recalled_memories} == {alpha.id, beta.id}
+    assert first.cognitive_trace["relational_memory"]["association_count"] == 1
+
+    second = brain.respond(
+        owner_id="owner",
+        query="alpha",
+        profile=profile,
+        session_id="relational-session",
+    )
+    beta_result = next(item for item in second.recalled_memories if item["memory_id"] == beta.id)
+    assert "associative" in beta_result["retrieval_channels"]
+    assert second.cognitive_trace["relational_memory"]["retrieval_strengthenings"] >= 1
+
+    assert brain.clear_session("owner", "relational-session") is True
+    assert brain.architecture.relational_memory.snapshot()["association_count"] == 0
+
+
+def test_explicit_repository_contradiction_removes_learned_memory_association() -> None:
+    repository = MemoryRepository(":memory:")
+    consent = repository.grant_consent("owner")
+    alpha = repository.add(
+        owner_id="owner",
+        kind=MemoryKind.EPISODIC,
+        content="alpha service deployment fact",
+        source="owner statement A",
+        consent_id=consent.id,
+    )
+    beta = repository.add(
+        owner_id="owner",
+        kind=MemoryKind.EPISODIC,
+        content="beta deployment cache fact",
+        source="owner statement B",
+        consent_id=consent.id,
+    )
+    learning = LearningSystem(repository)
+    architecture = CognitiveArchitecture(
+        memory_search=HybridMemorySearch(repository),
+        learning=learning,
+    )
+    brain = BrainService(RecordingProvider(), learning, architecture=architecture)
+    profile = IdentityProfile(owner_id="owner")
+
+    first = brain.respond(
+        owner_id="owner",
+        query="alpha beta",
+        profile=profile,
+        session_id="contradiction-session",
+    )
+    assert first.cognitive_trace["relational_memory"]["association_count"] == 1
+
+    repository.link_contradiction("owner", alpha.id, beta.id, note="Owner marked as conflicting")
+    second = brain.respond(
+        owner_id="owner",
+        query="alpha",
+        profile=profile,
+        session_id="contradiction-session",
+    )
+    beta_result = next(item for item in second.recalled_memories if item["memory_id"] == beta.id)
+
+    assert "contradiction" in beta_result["retrieval_channels"]
+    assert "associative" not in beta_result["retrieval_channels"]
+    assert second.cognitive_trace["relational_memory"]["explicit_contradiction_pairs"] == 1
+    assert second.cognitive_trace["relational_memory"]["contradiction_suppressions"] >= 1
+    assert second.cognitive_trace["relational_memory"]["association_count"] == 0
+
+
+
+def test_associated_record_is_blocked_by_contradiction_even_when_not_lexically_retrieved() -> None:
+    repository = MemoryRepository(":memory:")
+    consent = repository.grant_consent("owner")
+    alpha = repository.add(
+        owner_id="owner",
+        kind=MemoryKind.EPISODIC,
+        content="alpha operational deployment fact",
+        source="owner statement A",
+        consent_id=consent.id,
+    )
+    gamma = repository.add(
+        owner_id="owner",
+        kind=MemoryKind.EPISODIC,
+        content="gamma incompatible deployment fact",
+        source="owner statement B",
+        consent_id=consent.id,
+    )
+    learning = LearningSystem(repository)
+    architecture = CognitiveArchitecture(
+        memory_search=HybridMemorySearch(repository),
+        learning=learning,
+    )
+    brain = BrainService(RecordingProvider(), learning, architecture=architecture)
+    profile = IdentityProfile(owner_id="owner")
+
+    first = brain.respond(
+        owner_id="owner",
+        query="alpha gamma",
+        profile=profile,
+        session_id="hidden-conflict-session",
+    )
+    assert first.cognitive_trace["relational_memory"]["association_count"] == 1
+
+    # The later cue mentions only alpha, so gamma is not a lexical candidate.
+    repository.link_contradiction("owner", alpha.id, gamma.id, note="Explicit owner conflict")
+    second = brain.respond(
+        owner_id="owner",
+        query="alpha",
+        profile=profile,
+        memories=[alpha, gamma],
+        session_id="hidden-conflict-session",
+    )
+
+    gamma_result = [
+        item for item in second.recalled_memories if item["memory_id"] == gamma.id
+    ]
+    assert gamma_result == []
+    assert second.cognitive_trace["relational_memory"]["contradiction_suppressions"] >= 1
+    assert second.cognitive_trace["relational_memory"]["association_count"] == 0

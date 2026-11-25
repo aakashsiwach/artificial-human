@@ -65,6 +65,7 @@ _DEFINITIONS = """\
 | Memory | Existing synthetic memory benchmark (46 memories, two synthetic owners) plus source-attribution queries | Graded relevance per query, expected source, empty set for irrelevant queries |
 | Associative memory | Nine fixed source-fact pairs; each pair is co-activated during training, then tested with a cue that directly retrieves only its source fact | Whether the declared target fact is retrieved in the top 5 |
 | Associative context | Nine source-fact pairs trained in separate contexts, then queried in the same context, a different context, and a shared global graph | Same-context target recall@5 and cross-context leakage@5 |
+| Associative dynamics | Nine paired contradiction and distractor-interference probes over opaque record IDs | Contradiction suppression rate and target recall after a capacity-limited distractor sequence |
 | Integration | Six multi-turn scenarios through `CognitiveArchitecture` (A–F) | Scenario-specific behavioural checks |"""
 
 _BASELINES = """\
@@ -111,6 +112,10 @@ _METRICS = """\
   declared target in the top 5 / mean reciprocal rank of that target.
 - **Cross-context leakage@5.** Share of cues that retrieve a target learned in a
   different context; lower is better.
+- **Contradiction suppression rate.** Share of explicit conflict probes in which
+  a previously learned positive edge is deleted and remains unavailable for recall.
+- **Post-interference target recall@1.** Share of cue probes that recover a target
+  relation after a fixed distractor sequence under a one-edge budget.
 - **False associations per query.** Mean count of top-5 facts that are neither
   the cue source nor the declared target."""
 
@@ -480,6 +485,25 @@ def _suite_section(suite: Mapping[str, Any]) -> list[str]:
                 f"| {_fmt(shared['target_recall@5'])} |"
             )
         lines.append("")
+    elif name == "associative-dynamics":
+        systems = suite["systems"]
+        contradiction = systems["contradiction_suppression"]
+        lines += [
+            f"Explicit contradiction suppression rate: "
+            f"{_fmt(contradiction['suppression_rate'])}; "
+            f"contradiction recall@1: {_fmt(contradiction['contradiction_recall@1'])}.",
+            "",
+            "| Policy | Target recall after distractors@1 | Mean evicted links |",
+            "| --- | ---: | ---: |",
+        ]
+        for policy, values in suite["systems"].items():
+            if policy == "contradiction_suppression":
+                continue
+            lines.append(
+                f"| {policy} | {_fmt(values['target_recall_after_distractors@1'])} "
+                f"| {_fmt(values['mean_evicted_links'])} |"
+            )
+        lines.append("")
     if suite["checks"] and name != "integration":
         lines += ["**Checks**", ""] + [
             f"- {'PASS' if item['passed'] else 'FAIL'}: {item['name']}" for item in suite["checks"]
@@ -553,6 +577,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "memory": "semantic similarity threshold",
         "associative-memory": "none (fixed source-fact probes; no tuning)",
         "associative-context": "none (fixed source-fact/context probes; no tuning)",
+        "associative-dynamics": "none (fixed contradiction/interference probes; no tuning)",
         "integration": "none (fixed scenarios)",
         "longmemeval": "none: every external question is held out",
         "digit-span": "fitting human reference models only (participant-level split)",
@@ -569,7 +594,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "## 7. Results by subsystem", "",
     ]
     for name in ("attention", "working-memory", "prediction", "memory",
-                 "associative-memory", "associative-context"):
+                 "associative-memory", "associative-context", "associative-dynamics"):
         if name in suites:
             lines += _suite_section(suites[name])
     lines += ["## 8. Integrated multi-turn results", ""]
