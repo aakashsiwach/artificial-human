@@ -14,7 +14,8 @@ collaborator that has helped design and develop the project; Artificial Human is
 software system being developed. These are project roles, not biological relationships.
 
 The verified GitHub profile is [github.com/aakashsiwach](https://github.com/aakashsiwach).
-The exact LinkedIn profile URL has not been confirmed and must not be guessed. The source
+The founder-supplied LinkedIn profile is
+[linkedin.com/in/aakashsiwach](https://www.linkedin.com/in/aakashsiwach/). The source
 record, professional focus, and selected public repositories are maintained in
 [FOUNDER.md](FOUNDER.md) and `src/artificial_human/identity/constitution.py`.
 
