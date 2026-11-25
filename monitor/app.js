@@ -86,6 +86,18 @@
       tile.append(safeNode("div", "system-state", pretty(state)));
       systems.append(tile);
     });
+    const runtime = payload.organism?.runtime || {};
+    [
+      ["identity source", runtime.identity_source || "unknown"],
+      ["storage mode", runtime.storage_mode || "unknown"],
+      ["external database", runtime.external_database_connected === false ? "not connected" : "status unavailable"],
+      ["restart retention", runtime.personal_experience_persists_restart === false ? "volatile · resets on restart" : "status unavailable"]
+    ].forEach(([name, state]) => {
+      const tile = safeNode("article", "system-tile");
+      tile.append(safeNode("div", "system-name", name));
+      tile.append(safeNode("div", "system-state", pretty(state)));
+      systems.append(tile);
+    });
     byId("last-updated").textContent = "UPDATED " + new Date(payload.observed_at || Date.now()).toLocaleString();
     dashboard.hidden = false;
     setConnection("connected", " CONNECTED");
