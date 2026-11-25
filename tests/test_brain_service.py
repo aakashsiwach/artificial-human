@@ -224,6 +224,14 @@ def test_associative_links_are_owner_scoped_and_session_clear_deletes_them() -> 
     assert same_owner.cognitive_trace["associative_memory_context"] == "session"
     assert other_owner.cognitive_trace["associative_memory_context"] == "session"
 
+    # Give owner-b its own association after verifying it did not inherit owner-a's.
+    brain.respond(
+        owner_id="owner-b",
+        query="purpose mother",
+        profile=IdentityProfile(owner_id="owner-b"),
+        session_id="shared-session-label",
+    )
+
     # Clearing a session removes both its bounded workspace and associative links.
     assert brain.clear_session("owner-a", "shared-session-label") is True
     assert brain.knowledge_network.snapshot()["association_context_count"] == 1
