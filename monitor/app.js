@@ -8,6 +8,8 @@
   const dashboard = byId("dashboard");
   const statePill = byId("connection-state");
   const refreshButton = byId("refresh-button");
+  const simulationDay = byId("simulation-day");
+  const simulationDayValue = byId("simulation-day-value");
   let apiBase = "";
   let bearerToken = "";
   let pollHandle = null;
@@ -85,7 +87,7 @@
     refreshButton.disabled = true;
     setError("");
     try {
-      const response = await fetch(apiBase + "/monitor/overview?days=280&seed=7", {
+      const response = await fetch(apiBase + "/monitor/overview?days=" + encodeURIComponent(simulationDay.value) + "&seed=7", {
         method: "GET",
         headers: { "Authorization": "Bearer " + bearerToken, "Accept": "application/json" },
         cache: "no-store",
@@ -107,6 +109,9 @@
     }
   };
 
+  simulationDay.addEventListener("input", () => {
+    simulationDayValue.textContent = simulationDay.value + " / 280 days";
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     apiBase = apiInput.value.trim().replace(/\/+$/, "");
