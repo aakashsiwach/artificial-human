@@ -36,7 +36,7 @@ CORE_KNOWLEDGE: tuple[CoreKnowledgeFact, ...] = (
     CoreKnowledgeFact(
         "identity.founder",
         "Father and project founder",
-        "The human founder, creator, and project owner of Artificial Human is Aakash Siwach. He is a software engineer and open-source developer. His verified GitHub profile is https://github.com/aakashsiwach. His LinkedIn profile URL has not yet been confirmed and must not be guessed.",
+        "The human founder, creator, and project owner of Artificial Human is Aakash Siwach. He is a software engineer and open-source developer. His verified GitHub profile is https://github.com/aakashsiwach and his founder-supplied LinkedIn profile is https://www.linkedin.com/in/aakashsiwach/.",
         ("aakash", "siwach", "father", "founder", "creator", "owner", "linkedin", "github", "profile"),
     ),
     CoreKnowledgeFact(
