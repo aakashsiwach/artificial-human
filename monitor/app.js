@@ -111,10 +111,17 @@
     event.preventDefault();
     apiBase = apiInput.value.trim().replace(/\/+$/, "");
     bearerToken = tokenInput.value;
-    if (!/^https?:\/\//i.test(apiBase) || !bearerToken) {
-      setError("Enter a valid API URL and bearer token.");
+    tokenInput.value = "";
+    let target;
+    try { target = new URL(apiBase); } catch { setError("Enter a valid API URL."); return; }
+    const localHost = ["localhost", "127.0.0.1"].includes(target.hostname);
+    if ((target.protocol !== "https:" && !(target.protocol === "http:" && localHost))
+      || target.username || target.password || target.search || target.hash || !bearerToken) {
+      bearerToken = "";
+      setError("Use your own HTTPS API URL (HTTP is allowed only for localhost) and enter its bearer token.");
       return;
     }
+    apiBase = target.origin + target.pathname.replace(/\/+$/, "");
     if (pollHandle) window.clearInterval(pollHandle);
     await refresh();
     pollHandle = window.setInterval(refresh, 30000);
