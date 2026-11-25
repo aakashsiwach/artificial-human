@@ -8,6 +8,20 @@ Artificial Human is intended to be an artificial mind whose architecture is info
 
 The language model is a component used for language generation and deliberation. It is not the architecture itself and must not be treated as a replacement for perception, attention, memory, learning, prediction, executive control, or action selection.
 
+## Recurrent in-process population dynamics
+
+`cognition/dynamics.py` runs a small fixed-topology recurrent activity model for each
+explicit text input. The current experiment uses seven abstract population nodes and ten
+directed projections from the developmental scaffold, performs eight bounded synchronous
+updates, applies activity leak and an inhibitory projection, and reports population-level
+activity without storing raw input text. It is reset when the service process restarts.
+
+Text features provide hand-authored external channel drives. They are not biologically
+grounded sensory encoders. Projection weights are currently fixed; no synaptic learning is
+claimed by this runtime engine. The model is a testable engineering abstraction, not a
+simulation of biological neurons. The prenatal developmental simulator remains a separate
+model with its own maturity clock and plasticity experiment.
+
 ## Source-defined constitution and knowledge
 
 The stable Artificial Human identity is a version-controlled source module:
