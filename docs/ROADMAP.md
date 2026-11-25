@@ -60,6 +60,14 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 
 ## Milestone 2 — deeper biological and cognitive mechanisms
 
+### Developmental substrate research track
+
+- [x] Deliver the first in-memory prenatal scaffold prototype: 40-week developmental clock, fixed abstract population/projection topology, maturity gates, intrinsic activity, explicit scalar sensory input, bounded connection plasticity, CLI, tests and documentation.
+- [ ] Replace scalar channel adaptation with temporally structured population activity and distributed feature representations.
+- [ ] Compare alternative plasticity rules, including rate-based Hebbian, BCM-like, STDP-inspired and homeostatic mechanisms, against frozen-scaffold baselines.
+- [ ] Add independently authored developmental/behavioural validation tasks and parameter sensitivity analysis before making biological-fidelity claims.
+
+
 - [ ] Research and specify affective appraisal and salience without unsupported emotion inference.
 - [ ] Implement homeostatic drives and motivation with bounded, inspectable state.
 - [ ] Implement action selection and reinforcement learning with approval constraints.

@@ -44,6 +44,17 @@ The Brain now runs an explicit cognitive cycle before calling the language model
 
 Implemented modules live under `src/artificial_human/cognition/`. The details, endpoint examples, research limitations, and future mechanisms are documented in [Brain and intelligence](docs/BRAIN.md).
 
+## Prenatal development substrate (experimental)
+
+The first developmental prototype uses a fixed abstract circuit scaffold with seven neural-population abstractions and ten directed projections. A 280-day obstetric gestational clock matures the populations and runs deterministic intrinsic activity. Explicit scalar tactile, vestibular and auditory cues can alter existing connection strengths through a bounded activity-dependent rule when the corresponding model pathway is available.
+
+This prototype starts with no experience history. It retains no stimulus content and does not write exposures to SQLite. It is not a fetal-brain simulation, a semantic learner, or evidence of biological equivalence. Read [Prenatal development](docs/PRENATAL_DEVELOPMENT.md) for the developmental assumptions, model limits and reproduction steps.
+
+~~~bash
+artificial-human prenatal --days 280
+artificial-human prenatal --days 280 --seed 7 --exposure 25:auditory:0.7 --exposure 30:tactile:0.4
+~~~
+
 ## Long-term memory: semantic, hybrid and temporal
 
 Long-term memory can retrieve by meaning as well as by keywords. "What is the boiling point of H2O?" finds "Water boils at approximately 100 degrees Celsius…". It also distinguishes when an event happened, when the system learned it, and when a fact was valid. Changed facts are stored as new versions linked to the old ones, contradictions are kept and flagged, and every result explains why it was retrieved.
@@ -183,6 +194,8 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Documentation
 
+- [Prenatal developmental substrate](docs/PRENATAL_DEVELOPMENT.md)
+
 - [AI contributor instructions](AGENTS.md)
 - [Claude Code instructions](CLAUDE.md)
 - [Research Charter and Project North Star](docs/RESEARCH_CHARTER.md)
@@ -198,7 +211,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Project status
 
-The project has an executable organism foundation and an integrated, neuroscience-informed cognitive-cycle foundation, including semantic, hybrid, and temporal long-term memory, and a reproducible baseline evaluation of its cognitive subsystems. The evaluation still lacks externally authored data. The next work is to develop associative memory and memory dynamics before expanding into multimodal perception, affect/homeostasis, action selection, and neural/neuromorphic experiments. It is not yet a complete artificial human, a biologically faithful brain simulation, an autonomous self-repair system, or artificial consciousness. See the [research charter](docs/RESEARCH_CHARTER.md) and [roadmap](docs/ROADMAP.md) for the scientific principles and implementation sequence.
+The project has an executable organism foundation, an integrated neuroscience-informed cognitive cycle, a first in-memory prenatal developmental-substrate prototype, semantic/hybrid/temporal long-term memory, and reproducible cognitive evaluations. The evaluation still lacks externally authored data. The next work is to develop associative memory and memory dynamics before expanding into multimodal perception, affect/homeostasis, action selection, and neural/neuromorphic experiments. It is not yet a complete artificial human, a biologically faithful brain simulation, an autonomous self-repair system, or artificial consciousness. See the [research charter](docs/RESEARCH_CHARTER.md) and [roadmap](docs/ROADMAP.md) for the scientific principles and implementation sequence.
 
 ## License
 
