@@ -110,6 +110,18 @@
         systems.append(tile);
       });
     }
+    const associations = payload.organism?.associative_memory;
+    if (associations) {
+      const tile = safeNode("article", "system-tile");
+      tile.append(safeNode("div", "system-name", "associative memory"));
+      tile.append(safeNode(
+        "div",
+        "system-state",
+        Number(associations.association_count || 0).toLocaleString() + " links · "
+          + Number(associations.coactivations || 0).toLocaleString() + " co-activations"
+      ));
+      systems.append(tile);
+    }
     const runtime = payload.organism?.runtime || {};
     [
       ["identity source", runtime.identity_source || "unknown"],
