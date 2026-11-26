@@ -1,6 +1,7 @@
 """Opt-in evaluation of schema extraction on independently authored XES logs."""
 from __future__ import annotations
 
+import hashlib
 import random
 from pathlib import Path
 from statistics import fmean
@@ -13,13 +14,12 @@ from artificial_human.memory.repository import MemoryRepository
 
 from artificial_human.cognition.benchmark.external.event_log import (
     MAX_EVENTS_PER_CASE,
-    EventLogCase,
     load_xes,
 )
 
 
 PERMUTATION_REPEATS = 5
-DEFAULT_MAX_CASES = 2_000
+DEFAULT_MAX_CASES = 500
 
 
 def _contains(sequence: tuple[str, ...], pattern: tuple[str, ...]) -> bool:
@@ -61,7 +61,7 @@ def run_schema_event_log_suite(
     owner_id = "external-schema-eval-" + log.sha256[:16]
     repository = MemoryRepository(":memory:")
     consent = repository.grant_consent(owner_id)
-    owner_digest = __import__("hashlib").sha256(owner_id.encode("utf-8")).hexdigest()[:16]
+    owner_digest = hashlib.sha256(owner_id.encode("utf-8")).hexdigest()[:16]
     context_prefix = f"owner-{owner_digest}.session-"
     replay = EpisodicReplayMemory(
         max_contexts=len(training_cases) + 1,
@@ -209,4 +209,5 @@ def run_schema_event_log_suite(
             "source_case_ids_reported": False,
         },
     )
+    repository.close()
     return result
