@@ -33,3 +33,24 @@ def test_memory_eval_markdown_prints_on_cp1252_stdout(monkeypatch) -> None:
     assert main(["memory-eval", "--backend", "none"]) == 0
     stream.flush()
     assert stream.buffer.getvalue().decode("utf-8").startswith("# Memory retrieval benchmark")
+
+
+def test_memory_search_with_content_prints_on_cp1252_stdout(tmp_path, monkeypatch) -> None:
+    from artificial_human.core.models import MemoryKind
+    from artificial_human.memory.repository import MemoryRepository
+
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_DB_PATH", str(tmp_path / "cli.sqlite3"))
+    monkeypatch.setenv("ARTIFICIAL_HUMAN_OWNER_ID", "cli-owner")
+    monkeypatch.delenv("ARTIFICIAL_HUMAN_EMBEDDING_BACKEND", raising=False)
+    repository = MemoryRepository(tmp_path / "cli.sqlite3")
+    consent = repository.grant_consent("cli-owner")
+    repository.add(
+        owner_id="cli-owner", kind=MemoryKind.SEMANTIC, content="Tea at 9–10 am − always",
+        source="test", consent_id=consent.id,
+    )
+    repository.close()
+    stream = _cp1252_stdout()
+    monkeypatch.setattr(sys, "stdout", stream)
+    assert main(["memory-search", "tea", "--show-content"]) == 0
+    stream.flush()
+    assert "9–10 am − always" in stream.buffer.getvalue().decode("utf-8")

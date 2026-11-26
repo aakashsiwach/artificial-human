@@ -9,6 +9,19 @@ from artificial_human.cognition.benchmark.common import SuiteResult, check
 from artificial_human.memory.embeddings import EmbeddingProvider
 
 
+def _num(value: object) -> str:
+    """Format a metric that may be missing (None when no question was scorable)."""
+    return "n/a" if value is None else f"{value:.3f}"
+
+
+def _gradient(shape: dict[str, float]) -> str:
+    if shape["first_third"] > shape["last_third"]:
+        return "a primacy gradient"
+    if shape["last_third"] > shape["first_third"]:
+        return "a recency gradient"
+    return "no primacy or recency gradient"
+
+
 def longmemeval_suite(
     path: Path, provider: EmbeddingProvider | None, limit: int | None,
     notify: Callable[[str], None],
@@ -41,8 +54,8 @@ def longmemeval_suite(
     }
     primary = summary["variants"][outcome["primary_variant"]]["overall"]
     result.findings = [
-        f"{name}: turn recall@5 {entry['overall']['turn_recall@5']:.3f}, recall@20 "
-        f"{entry['overall']['turn_recall@20']:.3f}, MRR {entry['overall']['turn_mrr']:.3f}; "
+        f"{name}: turn recall@5 {_num(entry['overall']['turn_recall@5'])}, recall@20 "
+        f"{_num(entry['overall']['turn_recall@20'])}, MRR {_num(entry['overall']['turn_mrr'])}; "
         f"abstention rejection rate {entry['abstention']['rejection_rate']}."
         for name, entry in summary["variants"].items()
     ] + [
@@ -89,15 +102,29 @@ def digit_span_suite(directory: Path, seed: int) -> SuiteResult:
     longest = str(max(int(load) for load in outcome["human_reference_eval_participants"]))
     human = outcome["human_reference_eval_participants"][longest]["curve_shape"]
     soft = software[longest]["curve_shape"]
+    rmse = outcome["serial_position_rmse_vs_held_out_humans"]
+    primacy_rmse = next(v for k, v in rmse.items() if k.startswith("primacy_store_"))
+    recency_rmse = next(v for k, v in rmse.items() if k.startswith("recency_store_"))
+    if primacy_rmse < recency_rmse:
+        comparison = "describes held-out serial-position curves better than"
+    elif primacy_rmse > recency_rmse:
+        comparison = "describes held-out serial-position curves worse than"
+    else:
+        comparison = "describes held-out serial-position curves exactly as well as"
+    human_gradient, soft_gradient = _gradient(human), _gradient(soft)
+    opposite = {"a primacy gradient": "a recency gradient", "a recency gradient": "a primacy gradient"}
+    soft_text = "the reverse" if opposite.get(human_gradient) == soft_gradient else soft_gradient
     result.findings = [
-        f"At load {longest}, held-out humans show a primacy gradient (first third "
+        f"At load {longest}, held-out humans show {human_gradient} (first third "
         f"{human['first_third']:.3f}, last third {human['last_third']:.3f}). The software "
-        f"workspace shows the reverse (first third {soft['first_third']:.3f}, last third "
-        f"{soft['last_third']:.3f}) because it keeps the most recent items.",
+        f"workspace shows {soft_text} (first third {soft['first_third']:.3f}, last third "
+        f"{soft['last_third']:.3f})"
+        + (" because it keeps the most recent items." if soft_gradient == "a recency gradient"
+           else "."),
         "Among reference models fitted on tuning participants only, a primacy store (capacity "
-        f"{outcome['fitted_primacy_capacity']}) describes held-out serial-position curves better "
-        f"than a recency store (best capacity {outcome['fitted_recency_capacity']}). This "
-        "describes behaviour; it is not a claim about mechanism.",
+        f"{outcome['fitted_primacy_capacity']}) {comparison} a recency store (best capacity "
+        f"{outcome['fitted_recency_capacity']}). This describes behaviour; it is not a claim "
+        "about mechanism.",
         outcome["note"],
     ]
     return result

@@ -60,25 +60,30 @@ def load_digit_span(directory: Path) -> tuple[list[Trial], dict[str, Any]]:
     if not files:
         raise ExternalDatasetError(f"No {FILE_PATTERN} files in {directory}")
     trials: list[Trial] = []
-    for path in files:
+    for number, path in enumerate(files, start=1):
+        # File names embed participant ids (sub-<id>_...), so errors name the file
+        # by its position in the sorted listing instead.
+        name = f"file {number} of {len(files)}"
         with path.open(encoding="utf-8", newline="") as handle:
             reader = csv.DictReader(handle, delimiter="\t")
             if tuple(reader.fieldnames or ()) != COLUMNS:
-                raise ExternalDatasetError(f"{path.name}: unexpected columns")
+                raise ExternalDatasetError(f"{name}: unexpected columns")
             for line, row in enumerate(reader, start=2):
+                if None in row or any(value is None for value in row.values()):
+                    raise ExternalDatasetError(f"{name}:{line}: wrong number of fields")
                 try:
                     load = int(row["condition"])
                     flags = tuple(int(flag) for flag in row["triggerCorrect"])
                     partial = int(row["partialScore"])
                 except ValueError as error:
-                    raise ExternalDatasetError(f"{path.name}:{line}: non-numeric field") from error
+                    raise ExternalDatasetError(f"{name}:{line}: non-numeric field") from error
                 sequence = row["sequence"]
                 if row["task"] != "remember":
-                    raise ExternalDatasetError(f"{path.name}:{line}: unexpected task")
+                    raise ExternalDatasetError(f"{name}:{line}: unexpected task")
                 if not sequence.isdigit() or len(sequence) != load or len(flags) != load:
-                    raise ExternalDatasetError(f"{path.name}:{line}: length mismatch")
+                    raise ExternalDatasetError(f"{name}:{line}: length mismatch")
                 if any(flag not in (0, 1) for flag in flags) or sum(flags) != partial:
-                    raise ExternalDatasetError(f"{path.name}:{line}: inconsistent correctness")
+                    raise ExternalDatasetError(f"{name}:{line}: inconsistent correctness")
                 trials.append(Trial(
                     participant=row["participant_id"], load=load, sequence=sequence,
                     correct=flags, missing_response=row["response"].strip() in ("", "n/a"),
@@ -189,6 +194,13 @@ def run_digit_span(directory: Path, *, seed: int) -> dict[str, Any]:
     if not tuning or not evaluation:
         raise ExternalDatasetError("participant split produced an empty partition")
     loads = sorted({trial.load for trial in trials})
+    for label, partition in (("tuning", tuning), ("eval", evaluation)):
+        absent = sorted(set(loads) - {trial.load for trial in partition})
+        if absent:
+            raise ExternalDatasetError(
+                f"{label} participants have no trials at load(s) {absent}; every load must "
+                "appear in both partitions"
+            )
 
     human_eval = _position_curves(evaluation)
     human_tuning = _position_curves(tuning)

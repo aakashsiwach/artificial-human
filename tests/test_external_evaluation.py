@@ -346,3 +346,134 @@ def test_repository_close_releases_in_memory_database() -> None:
     repository.close()
     repository.close()  # idempotent
     assert repository._keeper is None  # noqa: SLF001 - verifying release
+
+
+# ------------------------------------------------------- review regressions
+
+
+def _rewrite_longmemeval(path: Path, mutate) -> None:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    path.write_text(json.dumps(mutate(data)), encoding="utf-8")
+
+
+def test_longmemeval_suite_without_scorable_questions_reports_na(tmp_path) -> None:
+    from artificial_human.cognition.benchmark.external.suites import longmemeval_suite
+
+    path = write_longmemeval_fixture(tmp_path)
+    _rewrite_longmemeval(path, lambda data: [item for item in data if item["question_id"].endswith("_abs")])
+    result = longmemeval_suite(path, None, None, lambda _message: None)
+    assert any("turn recall@5 n/a" in finding for finding in result.findings)
+    assert main(["cognition-eval", "--suite", "longmemeval", "--longmemeval-path", str(path)]) == 0
+
+
+@pytest.mark.parametrize("limit", ["0", "-1", "abc"])
+def test_external_limit_must_be_positive(tmp_path, capsys, limit) -> None:
+    path = write_longmemeval_fixture(tmp_path)
+    with pytest.raises(SystemExit) as raised:
+        main(["cognition-eval", "--suite", "longmemeval", "--longmemeval-path", str(path),
+              "--external-limit", limit])
+    assert raised.value.code == 2
+    capsys.readouterr()
+
+
+def test_load_longmemeval_rejects_non_positive_limit(tmp_path) -> None:
+    path = write_longmemeval_fixture(tmp_path)
+    for limit in (0, -5):
+        with pytest.raises(ExternalDatasetError, match="positive"):
+            lme.load_longmemeval(path, limit=limit)
+    assert len(lme.load_longmemeval(path, limit=1)[0]) == 1
+
+
+def test_longmemeval_counts_foreign_owner_results_as_leaks(tmp_path, monkeypatch) -> None:
+    from dataclasses import replace as dc_replace
+    from types import SimpleNamespace
+
+    from artificial_human.memory.system import LongTermMemory
+
+    original = LongTermMemory.search
+
+    def leaky(self, owner_id, query, **kwargs):
+        response = original(self, owner_id, query, **kwargs)
+        if owner_id.endswith("-probe"):
+            return response
+        foreign = SimpleNamespace(memory=SimpleNamespace(id="foreign-memory", owner_id="intruder"))
+        return dc_replace(response, results=(*response.results, foreign))
+
+    monkeypatch.setattr(LongTermMemory, "search", leaky)
+    summary = lme.run_longmemeval(write_longmemeval_fixture(tmp_path))["summary"]
+    assert summary["owner_leaks"] > 0
+
+
+def write_recency_digit_span_fixture(directory: Path, participants: int = 12) -> Path:
+    """Synthetic participants who recall only the last items (a recency gradient)."""
+    directory.mkdir(parents=True, exist_ok=True)
+    for index in range(participants):
+        participant = f"sub-9{index:02d}"
+        rows = [COLUMNS]
+        for trial, (load, sequence) in enumerate(((5, "31415"), (9, "271828182"),
+                                                   (13, "1123581321345"))):
+            kept = min(load, 2 + index % 2)
+            flags = "0" * (load - kept) + "1" * kept
+            rows.append("\t".join([participant, "remember", str(load), str(trial + 1), sequence,
+                                   sequence[-kept:], str(kept), str(kept), flags]))
+        (directory / f"{participant}_task-memory_beh.tsv").write_text(
+            "\n".join(rows) + "\n", encoding="utf-8")
+    return directory
+
+
+def test_digit_span_findings_follow_the_data(tmp_path) -> None:
+    from artificial_human.cognition.benchmark.external.suites import digit_span_suite
+
+    primacy = digit_span_suite(write_digit_span_fixture(tmp_path / "primacy"), seed=7).findings
+    assert "humans show a primacy gradient" in primacy[0] and "shows the reverse" in primacy[0]
+    assert "better than a recency store" in primacy[1]
+    recency = digit_span_suite(write_recency_digit_span_fixture(tmp_path / "recency"), seed=7)
+    assert "humans show a recency gradient" in recency.findings[0]
+    assert "shows the reverse" not in recency.findings[0]
+    assert "better than a recency store" not in recency.findings[1]
+
+
+def test_digit_span_requires_every_load_in_both_partitions(tmp_path) -> None:
+    directory = write_digit_span_fixture(tmp_path / "beh")
+    eval_files = [path for path in sorted(directory.glob("*.tsv"))
+                  if participant_split(path.name.split("_")[0], 7) == "eval"]
+    for path in eval_files:  # drop every load-13 trial from held-out participants
+        lines = path.read_text(encoding="utf-8").splitlines()
+        path.write_text("\n".join(line for line in lines if "\t13\t" not in line) + "\n",
+                        encoding="utf-8")
+    with pytest.raises(ExternalDatasetError, match=r"eval participants have no trials at load\(s\) \[13\]"):
+        run_digit_span(directory, seed=7)
+
+
+def test_digit_span_ragged_rows_are_dataset_errors_without_participant_ids(tmp_path) -> None:
+    directory = write_digit_span_fixture(tmp_path / "beh", participants=2)
+    target = next(directory.glob("*.tsv"))
+    lines = target.read_text(encoding="utf-8").splitlines()
+    lines[1] = "\t".join(lines[1].split("\t")[:4])  # truncated row
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with pytest.raises(ExternalDatasetError, match="wrong number of fields") as raised:
+        load_digit_span(directory)
+    assert "sub-9" not in str(raised.value)
+    lines[1] = lines[1] + "\t1\t2\t3\t4\t5\t6"  # too many fields
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with pytest.raises(ExternalDatasetError, match="wrong number of fields"):
+        load_digit_span(directory)
+
+
+def test_cli_rejects_empty_paths_and_unsafe_report_stems(tmp_path, capsys) -> None:
+    path = write_longmemeval_fixture(tmp_path)
+    assert main(["cognition-eval", "--longmemeval-path", ""]) == 2
+    for stem in ("../escape", "a/b", r"a\b", "", ".."):
+        assert main(["cognition-eval", "--suite", "longmemeval", "--longmemeval-path", str(path),
+                     "--output-dir", str(tmp_path / "out"), "--report-stem", stem]) == 2
+    capsys.readouterr()
+
+
+def test_external_only_run_does_not_overwrite_internal_report(tmp_path, capsys) -> None:
+    path = write_longmemeval_fixture(tmp_path)
+    out = tmp_path / "out"
+    assert main(["cognition-eval", "--suite", "longmemeval", "--longmemeval-path", str(path),
+                 "--output-dir", str(out)]) == 0
+    assert sorted(p.name for p in out.iterdir()) == [
+        "external-evaluation-report.md", "external-evaluation-results.json"]
+    capsys.readouterr()

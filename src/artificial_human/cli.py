@@ -119,7 +119,7 @@ def _memory_search(args: argparse.Namespace) -> int:
     for item, result in zip(payload["results"], response.results, strict=True):
         if args.show_content:
             item["content"] = result.memory.content
-    print(json.dumps(payload, indent=2, ensure_ascii=False))
+    _emit(json.dumps(payload, indent=2, ensure_ascii=False))
     return 0
 
 
@@ -130,6 +130,16 @@ def _memory_index(args: argparse.Namespace) -> int:
         print(json.dumps(report.as_dict(), indent=2))
     print(json.dumps(organism.long_term_memory.status(organism.owner_id), indent=2))
     return 0
+
+
+def _positive_int(text: str) -> int:
+    try:
+        value = int(text)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"expected a positive integer, got {text!r}") from error
+    if value < 1:
+        raise argparse.ArgumentTypeError(f"expected a positive integer, got {value}")
+    return value
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -198,12 +208,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Local directory of NEMAR on003838 sub-*_task-memory_beh.tsv files (opt-in)",
     )
     cognition.add_argument(
-        "--external-limit", type=int,
+        "--external-limit", type=_positive_int,
         help="Evaluate only the first N LongMemEval questions (quick checks)",
     )
     cognition.add_argument(
-        "--report-stem", default="cognitive-evaluation",
-        help="File-name stem for written reports (for example external-evaluation)",
+        "--report-stem",
+        help="File-name stem for written reports (default: external-evaluation when only "
+             "external suites run, otherwise cognitive-evaluation)",
     )
     cognition.add_argument("--seed", type=int, default=DEFAULT_SEED)
     cognition.add_argument("--output-dir", help="Write report files here (default: stdout)")
@@ -231,12 +242,26 @@ def _cognition_eval(args: argparse.Namespace) -> int:
         write_reports,
     )
 
+    paths = (("--longmemeval-path", args.longmemeval_path), ("--digit-span-dir", args.digit_span_dir))
+    empty = [flag for flag, value in paths if value is not None and not value.strip()]
+    if empty:
+        print(f"[cognition-eval] invalid arguments: empty path for {', '.join(empty)}",
+              file=sys.stderr)
+        return 2
     available = [name for name, value in (("longmemeval", args.longmemeval_path),
-                                          ("digit-span", args.digit_span_dir)) if value]
+                                          ("digit-span", args.digit_span_dir)) if value is not None]
     try:
-        resolve_suites(args.suite or ["all"], available_external=available)
+        selected = resolve_suites(args.suite or ["all"], available_external=available)
     except ValueError as error:
         print(f"[cognition-eval] invalid arguments: {error}", file=sys.stderr)
+        return 2
+    stem = args.report_stem
+    if stem is None:
+        only_external = all(name in EXTERNAL_COGNITIVE_SUITES for name in selected)
+        stem = "external-evaluation" if only_external else "cognitive-evaluation"
+    elif not stem.strip() or stem in (".", "..") or any(sep in stem for sep in ("/", "\\")):
+        print(f"[cognition-eval] invalid arguments: --report-stem must be a plain file-name "
+              f"stem, not {stem!r}", file=sys.stderr)
         return 2
     provider: EmbeddingProvider | None = None
     if args.embedding_backend == "fastembed":
@@ -260,7 +285,7 @@ def _cognition_eval(args: argparse.Namespace) -> int:
         return 1
     formats = args.format or (["json", "markdown"] if args.output_dir else ["markdown"])
     if args.output_dir:
-        for path in write_reports(report, Path(args.output_dir), formats, args.report_stem):
+        for path in write_reports(report, Path(args.output_dir), formats, stem):
             print(f"[cognition-eval] wrote {path}", file=sys.stderr)
     elif "json" in formats:
         _emit(json.dumps(report, indent=1, ensure_ascii=False))
