@@ -115,7 +115,8 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [ ] Add continual learning with replay, forgetting controls, and catastrophic-forgetting evaluations.
 - [ ] Evaluate model adaptation separately from memory retrieval and prompt conditioning.
 - [ ] Measure factual recall, generalization, decision consistency, calibration, and transfer.
-- [ ] Extend owner-reviewed schema extraction beyond synthetic, explicitly annotated event-type metadata to independently authored held-out workflows and transfer tasks.
+- [x] Add an opt-in local XES event-log adapter for owner-reviewed schema evaluation, with chronological case holdouts, hashed case contexts, explicit attribute allowlists, and aggregate-only reporting.
+- [ ] Run the XES suite on an independently authored event log after verifying the provider's licence/terms; compare against process-mining baselines and add a separate cross-domain transfer task. No held-out run is claimed yet.
 - [ ] Maintain a benchmark suite that catches regressions across cognitive functions. (A baseline suite exists via `cognition-eval`; automatic regression thresholds are not yet enforced in CI.)
 - [ ] Add multimodal perception and grounded prediction as separately evaluated capabilities.
 
