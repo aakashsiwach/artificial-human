@@ -88,6 +88,9 @@ Full details, configuration, limitations and the comparison with biological memo
 ```bash
 artificial-human cognition-eval --suite all --output-dir docs/benchmarks
 artificial-human cognition-eval --suite working-memory --format json
+# after obtaining an XES dataset and checking its licence/terms:
+artificial-human cognition-eval --suite schema-event-log \\
+  --schema-event-log-path external-data/workflow.xes.gz --schema-event-log-max-cases 500
 ```
 
 Selected measured findings:
@@ -99,12 +102,12 @@ Selected measured findings:
 
 These are software benchmarks on synthetic data, not measures of human cognition or biological fidelity. See the [cognitive evaluation report](docs/benchmarks/cognitive-evaluation-report.md) and the [research record](docs/COGNITIVE_EVALUATION.md).
 
-**Independent evaluation (opt-in, local data only).** Two independently authored datasets can be evaluated with `--longmemeval-path` and `--digit-span-dir`. Nothing is downloaded automatically, and raw data are never committed; see [EXTERNAL_DATASETS.md](docs/benchmarks/EXTERNAL_DATASETS.md).
+**Independent evaluation (opt-in, local data only).** LongMemEval Oracle and NEMAR digit-span can be evaluated with `--longmemeval-path` and `--digit-span-dir`. A generic XES event-log adapter adds a chronological case-holdout probe for independently sourced workflows using `--schema-event-log-path`. Nothing is downloaded automatically, and raw data are never committed; see [EXTERNAL_DATASETS.md](docs/benchmarks/EXTERNAL_DATASETS.md).
 
 - **LongMemEval Oracle** (MIT, 500 held-out questions): turn-level evidence recall@10 is 0.862 lexical and 0.882 hybrid + temporal. Semantic-only is worse than lexical on this data (MRR 0.619 vs 0.685), unlike on the project's synthetic benchmark.
 - **NEMAR digit span** (CC0, 86 participants): humans show strong primacy in serial recall; on the same sequences the software workspace shows pure recency.
 
-See the [external evaluation report](docs/benchmarks/external-evaluation-report.md). The project is still in Stage 1: attention and prediction have no external evaluation data yet.
+See the [external evaluation report](docs/benchmarks/external-evaluation-report.md). The XES schema suite reports recurrence and shuffled-order controls, not schema precision: a typical event log supplies no gold schema labels. The BPI Challenge 2013 incidents log is documented as a real-life Volvo IT log in XES, but its licence must be verified from the provider before use. Attention and prediction still lack suitable independent evaluation data.
 
 **Important:** the attention and novelty calculations are transparent engineering heuristics. Language perception is currently text-only. This milestone does not implement spiking neurons, realistic neural networks, emotion, homeostatic drives, reinforcement learning, or the full range of human cognitive abilities.
 
@@ -327,7 +330,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Project status
 
-The project has an executable organism foundation, an integrated neuroscience-informed cognitive cycle, a first in-memory prenatal developmental-substrate prototype, semantic/hybrid/temporal long-term memory, and reproducible cognitive evaluations. The evaluation still lacks externally authored data. The next work is to develop associative memory and memory dynamics before expanding into multimodal perception, affect/homeostasis, action selection, and neural/neuromorphic experiments. It is not yet a complete artificial human, a biologically faithful brain simulation, an autonomous self-repair system, or artificial consciousness. See the [research charter](docs/RESEARCH_CHARTER.md) and [roadmap](docs/ROADMAP.md) for the scientific principles and implementation sequence.
+The project has an executable organism foundation, an integrated neuroscience-informed cognitive cycle, a first in-memory prenatal developmental-substrate prototype, semantic/hybrid/temporal long-term memory, and reproducible cognitive evaluations. Long-term recall and digit-span evaluation use independently authored datasets; the new XES schema evaluator is opt-in and awaits a licence-verified event-log run. The next work is to develop associative memory and memory dynamics before expanding into multimodal perception, affect/homeostasis, action selection, and neural/neuromorphic experiments. It is not yet a complete artificial human, a biologically faithful brain simulation, an autonomous self-repair system, or artificial consciousness. See the [research charter](docs/RESEARCH_CHARTER.md) and [roadmap](docs/ROADMAP.md) for the scientific principles and implementation sequence.
 
 ## License
 
