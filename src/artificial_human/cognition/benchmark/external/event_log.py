@@ -7,13 +7,14 @@ allowlisted by the operator.
 from __future__ import annotations
 
 import gzip
+import hashlib
 import re
 import unicodedata
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, BinaryIO
+from typing import BinaryIO
 
 from artificial_human.cognition.benchmark.external import ExternalDatasetError, sha256_file
 
@@ -21,10 +22,10 @@ from artificial_human.cognition.benchmark.external import ExternalDatasetError, 
 MAX_FILE_BYTES = 100 * 1024 * 1024
 MAX_CASES = 20_000
 MAX_EVENTS = 250_000
-MAX_EVENTS_PER_CASE = 2_000
+MAX_EVENTS_PER_CASE = 128
 _SENSITIVE_PARTS = frozenset({
     "account", "address", "auth", "card", "cookie", "cvv", "email", "ip",
-    "name", "password", "phone", "secret", "session", "ssn", "token", "user",
+    "name", "operator", "patient", "password", "phone", "resource", "secret", "session", "ssn", "token", "user",
 })
 
 
@@ -67,12 +68,12 @@ def _activity_slug(label: str, seen: dict[str, str]) -> str:
     if not slug[0].isalpha():
         slug = "event." + slug
     if len(slug) > 64:
-        slug = slug[:54].rstrip(".") + "." + __import__("hashlib").sha256(
+        slug = slug[:54].rstrip(".") + "." + hashlib.sha256(
             label.encode("utf-8")
         ).hexdigest()[:8]
     prior = seen.get(slug)
     if prior is not None and prior != label:
-        suffix = __import__("hashlib").sha256(label.encode("utf-8")).hexdigest()[:8]
+        suffix = hashlib.sha256(label.encode("utf-8")).hexdigest()[:8]
         slug = slug[:55].rstrip(".") + "." + suffix
     seen[slug] = label
     return slug
@@ -154,6 +155,7 @@ def load_xes(path: Path, *, attribute_keys: tuple[str, ...] = ()) -> EventLogDat
             raise ExternalDatasetError("Selected XES attribute keys must normalize uniquely")
         selected[key] = safe
 
+    dataset_digest = sha256_file(path)
     cases: list[EventLogCase] = []
     case_digests: set[str] = set()
     seen_activities: dict[str, str] = {}
@@ -178,9 +180,10 @@ def load_xes(path: Path, *, attribute_keys: tuple[str, ...] = ()) -> EventLogDat
                 case_id = case_value[1]
                 if not case_id:
                     raise ExternalDatasetError("XES case identifiers cannot be empty")
-                import hashlib
-
-                case_digest = hashlib.sha256(case_id.encode("utf-8")).hexdigest()[:24]
+                # Salt the case digest with the file fingerprint to prevent cross-dataset linkage.
+                case_digest = hashlib.sha256(
+                    (dataset_digest + ":" + case_id).encode("utf-8")
+                ).hexdigest()[:24]
                 if case_digest in case_digests:
                     raise ExternalDatasetError("XES trace case identifiers must be unique")
                 case_digests.add(case_digest)
@@ -240,5 +243,5 @@ def load_xes(path: Path, *, attribute_keys: tuple[str, ...] = ()) -> EventLogDat
         cases=tuple(cases),
         event_count=event_count,
         activity_count=len(seen_activities),
-        sha256=sha256_file(path),
+        sha256=dataset_digest,
     )
