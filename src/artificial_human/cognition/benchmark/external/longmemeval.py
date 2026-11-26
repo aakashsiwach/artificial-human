@@ -142,6 +142,8 @@ def _validate(raw: Any, index: int) -> Question:
 
 def load_longmemeval(path: Path, *, limit: int | None = None) -> tuple[list[Question], dict[str, Any]]:
     """Load and validate the local Oracle file. Never downloads anything."""
+    if limit is not None and limit < 1:
+        raise ExternalDatasetError(f"limit must be a positive number of questions, not {limit}")
     if not path.is_file():
         raise ExternalDatasetError(
             f"LongMemEval file not found: {path}. Download it manually "
@@ -252,7 +254,10 @@ def evaluate_question(
             )
             ranked = [item.memory.id for item in response.results]
             leaks = sum(item.memory.owner_id != owner for item in response.results)
-            sessions_ranked = list(dict.fromkeys(turn_info[key][0] for key in ranked))
+            # Foreign-owner ids are not in turn_info; skip them here so the leak is
+            # counted and reported by the isolation check instead of raising KeyError.
+            sessions_ranked = list(dict.fromkeys(
+                turn_info[key][0] for key in ranked if key in turn_info))
             scores: dict[str, Any] = {"returned": len(ranked), "owner_leaks": leaks}
             if evidence_turns and not question.abstention:
                 relevant = {key: 1 for key in evidence_turns}
