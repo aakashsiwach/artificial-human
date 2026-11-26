@@ -2,7 +2,7 @@
 
 This document describes what the long-term memory subsystem actually implements, how to configure and evaluate it, and how far it is from biological human memory. The implementation lives in `src/artificial_human/memory/`. Design decisions are recorded in [ADR 0001](adr/0001-semantic-hybrid-temporal-memory.md).
 
-**Scope note.** Everything here is an explicit computational abstraction: SQLite records, pretrained text embeddings, ranking formulas and rules. None of it simulates neurons, synapses or hippocampal circuitry. Biological references below explain *why* a function is worth modelling, not a claim that the code reproduces the biology.
+**Scope note.** This document records the current/legacy long-term-memory implementation: SQLite records, pretrained text embeddings, ranking formulas and rules. None of it simulates neurons, synapses or hippocampal circuitry. The new project target is a database-free, in-memory cognitive memory architecture integrated with the neural substrate. The SQLite implementation must be migrated or isolated from the active organism runtime under issue #30; do not extend database dependence as a new brain feature.
 
 ## 1. Components
 

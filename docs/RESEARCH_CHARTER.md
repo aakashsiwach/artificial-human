@@ -139,7 +139,7 @@ The following is the research map for the artificial mind. It is not a claim tha
 
 ## 4. Current implementation baseline on main
 
-As of 2026-11-24, the following project foundations are merged.
+As of the current main baseline (commit 0d26b235be55d347a60435823c27762defc83eca, 2026-11-26), the following foundations are merged. This section records the implementation, not completion of the new runtime target.
 
 ### Cognitive-cycle foundation
 
@@ -230,7 +230,7 @@ As of 2026-11-24, the following project foundations are merged.
 - Supersession and contradiction links; changed facts preserve their history and source.
 - Inferred facts cannot silently replace asserted facts.
 - Retrieval explanations and filters, owner isolation, memory deletion, and embedding deletion on consent revocation.
-- Versioned transactional SQLite migrations.
+- Versioned transactional SQLite migrations in the legacy memory subsystem; this database implementation is not part of the target RAM-only organism runtime.
 - Synthetic memory-retrieval benchmark and offline CI benchmark.
 
 ### Evaluation foundation
@@ -251,7 +251,7 @@ The repository also contains identity, consent, learning-review, event-bus, circ
 - Memory has no retrieval-dependent strengthening, biological forgetting, interference model, contiguity-based recall, or gradual hippocampal-cortical consolidation.
 - Temporal intent is based on English rules and may fail on unusual wording or other languages.
 - There is no affective appraisal, interoceptive body model, homeostatic drive system, or reinforcement-based action selection.
-- There is no spiking neural substrate or neuromorphic hardware integration.
+- There is no individual-neuron/spiking neural substrate, no runtime synaptic plasticity in `cognition/dynamics.py`, and no neuromorphic hardware integration. The seven-population/ten-projection rate model is an abstract prototype.
 - The benchmarks are small, synthetic, English-only, and authored within the project. They are regression tools, not evidence of human-like cognition. Independently authored data now cover long-term recall (LongMemEval Oracle) and a human digit-span reference, but not attention or prediction.
 - Measured baseline weaknesses (see the cognitive evaluation report): salient distractors defeat the attention formula; per-source normalisation lets weak learning examples take attention slots; working-memory forgetting is decay-driven, recency-only and content-agnostic; lexical novelty treats contradictions and script violations as familiar; retrieval ignores the conversational context held in working memory.
 - The system is not a complete artificial human, a biologically faithful brain simulation, or evidence of consciousness.
@@ -317,77 +317,53 @@ Reject technologies that add complexity without measurable value.
 
 ## 7. Delivery sequence and immediate priorities
 
-The roadmap is maintained in [ROADMAP.md](ROADMAP.md). The following is the active execution order; it is a guide for sequencing, not permission to mark future work complete.
+The active delivery sequence is the code-first living-organism programme in [ROADMAP.md](ROADMAP.md) and parent tracker [GitHub issue #16](https://github.com/aakashsiwach/artificial-human/issues/16). It supersedes the older sequence that placed neural substrate research after further memory and benchmark extensions.
 
-### Stage 0 — foundation already merged
+### Phase 0 — architecture and RAM-only runtime
+- [ ] Align the README, charter, roadmap, brain, blueprint, architecture, memory and safety documents.
+- [ ] Specify and test a database-free runtime boundary. The active organism must not initialise SQLite, SQL, a vector store or an external persistence service.
+- [ ] Keep runtime activity, synaptic state, memory, goals and internal drives in bounded process memory. Restart resets learned state in this first phase.
+- [ ] Keep the legacy SQLite implementation isolated while migration proceeds; do not mislabel `:memory:` SQLite as database-free.
 
-- Organism and subsystem boundaries.
-- Consent-gated persistent memory and explicit observations.
-- Integrated cognitive-cycle foundation.
-- Semantic, hybrid, and temporal long-term memory.
-- Retrieval benchmark, traces, docs, and CI.
+### Phase 1 — neural simulation substrate
+- [ ] Implement a deterministic simulation clock, event scheduler and bounded network state.
+- [ ] Implement inspectable individual neuron dynamics, starting with a justified reduced model.
+- [ ] Implement excitatory/inhibitory synapses, transmission delays and event-driven spike propagation.
+- [ ] Demonstrate a recurrent microcircuit with causal propagation, inhibition, recurrent activity and stable decay.
 
-### Stage 1 — close measurement gaps
+### Phase 2 — learning, regulation, representations and memory
+- [ ] Compare local plasticity rules, including STDP-inspired and rate-based baselines, with bounded weights and reproducible updates.
+- [ ] Add homeostatic regulation and stress/stability evaluation.
+- [ ] Replace keyword-driven population activation with explicit distributed population codes.
+- [ ] Migrate cognitive memory to distinct bounded in-memory mechanisms (working, episodic, semantic, procedural and spatial) with interference, forgetting, provenance and replay.
 
-- Build held-out benchmarks for attention, working-memory retention, prediction, and memory recall.
-- Expand beyond the current small project-authored English memory dataset.
-- Add externally authored or independently reviewed evaluation material with suitable licences.
-- Establish multi-turn tasks for retention, interference, context switching, contradiction handling, calibration, and generalisation.
-- Measure end-to-end latency, resource use, failure recovery, and privacy invariants.
-- *Status:* the synthetic baseline (all five areas, multi-turn retention, interference, context switching and contradiction handling, runtime and peak-memory measurement) is implemented. Independently authored data are now used for long-term recall (LongMemEval Oracle, MIT) and as a human working-memory reference (NEMAR on003838 digit span, CC0); see [EXTERNAL_DATASETS.md](benchmarks/EXTERNAL_DATASETS.md). Novelty-score calibration and generalisation tests exist. Still open: external material for attention and prediction, calibration of other scores, cross-language and cross-domain generalisation, and failure-recovery measures. Stage 1 is therefore **not complete**.
+### Phase 3 — sensory grounding and predictive world state
+- [ ] Add explicit permission-scoped sensory event encoders for vision, audition, touch, vestibular/proprioceptive and interoceptive channels.
+- [ ] Add uncertainty-aware temporal and multisensory state estimation.
+- [ ] Implement a world-state model that predicts simulated outcomes and learns from measured prediction error.
 
-### Stage 2 — associative memory and memory dynamics
+### Phase 4 — connected circuits and embodied action
+- [ ] Connect episodic/context binding and replay to the neural substrate.
+- [ ] Compare simulation-first action-selection and reward-learning mechanisms.
+- [ ] Implement forward prediction and error-based adaptive control.
+- [ ] Create a deterministic simulated body/environment and close the perception-action-feedback loop.
 
-This is the next major cognitive implementation target.
+### Phase 5 — developmental and continuous runtime
+- [ ] Reconcile the isolated prenatal scaffold with the new neural substrate so there is one executable model, not two disconnected prototypes.
+- [ ] Extend development into postnatal experience-dependent maturation, synaptic refinement and forgetting where evidence supports testable hypotheses.
+- [ ] Run bounded neural, memory, predictive and regulatory updates continuously without incoming requests or LLM calls.
 
-- Build explicit associative/relational memory between people, concepts, events, locations, facts, goals, and sources.
-- Investigate hippocampal-inspired pattern completion and pattern separation as competing, measurable computational mechanisms.
-- Add temporal contiguity and context-dependent episodic cueing. (Owner/session-scoped adjacent-event replay is implemented in PR #12; pending merge and CI.)
-- Model retrieval-dependent strengthening, decay, and interference; make parameters inspectable and owner-controlled.
-- Investigate confidence and source credibility without converting repetition or model inference into truth.
-- Implement owner-reviewed replay and consolidation candidates that preserve provenance.
-- Compare consolidation and forgetting mechanisms against the current static memory baseline.
-- Evaluate retention, recall, false memories, source attribution, contradiction resolution, and catastrophic interference.
+### Phase 6 — supervised self-development and integration
+- [ ] Let the organism identify measurable failures and generate candidate code, tests and immutable diffs in an isolated workspace.
+- [ ] Require human approval for source adoption, merge and deployment; no silent live self-modification.
+- [ ] Integrate neural, cognitive, body and environment systems through typed interfaces; prove core operation with the LLM disabled.
 
-### Stage 3 — multimodal perception and grounding
+### Phase 7 — evaluation and completion
+- [ ] Evaluate neural dynamics, learning, memory, sensory integration, prediction, action, development, resource use and recovery against explicit baselines.
+- [ ] Use deterministic CI for core mechanisms. External datasets remain optional, local-only, licence-reviewed and secondary to the neural implementation.
+- [ ] Verify the project-level completion checklist in issue #40; keep issue #16 open until all required evidence exists.
 
-- Introduce explicit, permission-scoped vision and audio input before ambient sensing.
-- Build modality-specific perceptual encoders and timestamped percepts.
-- Research uncertainty-aware multisensory fusion, temporal synchrony, and causal binding.
-- Add spatial and environmental state representations.
-- Connect perception to prediction and memory, and test grounding through controlled tasks.
-- Keep all devices and environment access disabled by default until separate security and consent designs exist.
-
-### Stage 4 — affect, interoception, homeostasis, and motivation
-
-- Research distributed affective appraisal, valuation, interoception, and autonomic regulation.
-- Introduce bounded, explicit internal-state variables with clear semantics.
-- Model competing needs and priorities without claiming subjective feelings.
-- Evaluate how internal state changes attention, memory encoding, planning, and decision behaviour.
-- Prevent inferred emotion from being stored as fact about a user.
-
-### Stage 5 — action selection and adaptive learning
-
-- Compare model-based and model-free reinforcement learning, hierarchical policies, and habit learning.
-- Investigate basal-ganglia-inspired action selection and reward-prediction signals as computational hypotheses.
-- Introduce actions first in deterministic simulations and sandboxed tasks.
-- Evaluate reward hacking, exploration, uncertainty, recovery, transfer, and long-horizon consistency.
-- Maintain independent safety constraints and human approval for consequential external actions.
-
-### Stage 6 — neural and neuromorphic research track
-
-- Compare conventional deep networks, recurrent/state-space models, local plasticity models, and spiking neural networks.
-- Build small controlled tasks that reveal whether timing, spikes, recurrence, or local learning provide useful capabilities.
-- Study available brain atlases, cell-type data, circuit reconstructions, and open modelling infrastructure.
-- Prototype hardware only after an evaluated software workload exists.
-- Treat organoid or biohybrid computing as a separate, ethically governed research area, not a routine implementation dependency.
-
-### Stage 7 — integrated adaptive artificial mind
-
-- Integrate perception, memory, attention, prediction, appraisal, motivation, action, and learning into closed-loop tasks.
-- Measure generalisation, robustness, calibration, long-term adaptation, transfer, and resource efficiency.
-- Compare multiple cognitive architectures, including predictive-processing, global-workspace, symbolic, neural, and hybrid designs.
-- Maintain an explicit research track for consciousness theories; do not claim consciousness from functional integration or conversational behaviour.
+The existing cognitive benchmarks remain useful regression tools, but they do not outrank implementation of the neural substrate. Do not add peripheral datasets, dashboards, APIs, storage backends or agent frameworks ahead of these phases.
 
 ## 8. Research protocol and definition of done
 

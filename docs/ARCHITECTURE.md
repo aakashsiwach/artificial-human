@@ -1,82 +1,81 @@
-# Architecture
+# Architecture — code-first living organism
 
-## Runtime
+## Project target
 
-The [Research Charter](RESEARCH_CHARTER.md) defines the project north star, scientific method, technology-selection criteria, staged roadmap, and context-recovery process. It is the required starting point for substantial architecture changes.
+Artificial Human is being developed as a continuously advancing computational organism. Its brain is executable source-defined code with explicit state transitions and bounded RAM state. It is not an LLM wrapped around a database.
 
-The project is a Python 3.12+ modular monolith with a local SQLite store and a loopback-only FastAPI interface. Modules communicate through explicit calls and a small synchronous event bus. The human brain is the research reference; software modules are transparent computational approximations, not literal biological organs.
+The [Research Charter](RESEARCH_CHARTER.md) defines evidence standards; the [Roadmap](ROADMAP.md) defines ordered delivery; parent issue [#16](https://github.com/aakashsiwach/artificial-human/issues/16) tracks completion.
 
-## Cognitive module boundaries
+## Current baseline — honest status
 
-- **cognition.perception:** normalize explicit language input and attach source/time provenance.
-- **cognition.attention:** select a limited set of candidate memories and approved demonstrations.
-- **cognition.working_memory:** maintain a bounded volatile workspace, salience decay, and reactivation counts.
-- **cognition.prediction:** compute a lexical novelty / overlap signal against active workspace context.
-- **cognition.executive:** decompose a goal into inspectable steps with an approval boundary.
-- **cognition.architecture:** orchestrate the cognitive cycle and create an inspectable trace.
-- **brain.service:** pass selected context to a configurable language model and return its answer with the cognitive trace.
-- **cognition.benchmark:** reproducible evaluation of the subsystems above (seeded synthetic datasets → execution against the real classes → shared metrics → JSON/Markdown reports). It reuses `memory.benchmark` for long-term recall, makes no network calls by default, and never writes to the organism's database. CLI: `artificial-human cognition-eval`.
+The merged repository is a Python modular monolith with FastAPI, a cognitive software pipeline and a legacy SQLite memory subsystem.
 
-The model is one component of the cognitive architecture; it does not replace the surrounding systems.
+- Normal local `ArtificialOrganism` construction defaults to file-backed SQLite.
+- Public/volatile mode uses SQLite `:memory:`; this is process-local but remains a database.
+- `cognition/dynamics.py` has seven abstract populations and ten fixed projections, performs bounded rate updates, and does not model individual neurons, spike timing, synaptic delays or runtime plasticity.
+- The API lifespan runs a low-amplitude idle activity approximation once per second while the process is awake. It is not a complete simulation clock or evidence of biological resting-state activity.
+- The prenatal scaffold is a separate experimental abstraction and is not integrated with runtime dynamics.
+- Perception is explicit text; the current world model, sensory body and simulated action loop do not exist.
+- The cognitive cycle has attention, working memory, memory retrieval, lexical novelty, deterministic planning and an optional LLM language interface. Several mechanisms are heuristics or database-backed software.
 
-## Integrated cognitive data flow
+The current implementation is **not yet database-free**. Phase 0 issue #18 must establish and test that boundary before active runtime migration.
 
-1. The perception system converts explicitly supplied language into a `Percept`.
-2. Memory retrieval runs `HybridMemorySearch` for the requesting owner over memories whose `personal_memory` consent remains active. Lexical, semantic and temporal channels are fused by Reciprocal Rank Fusion. Twice the memory budget is returned so attention can choose among them, and each candidate carries its channels and explanation.
-3. The learning system returns only owner-approved demonstrations under active `personal_learning` consent.
-4. The attention system ranks candidate references and selects a bounded set.
-5. The working-memory system activates selected content in a capacity-limited workspace. No session ID means request-scoped memory; a supplied session ID uses a bounded, owner-scoped process-memory session.
-6. The prediction system estimates lexical novelty relative to previous workspace context. This signal prompts assumption-checking; it is not a truth score.
-7. Executive control creates a goal plan and marks steps that need approval.
-8. The language model receives the current percept, selected evidence, bounded working-memory context, prediction signal, and executive plan.
-9. The response includes an evidence list and cognitive trace. Hidden chain-of-thought is not exposed.
-10. The owner can clear a volatile session. Process restart also clears all volatile sessions.
+## Target runtime layers
 
-## Remaining organism modules
+1. **Simulation kernel:** deterministic simulation time, scheduler, event ordering, pause/resume/reset, bounded work and inspectable snapshots.
+2. **Neural substrate:** neuron models, membrane state, excitatory/inhibitory synapses, delays, recurrent connectivity, spike propagation and local plasticity.
+3. **Network/circuit models:** distributed population coding, recurrent microcircuits, context/episodic binding, predictive/error-correction and action-selection mechanisms. These are computational hypotheses, not anatomical replicas.
+4. **Cognitive processes:** perception, attention, working memory, episodic/semantic/procedural/spatial memory, prediction, appraisal, homeostasis, motivation, planning and learning.
+5. **Body and environment:** explicit sensory events, internal state, simulated body/action space, environmental transitions, feedback and outcome evaluation.
+6. **Organism lifecycle:** continuous ticks, developmental time, resource governance, stability monitoring, bounded scheduling, snapshots and shutdown.
+7. **Optional language interface:** replaceable LLM adapter. Core neural, memory, learning and simulated action mechanisms must work when it is disabled.
+8. **Supervised self-development:** isolated code/test proposals and immutable diffs, with human approval before source adoption or deployment.
 
-## Target cognitive architecture
+## Runtime state and persistence contract
 
-The current runtime is a text-driven cycle. The long-term target is a closed-loop system that connects sensory and interoceptive input, perceptual state estimation, associative memory, attention, predictive world modelling, affective appraisal, homeostatic state, goal/action selection, environment feedback, learning, and consolidation. Language models remain replaceable components inside the architecture, not the architecture itself.
+During this programme:
+- Source code defines architecture, stable identity, initial parameters, model rules and reviewed foundational knowledge.
+- Live neural state, synaptic weights, activity traces, memory representations, goals and internal drives are bounded in-process data structures.
+- There is no active SQL/SQLite, database, external vector store, remote persistence service or disk-backed runtime state.
+- Restart resets experience and learned parameters. Durable updates may later be exported as reviewed source artefacts; automatic persistence is not part of this phase.
+- State ownership, bounds, forgetting/eviction, concurrency, snapshot and reset semantics are explicit.
+- Legacy SQLite code stays isolated until migration and compatibility tests prove it can be retired. SQLite `:memory:` does not satisfy the no-database requirement.
 
-These are research directions, not implemented runtime modules. Every future component must have a defined hypothesis, input/output contract, measurable task, baseline, ablation, limitations, privacy scope, and safety boundary. See [Research Charter](RESEARCH_CHARTER.md).
+## Information flow
 
-- **identity:** owner-authored profile and boundaries.
-- **memory:** SQLite repository enforcing active consent and source provenance, with versioned migrations.
-- **memory.temporal / memory.search / memory.index / memory.embeddings:** temporal model and intent rules, hybrid search with explanations, consent-aware vector indexing, and replaceable embedding backends (local by default; see [ADR 0001](adr/0001-semantic-hybrid-temporal-memory.md)).
-- **memory.benchmark:** synthetic dataset, IR metrics and the reproducible evaluation runner.
-- **sensory:** manual observations only; no ambient device access.
-- **nervous system:** in-process event dispatch.
-- **circulation:** bounded priority queue for internal work.
-- **metabolism:** declared per-run operation, token, and elapsed-time budgets.
-- **immune:** health-signal thresholds and incident generation.
-- **regeneration:** repair proposals with approval state; no shell or code execution.
-- **sleep:** consolidation review proposals; no automatic rewriting or forgetting.
+```text
+explicit sensory/event input
+    -> modality encoder and uncertainty
+    -> neural activity and recurrent circuit processing
+    -> attention / working state / memory association
+    -> world-state prediction and internal appraisal
+    -> bounded goal and action selection
+    -> simulated body and environment
+    -> observed outcome and prediction error
+    -> local plasticity, memory update and consolidation
+```
 
-## Storage and privacy
+The LLM may assist language comprehension/generation at an adapter boundary. It must not replace neural dynamics, learn synaptic parameters, bypass executive/safety policy, or be required for the organism to advance its internal state.
 
-SQLite is the persistent store. Memory rows retain owner ID, type, content, source, consent grant, recorded time, metadata, and (schema v2) optional event time, validity interval, fact key, epistemic status and correction time. Revoking consent blocks future writes, excludes those records from normal retrieval, and deletes their embeddings. Explicit deletion endpoints support removal.
+## Scientific and engineering requirements
 
-Schema v2 tables:
+Every major mechanism must specify empirical motivation, competing explanations, computational hypothesis, abstraction level, omitted biology, typed interface, baseline, ablation, task, failure cases, resource limits and safety boundary.
 
-- `memory_links` — `supersedes` and `contradicts` relations between an owner's memories, with effective time and note.
-- `memory_embeddings` — one vector per memory and embedding space: model id, version, dimensions, content hash, float32 vector. Deleted with the memory, on consent revocation, or when the model changes and the index is rebuilt.
-- `memory_index_failures` — memory id, space and error class only. Never content.
+Brain-region names are research pointers, not module design instructions. A module is not a hippocampus, cortex or basal ganglia simply because it has that name.
 
-Migrations are tracked with `PRAGMA user_version`, run in per-version transactions, and never modify existing rows. Semantic indexing is a derived, rebuildable layer. The memory record is always written first and remains the source of truth.
+## Existing modules and migration
 
-Working memory is separate from persistent memory. Optional working-memory sessions live in process memory, are bounded, owner-scoped, and explicitly clearable. They are never implicitly copied to SQLite.
+- `cognition/dynamics.py`: legacy abstract rate-based population experiment. Replace or adapt only after the neuron/synapse kernel demonstrates equivalent or improved behaviours.
+- `development/prenatal.py`: separate seven-population/ten-projection scaffold. It must ultimately share the neural substrate rather than remain a competing engine.
+- `memory/*`: current SQLite repository, hybrid retrieval, temporal fields and consent-aware index. This is legacy infrastructure to migrate or isolate; do not expand its database dependence.
+- `cognition/*`: existing attention, working memory, prediction and executive software are useful baselines, not proof of neural implementation.
+- `brain/*`: optional language and planning adapters. The core organism must work without a configured provider.
+- `circulation/*`, `metabolism/*`, `immune/*`, `regeneration/*`, `sleep/*`: bounded software infrastructure, not literal organs.
 
-## API
+## API and tools
 
-- `POST /brain/respond` runs the cognitive cycle and generation.
-- `GET /brain/cognition/status` reports the active cognitive subsystem implementations.
-- `DELETE /brain/sessions/{session_id}` clears volatile working memory.
-- `GET /brain/status` reports model-provider configuration.
-- `POST /memories/search`, `GET /memories/timeline`, `GET|PATCH /memories/{id}`, `POST /memories/{id}/supersede`, `POST /memories/{id}/contradictions`, `GET /memories/index/status` and `POST /memories/index/rebuild` expose long-term memory search, temporal recall, versioning and indexing (see [MEMORY.md](MEMORY.md#8-api-and-cli)).
-- Existing identity, consent, memory, learning, immune, regeneration, and sleep endpoints remain available. Existing memory responses gain fields only.
+CLI and API are control surfaces over one organism runtime; they must not create independent brains or own simulation state. The kernel is testable without either interface. The API remains loopback-only until authentication, authorisation, TLS, abuse controls and audit logging are implemented.
 
-The API is unauthenticated in this milestone and must remain loopback-only. Do not expose it to a LAN, reverse proxy, or public internet until authentication, authorization, TLS, abuse controls, and audit logging are implemented.
+## Self-development boundary
 
-## Extension points
-
-Embedding backends already implement the narrow `EmbeddingProvider` interface (`describe`, `embed_documents`, `embed_query`) and declare their locality. Future research adapters should implement similar interfaces for approximate-nearest-neighbour indexing, multimodal sensory processing, affective appraisal, homeostatic drives, action selection, reinforcement learning, relational/associative memory, neural or spiking-network experiments, host telemetry, test runners, and isolated repair workspaces. Each connector must declare data scopes, network destinations, retention, approval requirements, hypotheses, and evaluation measures.
+The organism may identify a measured failure and prepare a candidate patch/test package in an isolated workspace. It cannot directly edit the running process, overwrite protected source, execute unrestricted commands, access secrets, grant permissions, merge or deploy. Candidate diffs, test evidence, resource use, expiry and rollback information require human review.

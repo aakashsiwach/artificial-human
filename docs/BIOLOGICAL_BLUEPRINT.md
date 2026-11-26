@@ -4,11 +4,15 @@
 
 The [Research Charter](RESEARCH_CHARTER.md) is the authoritative project north star and contains the expanded neuroscience research map, evidence standards, technology-selection strategy, staged implementation sequence, bibliography, and context-recovery prompt. This blueprint is the compact biological-to-computational map; it must remain consistent with the charter and the actual implementation.
 
-The human brain is the scientific reference for the artificial mind. We should study biological mechanisms and cognitive theories, translate selected functions into explicit computational models, and evaluate those models. A biological label must never be used to imply that ordinary software is a real organ or that an implementation reproduces the biology.
+The human brain is the scientific reference for the artificial mind. We study biological mechanisms and cognitive theories, translate selected functions into explicit computational models, and evaluate those models. A biological label must never imply that ordinary software is a real organ or that code reproduces the biology.
+
+**Living-code target:** build a source-defined organism whose simulation, neural mechanisms, memory and adaptation execute continuously with bounded RAM state. The LLM is an optional language adapter, not the brain. No SQL/SQLite, vector database, external memory service or persistent runtime database belongs in the target active runtime. Current merged code does not satisfy this yet: normal local runtime uses file-backed SQLite and public/volatile mode uses SQLite `:memory:`; migration is tracked in issues #18 and #30.
 
 Brain functions are distributed across interacting networks. The table below is a research map, not a one-region/one-module anatomical claim.
 
 ## Cognitive architecture
+
+The target architecture spans linked levels: neuron and synapse; local microcircuit; distributed network; cognitive process; organism/body; and environment/behaviour. Interfaces should allow state and signals to flow between levels without forcing a one-region/one-class mapping.
 
 ## Levels of analysis and technology strategy
 
@@ -116,3 +120,16 @@ This is a target architecture, not a claim that these modules are implemented. E
 For each proposed subsystem, document the biological evidence, the baseline measured by `cognition-eval`, the computational hypothesis, the abstraction level, measurable predictions, test datasets, failure modes, and ethical constraints. Prefer small falsifiable models over decorative brain-region labels. Compare alternatives and record when the biological evidence is unsettled.
 
 The project does not claim current AI is conscious, a literal human, or equivalent to a human brain.
+
+
+## Living-organism implementation order
+
+1. Establish a RAM-only runtime contract and isolate the legacy SQLite adapter.
+2. Implement deterministic simulation time, neurons, excitatory/inhibitory synapses, delays and event-driven spikes.
+3. Demonstrate a recurrent microcircuit with stable, inspectable activity.
+4. Add bounded local plasticity, homeostatic regulation and distributed representations.
+5. Add in-memory cognitive memory, sensory encoders, state estimation and predictive world modelling.
+6. Connect simulated body/environment, action selection and outcome-driven learning.
+7. Unify development and continuous runtime; then add reviewed self-development proposals.
+
+The [Roadmap](ROADMAP.md) links each work package to a dedicated issue. Current software and the prenatal scaffold remain separate approximations until a unified neural substrate is proven.
