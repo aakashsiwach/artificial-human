@@ -113,3 +113,15 @@ def digit_span_suite(directory: Path, seed: int) -> SuiteResult:
         outcome["note"],
     ]
     return result
+
+
+def schema_event_log_suite(
+    path: Path, seed: int, attribute_keys: tuple[str, ...], max_cases: int,
+) -> SuiteResult:
+    from artificial_human.cognition.benchmark.external.schema_event_log import (
+        run_schema_event_log_suite,
+    )
+
+    return run_schema_event_log_suite(
+        path, seed=seed, attribute_keys=attribute_keys, max_cases=max_cases,
+    )
