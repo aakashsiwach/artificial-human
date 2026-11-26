@@ -19,6 +19,7 @@ Rules that apply to every external dataset:
 | LongMemEval `_s` / `_m` and `custom_history` | Rejected | Filler sessions from ShareGPT/UltraChat (real user conversations); far larger than needed |
 | NEMAR on003838, Digit Span (behavioural files only) | **Adopted as a human behavioural reference** (opt-in suite `digit-span`) | CC0; documented trial-level serial-recall data |
 | NEMAR on004574, Cross-modal Oddball | Research candidate, not adopted | Undocumented behavioural columns; mostly clinical population; task not comparable to text novelty |
+| BPI Challenge 2013 incidents (XES) | Research candidate, not adopted | Official challenge page describes a real-life Volvo IT log and identifies the XES file/DOI, but that page does not state a licence; do not use until provider terms are verified |
 | LoCoMo (Maharana et al., 2024) | Rejected (earlier review) | Reported CC BY-NC 4.0, which is incompatible with Apache-2.0 redistribution; licence not verified at source |
 | STS Benchmark (Cer et al., 2017) | Rejected (earlier review) | Mixed per-source licences, some requiring provider agreements |
 
@@ -126,7 +127,43 @@ artificial-human cognition-eval --suite digit-span \
 
 ---
 
-## 4. Earlier rejections (recorded in COGNITIVE_EVALUATION.md)
+## 4. BPI Challenge 2013 — incident-management XES log (candidate; not yet adopted)
+
+| Field | Record |
+| --- | --- |
+| Official name | BPI Challenge 2013 — Incident Management Log |
+| Publisher / provenance | The official challenge page says the event log was prepared from Volvo IT Belgium's VINST incident/problem-management system and describes it as a real-life event log. |
+| Source | [Official BPI Challenge 2013 page](https://ais.win.tue.nl/bpi/2013/challenge.html) · incident-log DOI: [10.4121/500573e6-accc-4b0c-9576-aa5468b10cee](https://doi.org/10.4121/500573e6-accc-4b0c-9576-aa5468b10cee) |
+| Format | The challenge page identifies the incident, open-problem, and closed-problem log files as XES; source CSV is also listed. |
+| Licence and evidence | **Not verified.** The official challenge page identifies the dataset and DOI but does not state a licence. Secondary mirrors describe reuse terms inconsistently. The project therefore does not redistribute, download, or claim this dataset is approved for use. Verify the current provider terms and any organisational/privacy restrictions before running the opt-in adapter. |
+| Status | Research candidate only. No benchmark results from this dataset are claimed. |
+
+### Generic local XES schema-evaluation adapter
+
+The `schema-event-log` suite accepts a local `.xes` or `.xes.gz` file. It does not download data, infer activities from free text, or write approved schemas into persistent memory.
+
+- The XES `concept:name` activity labels are normalized into bounded event-type slugs.
+- Trace/case IDs are salted with the local file SHA-256 and used only as hashed training contexts; they are not reported.
+- Event attributes are excluded by default. Optional attributes require an explicit allowlist, and sensitive/resource-like keys are rejected.
+- Files are capped at 100 MiB, 250,000 events, 20,000 cases, and 128 events per case. The evaluation selects at most 500 cases by default.
+- Cases are ordered by their first event timestamp and split chronologically 80/20. Earlier cases generate proposals; later cases measure recurrence coverage.
+- A shuffled-within-case order is reported as a simple null control. Metrics are case support, coverage, shuffled coverage, coverage lift, and activity-vocabulary overlap.
+- Typical XES logs do not contain gold schema labels. These metrics are **not** schema precision, semantic correctness, or causal understanding. A single dataset does not demonstrate cross-domain transfer.
+- Output contains counts, ratios, split metadata, and the dataset SHA-256 only. External files remain local and must be covered by a separately verified data licence/terms review.
+
+After obtaining a dataset and reviewing its terms:
+
+```bash
+artificial-human cognition-eval --suite schema-event-log \
+  --schema-event-log-path external-data/workflow.xes.gz \
+  --schema-event-log-max-cases 500 \
+  --report-stem external-schema --output-dir docs/benchmarks
+```
+
+No external file is downloaded automatically and the suite is not run in CI.
+
+---
+## 5. Earlier rejections (recorded in COGNITIVE_EVALUATION.md)
 
 - **LoCoMo** (Maharana et al., ACL 2024): reported as CC BY-NC 4.0 by secondary sources. Non-commercial terms are incompatible with this Apache-2.0 project, and the licence was not verified at source.
 - **STS Benchmark** (Cer et al., 2017): scores are CC BY-SA 4.0, but source texts carry separate licences, some requiring agreements.
@@ -137,6 +174,7 @@ artificial-human cognition-eval --suite digit-span \
 external-data/                      # git-ignored (.gitignore: external-data/)
   longmemeval/longmemeval_oracle.json
   nemar/on003838/beh/sub-*_task-memory_beh.tsv
+  # optional: operator-supplied XES/XES.GZ files (no standard filename enforced)
 ```
 
 Intermediate files are not written. Reports go only where `--output-dir` points, and contain aggregates only.
