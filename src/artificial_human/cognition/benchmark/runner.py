@@ -31,7 +31,7 @@ SUITES: tuple[str, ...] = (
     "sleep-consolidation", "schema-extraction", "integration"
 )
 # Opt-in suites over locally downloaded, independently authored datasets.
-EXTERNAL_SUITES: tuple[str, ...] = ("longmemeval", "digit-span")
+EXTERNAL_SUITES: tuple[str, ...] = ("longmemeval", "digit-span", "schema-event-log")
 SCHEMA_VERSION = "1.6"
 
 
@@ -46,6 +46,7 @@ def _suite_runner(
     from artificial_human.cognition.benchmark.external.suites import (
         digit_span_suite,
         longmemeval_suite,
+        schema_event_log_suite,
     )
 
     options = external or {}
@@ -65,6 +66,11 @@ def _suite_runner(
         "longmemeval": lambda: longmemeval_suite(
             Path(options["longmemeval_path"]), provider, options.get("limit"), notify),
         "digit-span": lambda: digit_span_suite(Path(options["digit_span_dir"]), seed),
+        "schema-event-log": lambda: schema_event_log_suite(
+            Path(options["schema_event_log_path"]), seed,
+            tuple(options.get("schema_event_log_attribute_keys", ())),
+            int(options.get("schema_event_log_max_cases", 500)),
+        ),
     }
     if name not in runners:
         raise ValueError(f"Unknown suite {name!r}; choose from {', '.join(SUITES)} or all")
@@ -85,7 +91,8 @@ def resolve_suites(
         raise ValueError(
             "External suite(s) need a local dataset path: " + ", ".join(
                 "longmemeval (--longmemeval-path)" if name == "longmemeval"
-                else "digit-span (--digit-span-dir)" for name in missing)
+                else "digit-span (--digit-span-dir)" if name == "digit-span"
+                else "schema-event-log (--schema-event-log-path)" for name in missing)
         )
     if not requested or "all" in requested:
         return [*SUITES, *(name for name in EXTERNAL_SUITES if name in available_external)]
@@ -101,6 +108,9 @@ def run_cognitive_evaluation(
     longmemeval_path: str | Path | None = None,
     digit_span_dir: str | Path | None = None,
     external_limit: int | None = None,
+    schema_event_log_path: str | Path | None = None,
+    schema_event_log_attribute_keys: Sequence[str] = (),
+    schema_event_log_max_cases: int = 500,
 ) -> dict[str, Any]:
     notify = progress or (lambda _message: None)
     external: dict[str, Any] = {"progress": notify, "limit": external_limit}
@@ -111,6 +121,11 @@ def run_cognitive_evaluation(
     if digit_span_dir is not None:
         external["digit_span_dir"] = digit_span_dir
         available.append("digit-span")
+    if schema_event_log_path is not None:
+        external["schema_event_log_path"] = schema_event_log_path
+        external["schema_event_log_attribute_keys"] = tuple(schema_event_log_attribute_keys)
+        external["schema_event_log_max_cases"] = schema_event_log_max_cases
+        available.append("schema-event-log")
     selected = resolve_suites(suites, available_external=available)
     model = provider.describe().public() if provider is not None else None
     started = time.perf_counter()
