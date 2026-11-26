@@ -177,7 +177,7 @@ def build_parser() -> argparse.ArgumentParser:
         "cognition-eval",
         help="Evaluate attention, working memory, prediction, memory and the integrated cycle",
         description=(
-            "Runs offline by default. External suites (longmemeval, digit-span) run only when "
+            "Runs offline by default. External suites (longmemeval, digit-span, schema-event-log) run only when "
             "their local data path is given; nothing is ever downloaded. Exit status: 0 = "
             "evaluation completed (whatever the scores), 1 = execution or dataset error, "
             "2 = invalid arguments, 3 = a safety invariant (owner isolation) failed."
