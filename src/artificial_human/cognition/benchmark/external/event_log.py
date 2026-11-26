@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import BinaryIO
+from typing import IO
 
 from artificial_human.cognition.benchmark.external import ExternalDatasetError, sha256_file
 
@@ -129,7 +129,7 @@ def _values(element: ET.Element) -> dict[str, tuple[str, str]]:
     return values
 
 
-def _open_xes(path: Path) -> BinaryIO:
+def _open_xes(path: Path) -> IO[bytes] | gzip.GzipFile:
     try:
         return gzip.open(path, "rb") if path.name.casefold().endswith(".xes.gz") else path.open("rb")
     except OSError as error:
