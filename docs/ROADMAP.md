@@ -115,6 +115,7 @@ Do not skip the evaluation stage merely to add a visually impressive subsystem. 
 - [ ] Add continual learning with replay, forgetting controls, and catastrophic-forgetting evaluations.
 - [ ] Evaluate model adaptation separately from memory retrieval and prompt conditioning.
 - [ ] Measure factual recall, generalization, decision consistency, calibration, and transfer.
+- [ ] Extend owner-reviewed schema extraction beyond synthetic, explicitly annotated event-type metadata to independently authored held-out workflows and transfer tasks.
 - [ ] Maintain a benchmark suite that catches regressions across cognitive functions. (A baseline suite exists via `cognition-eval`; automatic regression thresholds are not yet enforced in CI.)
 - [ ] Add multimodal perception and grounded prediction as separately evaluated capabilities.
 

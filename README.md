@@ -82,6 +82,7 @@ Full details, configuration, limitations and the comparison with biological memo
 - **Associative memory:** source-context isolation, contradiction suppression, and bounded-interference controls.
 - **Episodic replay:** nine four-event sequences, immediate-neighbour recall, a no-replay baseline, and cross-context leakage checks.
 - **Sleep consolidation:** recurring-pattern detection, one-session and contradiction controls, non-mutating preview, and inferred-memory provenance after approval.
+- **Schema extraction:** recurrent owner-annotated event schemas, typed slot induction, constant retention, sensitive-key exclusion, singleton/contradiction controls, and owner-approved provenance.
 - **Integration:** six multi-turn scenarios through the full cognitive cycle.
 
 ```bash
@@ -176,6 +177,38 @@ excluded.
 This is a manually triggered pattern detector and owner-review workflow, not a simulated
 sleep cycle, automatic learning, or proof of biological systems consolidation.
 
+## Owner-reviewed schema extraction
+
+Schema extraction generalizes only **explicitly annotated** episodic records. Each source
+memory must provide an owner-authored `metadata.event_type` slug and may provide an
+`metadata.attributes` object containing primitive values. The extractor does not use an
+LLM or guess event labels from free text.
+
+It searches bounded replay sequences for the same ordered event-type pattern (2–4 steps)
+appearing in at least two distinct owner/session contexts with distinct source-event records.
+It keeps maximal recurring patterns and ignores unannotated, non-episodic, mixed-consent,
+deleted, revoked, or explicitly contradicted source examples.
+
+For each step, attributes present in every example are compared: values that never vary
+remain constants; values that differ become typed slots such as `provider: string` or
+`amount: integer`. Observed values for slot attributes are not copied into the schema.
+Sensitive attribute keys (credentials, contact details, payment identifiers, and similar
+fields) are excluded. The generated schema is a candidate, not an assertion that every
+future workflow follows it.
+
+- `POST /knowledge/schemas/preview` generates owner-reviewable schema candidates without writing a memory.
+- `GET /knowledge/schemas/proposals` lists the current owner's bounded proposal queue.
+- `POST /knowledge/schemas/proposals/{id}/review` accepts an explicit approval or rejection.
+- Approval atomically rechecks source visibility, event types, episodic type, shared active consent,
+  and contradictions before creating a **procedural, inferred** memory containing source-example
+  provenance. Rejection writes nothing.
+- Proposals are process-local and disappear on restart. They are invalidated when a source is
+  corrected, superseded, deleted, contradicted, or its consent is revoked.
+
+This is symbolic schema induction over owner-supplied structured event metadata, not autonomous
+semantic understanding or proof of human-like abstraction. The offline evaluation uses synthetic
+events; real-world generalization and transfer remain open research questions.
+
 ## Runtime population dynamics
 
 Each explicit message now runs a bounded recurrent activity update across seven abstract
@@ -211,6 +244,7 @@ The provider API key must be created by the account owner in GroqCloud. Do not p
 - `GET /brain/status` — inspect model-provider configuration.
 - `DELETE /brain/sessions/{session_id}` — clear a volatile working-memory session.
 - `POST /sleep/preview`, `GET /sleep/proposals`, and `POST /sleep/proposals/{id}/review` — detect and review replay-derived consolidation candidates.
+- `POST /knowledge/schemas/preview`, `GET /knowledge/schemas/proposals`, and `POST /knowledge/schemas/proposals/{id}/review` — induce and review structured event schemas.
 
 Example:
 
@@ -247,7 +281,7 @@ CLI equivalents: `artificial-human memory-search`, `memory-index status|rebuild`
 - Reproducible, offline cognitive evaluation of attention, working memory, prediction/novelty, memory and multi-turn behaviour.
 - Internal event bus, priority queue, and declared resource budgets.
 - Health signal policies and anomaly-to-incident flow.
-- Reviewable repair proposals and owner-approved, provenance-preserving memory consolidation.
+- Reviewable repair proposals, owner-approved memory consolidation, and structured event-schema induction with provenance.
 - FastAPI endpoints, CLI simulation, tests, and GitHub Actions CI.
 
 ## First-run personalisation

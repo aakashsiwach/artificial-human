@@ -264,6 +264,52 @@ implement REM/NREM dynamics, offline replay during biological sleep, autonomous 
 rewriting, or human systems consolidation. The word “sleep” labels the research direction,
 not a claim of biological equivalence.
 
+### Owner-annotated event-schema extraction
+
+The schema extractor reads only episodic memories carrying an explicit owner-authored
+`metadata.event_type` slug. An optional `metadata.attributes` object may contain primitive
+string, integer, finite-number, and boolean values. The extractor deliberately does not
+assign event types from natural-language content or ask a model to invent a workflow label.
+
+It scans bounded replay episodes for ordered event-type sequences of two to four steps.
+A candidate must occur in at least two distinct hashed owner/session contexts and use
+different source-event records in every example. Replaying the exact same source IDs in a
+new session does not count as independent support. If a longer recurring sequence contains
+a shorter pattern with at least the same support, only the maximal sequence is proposed.
+
+For each event step, only attribute keys present in every example are considered:
+- An attribute with the same value in every example remains a **constant**.
+- An attribute with varying values becomes a **typed slot** (string, integer, number,
+  boolean, or mixed). Observed values are not copied into the slot definition.
+- Sensitive keys such as credentials, contact details, payment-card/account fields,
+  and authentication tokens are excluded before generalization.
+
+A `SchemaProposal` stores the event-type pattern, source example sequences, typed
+schema definition, support count, and review status. The queue is owner-scoped, bounded,
+volatile, and idempotent for an unchanged set of source examples. Preview makes no
+persistent memory write. Rejection updates only the proposal state. Approval serializes
+concurrent review requests and asks the repository to atomically revalidate active
+consent, owner-visible episodic source records, unchanged event-type annotations, and
+contradictions before it stores a **procedural/inferred** memory. The record carries the
+schema definition, event sequence, and every source example ID for audit and deletion.
+
+Source correction, supersession, deletion, contradiction creation, consent revocation,
+and owner-wide erasure invalidate dependent proposals. Pending schemas do not survive
+a process restart. An approved schema memory follows ordinary memory consent, export,
+search, and deletion rules.
+
+The `schema-extraction` suite has nine synthetic probes. Each includes three distinct
+examples of a three-step event pattern, varying provider/amount attributes, stable
+currency/region attributes, and sensitive-key controls. It also includes a single-session
+pattern and a repeated but explicitly contradicted pattern. Measures include recurrent
+schema detection, slot induction, constant retention, sensitive-key exclusion, false
+generalization rates, preview-time writes, and source provenance after approval.
+
+This evaluates a deterministic symbolic abstraction mechanism over structured metadata.
+It does not measure generalization from raw language, real-world workflows, causal
+understanding, transfer to unseen domains, or biological semantic-memory/schema learning.
+Those remain open research questions requiring independently authored held-out tasks.
+
 ### Integrated multi-turn scenarios
 
 | Scenario | Question | Notes |

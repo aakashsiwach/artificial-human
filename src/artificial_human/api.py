@@ -19,6 +19,7 @@ from artificial_human.brain.providers.base import (
     ProviderRequestError,
 )
 from artificial_human.brain.service import BrainMode
+from artificial_human.cognition.schema_extraction import SchemaProposal
 from artificial_human.core.models import MemoryKind
 from artificial_human.development.prenatal import GESTATION_DAYS, PrenatalBrain
 from artificial_human.identity.profile import IdentityProfile
@@ -108,6 +109,11 @@ class ReindexRequest(BaseModel):
 
 
 class ConsolidationReviewRequest(BaseModel):
+    decision: Literal["approved", "rejected"]
+    note: str = Field(default="", max_length=2_000)
+
+
+class SchemaReviewRequest(BaseModel):
     decision: Literal["approved", "rejected"]
     note: str = Field(default="", max_length=2_000)
 
@@ -460,6 +466,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         organism_ref = get_organism()
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         organism_ref.sleep.clear_consent(organism_ref.owner_id, consent_id)
+        organism_ref.schema_extraction.clear_consent(organism_ref.owner_id, consent_id)
         return {"revoked": True}
 
     @app.post("/memories", status_code=201)
@@ -616,6 +623,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=str(error)) from error
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
+        organism_ref.schema_extraction.forget_memory(organism_ref.owner_id, memory_id)
         return {**_memory_payload(record), "index": _index_payload(outcome)}
 
     @app.post("/memories/{memory_id}/supersede", status_code=201)
@@ -637,6 +645,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             raise HTTPException(status_code=409, detail=str(error)) from error
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
+        organism_ref.schema_extraction.forget_memory(organism_ref.owner_id, memory_id)
         return {
             "memory": _memory_payload(record),
             "supersedes": memory_id,
@@ -657,6 +666,8 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=str(error)) from error
         organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
         organism_ref.sleep.forget_memory(organism_ref.owner_id, payload.other_memory_id)
+        organism_ref.schema_extraction.forget_memory(organism_ref.owner_id, memory_id)
+        organism_ref.schema_extraction.forget_memory(organism_ref.owner_id, payload.other_memory_id)
         return _link_payload(link)
 
     @app.delete("/memories/{memory_id}")
@@ -667,6 +678,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         organism_ref = get_organism()
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
+        organism_ref.schema_extraction.forget_memory(organism_ref.owner_id, memory_id)
         return {"deleted": True}
 
     @app.delete("/memories")
@@ -677,6 +689,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             organism_ref.owner_id
         )
         organism_ref.sleep.clear_owner(organism_ref.owner_id)
+        organism_ref.schema_extraction.clear_owner(organism_ref.owner_id)
         return {"deleted": count, "sessions_cleared": sessions_cleared}
 
     @app.post("/training/examples", status_code=201)
@@ -822,6 +835,140 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
                 {"id": step.id, "description": step.description, "requires_approval": step.requires_approval}
                 for step in plan.steps
             ],
+        }
+
+    @app.post("/knowledge/schemas/preview")
+    def preview_knowledge_schemas() -> dict[str, Any]:
+        organism_ref = get_organism()
+        proposals = organism_ref.schema_extraction.prepare_from_episodes(
+            owner_id=organism_ref.owner_id,
+            context_prefix=organism_ref.cognitive_brain.episodic_context_prefix(
+                organism_ref.owner_id
+            ),
+            episodic_memory=organism_ref.cognitive_brain.architecture.episodic_memory,
+            repository=organism_ref.memory,
+        )
+        return {
+            "proposals": [
+                {
+                    "id": item.id,
+                    "event_types": item.event_types,
+                    "source_sequences": item.source_sequences,
+                    "source_memory_ids": item.source_memory_ids,
+                    "schema": item.schema,
+                    "support_count": item.support_count,
+                    "summary": item.summary,
+                    "status": item.status,
+                    "created_at": item.created_at,
+                }
+                for item in proposals
+            ],
+            "reason": None if proposals else (
+                "No owner-annotated ordered event schema recurred across distinct sessions."
+            ),
+            "status": organism_ref.schema_extraction.snapshot(organism_ref.owner_id),
+            "metadata_contract": {
+                "event_type": "required owner-authored slug in memory metadata",
+                "attributes": "optional primitive-valued object; sensitive keys are excluded",
+            },
+        }
+
+    @app.get("/knowledge/schemas/proposals")
+    def list_knowledge_schema_proposals(
+        status: Literal["pending_review", "approved", "rejected"] | None = None,
+        limit: int = Query(default=50, ge=1, le=100),
+    ) -> dict[str, Any]:
+        organism_ref = get_organism()
+        proposals = organism_ref.schema_extraction.list_proposals(
+            organism_ref.owner_id, status=status, limit=limit
+        )
+        return {
+            "proposals": [
+                {
+                    "id": item.id,
+                    "event_types": item.event_types,
+                    "source_sequences": item.source_sequences,
+                    "source_memory_ids": item.source_memory_ids,
+                    "schema": item.schema,
+                    "support_count": item.support_count,
+                    "summary": item.summary,
+                    "status": item.status,
+                    "created_at": item.created_at,
+                    "reviewed_at": item.reviewed_at,
+                    "review_note": item.review_note,
+                    "schema_memory_id": item.schema_memory_id,
+                }
+                for item in proposals
+            ],
+            "status": organism_ref.schema_extraction.snapshot(organism_ref.owner_id),
+        }
+
+    @app.post("/knowledge/schemas/proposals/{proposal_id}/review")
+    def review_knowledge_schema_proposal(
+        proposal_id: str, payload: SchemaReviewRequest
+    ) -> dict[str, Any]:
+        organism_ref = get_organism()
+        owner_id = organism_ref.owner_id
+        try:
+            stored_memory: dict[str, Any] | None = None
+            if payload.decision == "approved":
+                def persist_schema(proposal: SchemaProposal, consent_id: str) -> str:
+                    nonlocal stored_memory
+                    record, outcome = organism_ref.long_term_memory.add_schema_memory(
+                        owner_id=owner_id,
+                        source_sequences=proposal.source_sequences,
+                        event_types=proposal.event_types,
+                        schema=proposal.schema,
+                        content=proposal.summary,
+                        source=f"owner-approved schema extraction:{proposal.id}",
+                        consent_id=consent_id,
+                        metadata={
+                            "schema_proposal_id": proposal.id,
+                            "schema_support_count": proposal.support_count,
+                            "reviewer_role": "owner",
+                            "review_note": payload.note,
+                        },
+                    )
+                    stored_memory = {
+                        **_memory_payload(record),
+                        "index": _index_payload(outcome),
+                    }
+                    return record.id
+
+                reviewed, _ = organism_ref.schema_extraction.approve_with(
+                    owner_id,
+                    proposal_id,
+                    reviewer=owner_id,
+                    note=payload.note,
+                    persist=persist_schema,
+                )
+            else:
+                reviewed = organism_ref.schema_extraction.review(
+                    owner_id,
+                    proposal_id,
+                    decision="rejected",
+                    reviewer=owner_id,
+                    note=payload.note,
+                )
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="Schema proposal not found") from error
+        except MemoryNotFoundError as error:
+            raise HTTPException(
+                status_code=409, detail="One or more schema source memories are unavailable"
+            ) from error
+        except ConsentRequiredError as error:
+            raise HTTPException(status_code=403, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        return {
+            "proposal": {
+                "id": reviewed.id,
+                "status": reviewed.status,
+                "reviewed_at": reviewed.reviewed_at,
+                "review_note": reviewed.review_note,
+                "schema_memory_id": reviewed.schema_memory_id,
+            },
+            "memory": stored_memory,
         }
 
     @app.post("/sleep/preview")

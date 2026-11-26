@@ -473,6 +473,114 @@ class MemoryRepository:
                 epistemic_status=epistemic_status,
             )
 
+    def add_schema_memory(
+        self,
+        *,
+        owner_id: str,
+        source_sequences: Sequence[Sequence[str]],
+        event_types: Sequence[str],
+        schema: dict[str, Any],
+        content: str,
+        source: str,
+        consent_id: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> MemoryRecord:
+        """Atomically persist an inferred procedural schema from annotated episodes.
+
+        Every example is revalidated inside the write transaction: all source
+        records must be visible episodic memories under the same active consent,
+        event-type annotations must still match, examples must be distinct, and
+        no explicit contradiction may connect source records. The stored schema
+        contains fixed attributes and slot definitions, not varying slot values.
+        """
+        sequences = tuple(tuple(sequence) for sequence in source_sequences)
+        types = tuple(event_types)
+        if len(sequences) < 2 or len(set(sequences)) != len(sequences):
+            raise ValueError("At least two distinct source sequences are required")
+        if len(types) < 2 or not all(isinstance(item, str) and item for item in types):
+            raise ValueError("At least two event types are required")
+        if any(len(sequence) != len(types) for sequence in sequences):
+            raise ValueError("Every source sequence must match the schema event-type length")
+        if any(
+            not sequence or any(not isinstance(memory_id, str) or not memory_id for memory_id in sequence)
+            for sequence in sequences
+        ):
+            raise ValueError("Source sequences must contain non-empty memory identifiers")
+        source_ids = tuple(dict.fromkeys(
+            memory_id for sequence in sequences for memory_id in sequence
+        ))
+        placeholders = ", ".join("?" for _ in source_ids)
+        try:
+            schema_json = json.dumps(schema, ensure_ascii=False, allow_nan=False)
+        except (TypeError, ValueError) as error:
+            raise ValueError("schema must contain only finite JSON-compatible values") from error
+        if not isinstance(schema, dict) or not schema:
+            raise ValueError("schema must be a non-empty object")
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                f"""SELECT m.* FROM memories m
+                    JOIN consents c ON c.id = m.consent_id
+                    WHERE m.owner_id = ? AND m.id IN ({placeholders})
+                      AND c.active = 1 AND c.purpose = 'personal_memory'""",
+                (owner_id, *source_ids),
+            ).fetchall()
+            by_id = {row["id"]: self._row_to_record(row) for row in rows}
+            if set(by_id) != set(source_ids):
+                raise MemoryNotFoundError("One or more schema source memories are unavailable")
+            if any(
+                record.kind is not MemoryKind.EPISODIC
+                or record.consent_id != consent_id
+                for record in by_id.values()
+            ):
+                raise ConsentRequiredError(
+                    "Schema examples must be visible episodic records under one active consent"
+                )
+            for sequence in sequences:
+                actual_types = tuple(
+                    str(by_id[memory_id].metadata.get("event_type", "")).strip().lower()
+                    for memory_id in sequence
+                )
+                if actual_types != types:
+                    raise ValueError(
+                        "A source event type changed after schema extraction; refresh the proposal"
+                    )
+
+            conflict = connection.execute(
+                f"""SELECT 1 FROM memory_links
+                    WHERE owner_id = ? AND relation = 'contradicts'
+                      AND from_memory_id IN ({placeholders})
+                      AND to_memory_id IN ({placeholders})
+                    LIMIT 1""",
+                (owner_id, *source_ids, *source_ids),
+            ).fetchone()
+            if conflict is not None:
+                raise ValueError("Contradictory source events cannot form a schema")
+
+            enriched = {
+                **(metadata or {}),
+                "knowledge_type": "ordered_event_schema",
+                "schema": json.loads(schema_json),
+                "schema_event_types": list(types),
+                "schema_source_sequences": [list(sequence) for sequence in sequences],
+                "schema_source_memory_ids": list(source_ids),
+                "schema_support_count": len(sequences),
+            }
+            return self._insert_memory(
+                connection,
+                owner_id=owner_id,
+                kind=MemoryKind.PROCEDURAL,
+                content=content,
+                source=source,
+                consent_id=consent_id,
+                metadata=enriched,
+                occurred_at=None,
+                valid_from=None,
+                valid_to=None,
+                fact_key=None,
+                epistemic_status="inferred",
+            )
+
     def add_consolidated_memory(
         self,
         *,

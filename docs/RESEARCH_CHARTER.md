@@ -200,6 +200,26 @@ As of 2026-11-24, the following project foundations are merged.
 - This is manually triggered pattern discovery and owner review, not a simulated sleep
   cycle, REM/NREM replay, or evidence of biological systems consolidation.
 
+### Owner-reviewed schema extraction and generalisation
+
+- Extract schemas only from explicit owner-authored event-type metadata on consent-visible
+  episodic records. Do not infer event labels from free text or model-generated guesses.
+- Require a repeated ordered event-type sequence across at least two distinct owner/session
+  contexts and distinct source-event records.
+- Keep attributes constant only when every example agrees. Convert varying primitive
+  attributes into typed slots without copying observed values into the schema.
+- Exclude sensitive attribute keys, mixed-consent evidence, deleted/revoked sources,
+  non-episodic records, and explicitly contradictory examples.
+- Queue bounded, process-local proposals. Preview never writes persistent memory.
+  Rejection writes nothing. Approval requires explicit owner action and atomic repository
+  revalidation of the source examples, event types, consent, and contradictions.
+- Store approved schemas as inferred procedural memories with full source-example provenance.
+  Invalidate proposals when any source is changed, superseded, deleted, contradicted, or revoked.
+- Evaluate detection, slot/constant induction, sensitive-key exclusion, false generalisation,
+  preview-time writes, and approval provenance using fixed synthetic controls.
+- This is a structured symbolic abstraction experiment, not evidence of human-like schema
+  learning or transfer. Real-world and independently authored evaluation is still required.
+
 ### Long-term memory foundation
 
 - Typed memory records with provenance and purpose-specific consent.

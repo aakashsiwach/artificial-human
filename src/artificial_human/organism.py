@@ -13,6 +13,7 @@ from artificial_human.brain.service import BrainService
 from artificial_human.circulation.scheduler import WorkScheduler
 from artificial_human.cognition.architecture import CognitiveArchitecture
 from artificial_human.cognition.dynamics import RecurrentDynamicsEngine
+from artificial_human.cognition.schema_extraction import SchemaExtractionSystem
 from artificial_human.core.events import EventBus
 from artificial_human.identity.constitution import core_identity_profile
 from artificial_human.identity.repository import IdentityRepository
@@ -87,6 +88,7 @@ class ArtificialOrganism:
         self.immune = ImmuneSystem()
         self.regeneration = RepairEngine()
         self.sleep = SleepSystem()
+        self.schema_extraction = SchemaExtractionSystem()
         self.circulation = WorkScheduler()
         self.metabolism = ResourceGovernor()
         self.nervous_system = EventBus()
@@ -132,6 +134,7 @@ class ArtificialOrganism:
                 "immune": "ready",
                 "regeneration": "proposal_only",
                 "sleep": "replay_pattern_detection_owner_review",
+                "schema_extraction": "annotated_event_pattern_owner_review",
                 "circulation": "ready",
                 "metabolism": "bounded_declared_work",
                 "nervous_system": "in_process",
@@ -149,6 +152,7 @@ class ArtificialOrganism:
             "relational_memory": self.cognitive_brain.architecture.relational_memory.snapshot(),
             "episodic_memory": self.cognitive_brain.architecture.episodic_memory.snapshot(),
             "sleep_consolidation": self.sleep.snapshot(self.owner_id),
+            "schema_extraction": self.schema_extraction.snapshot(self.owner_id),
             "immune_cells": [
                 "dendritic", "neutrophil", "macrophage", "b_cell_memory", "t_cell_verifier"
             ],

@@ -13,7 +13,7 @@ _PURPOSE = """\
 This report measures the cognitive subsystems that exist on `main` today:
 attention, working memory, the lexical prediction/novelty signal, long-term
 memory recall, controlled associative cue completion, context-scoped source monitoring,
-temporal episodic replay, owner-reviewed consolidation, and the integrated multi-turn cycle. It establishes a
+temporal episodic replay, owner-reviewed consolidation, structured schema induction, and the integrated multi-turn cycle. It establishes a
 reproducible baseline *before* new mechanisms are introduced, as Stage 1 of the
 [Research Charter](../RESEARCH_CHARTER.md) requires. No algorithm was changed to
 improve these numbers.
@@ -69,6 +69,7 @@ _DEFINITIONS = """\
 | Associative dynamics | Nine paired contradiction and distractor-interference probes over opaque record IDs | Contradiction suppression rate and target recall after a capacity-limited distractor sequence |
 | Episodic replay | Nine four-event sequences; cue each middle event and retrieve its immediate temporal neighbours | Exact neighbour recall@2, MRR, false replay rate, cross-context leakage |
 | Sleep consolidation | Nine event-pair probes with repeated, single-session, and contradicted patterns | Recurring-pattern proposal rate, false-positive rates, silent-write violations, approved provenance |
+| Schema extraction | Nine three-step structured event sequences with repeated examples, singleton and contradiction controls | Schema detection, typed slot induction, constant retention, sensitive-key exclusion, false-positive and approval-provenance rates |
 | Integration | Six multi-turn scenarios through `CognitiveArchitecture` (A–F) | Scenario-specific behavioural checks |"""
 
 _BASELINES = """\
@@ -94,7 +95,11 @@ _BASELINES = """\
   project-authored event sequences and opaque identifiers.
 - **Sleep consolidation.** Repeated adjacent episodic transitions are compared with
   one-session and explicit-contradiction controls. Preview must not write memory;
-  an approved proposal must retain inferred status and its source identifiers."""
+  an approved proposal must retain inferred status and its source identifiers.
+- **Schema extraction.** Owner-authored event types and primitive attributes are
+  compared across distinct episodes. Varying values must become typed slots; stable
+  values remain constants. Singleton and contradiction controls must not generalize,
+  and approval must preserve source-example provenance."""
 
 _METRICS = """\
 - **Precision@K / Recall@K / MRR / nDCG@K.** Standard ranked-retrieval
@@ -140,6 +145,16 @@ _METRICS = """\
   before an explicit owner approval.
 - **Approved provenance rate.** Share of approved proposals persisted as inferred
   semantic memories with source-memory IDs retained in provenance metadata.
+- **Schema detection rate.** Share of recurrent annotated event sequences that
+  produce an owner-reviewable schema proposal.
+- **Slot / constant accuracy.** Share of varying attributes represented as typed
+  slots and stable attributes retained as constants.
+- **Sensitive-key exclusion rate.** Share of test schemas that omit sensitive
+  attribute keys from both constants and slots.
+- **Schema false-positive rate.** Share of singleton or contradicted event patterns
+  incorrectly generalised.
+- **Approved schema provenance rate.** Share of approved procedural schemas that
+  preserve all source example sequences and inferred epistemic status.
 - **False associations per query.** Mean count of top-5 facts that are neither
   the cue source nor the declared target."""
 
@@ -509,6 +524,21 @@ def _suite_section(suite: Mapping[str, Any]) -> list[str]:
                 f"| {_fmt(shared['target_recall@5'])} |"
             )
         lines.append("")
+    elif name == "schema-extraction":
+        values = suite["systems"]["schema_induction"]
+        lines += [
+            f"Recurrent schema detection rate: {_fmt(values['recurrent_schema_detection_rate'])}; "
+            f"variable-attribute slot rate: {_fmt(values['variable_attribute_slot_rate'])}; "
+            f"stable-attribute constant rate: {_fmt(values['stable_attribute_constant_rate'])}.",
+            f"Sensitive-attribute exclusion rate: {_fmt(values['sensitive_attribute_exclusion_rate'])}; "
+            f"singleton false-positive rate: {_fmt(values['singleton_false_positive_rate'])}; "
+            f"contradiction false-positive rate: {_fmt(values['contradiction_false_positive_rate'])}.",
+            f"Preview silent-write violation rate: "
+            f"{_fmt(values['preview_silent_write_violation_rate'])}; "
+            f"approved schema provenance rate: "
+            f"{_fmt(values['approved_schema_provenance_rate'])}.",
+            "",
+        ]
     elif name == "sleep-consolidation":
         replay = suite["systems"]["replay_pattern_detection"]
         review = suite["systems"]["owner_review"]
@@ -640,6 +670,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "associative-dynamics": "none (fixed contradiction/interference probes; no tuning)",
         "episodic-replay": "none (fixed temporal-sequence probes; no tuning)",
         "sleep-consolidation": "none (fixed recurrence/approval probes; no tuning)",
+        "schema-extraction": "none (fixed structured-event generalisation probes; no tuning)",
         "integration": "none (fixed scenarios)",
         "longmemeval": "none: every external question is held out",
         "digit-span": "fitting human reference models only (participant-level split)",
@@ -657,7 +688,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     ]
     for name in ("attention", "working-memory", "prediction", "memory",
                  "associative-memory", "associative-context", "associative-dynamics",
-                 "episodic-replay", "sleep-consolidation"):
+                 "episodic-replay", "sleep-consolidation", "schema-extraction"):
         if name in suites:
             lines += _suite_section(suites[name])
     lines += ["## 8. Integrated multi-turn results", ""]

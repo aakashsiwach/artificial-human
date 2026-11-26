@@ -61,6 +61,30 @@ class LongTermMemory:
         )
         return record, self.index.index_memory(owner_id, record.id)
 
+    def add_schema_memory(
+        self,
+        *,
+        owner_id: str,
+        source_sequences: list[list[str]] | tuple[tuple[str, ...], ...],
+        event_types: list[str] | tuple[str, ...],
+        schema: dict[str, Any],
+        content: str,
+        source: str,
+        consent_id: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[MemoryRecord, IndexOutcome]:
+        record = self.repository.add_schema_memory(
+            owner_id=owner_id,
+            source_sequences=source_sequences,
+            event_types=event_types,
+            schema=schema,
+            content=content,
+            source=source,
+            consent_id=consent_id,
+            metadata=metadata,
+        )
+        return record, self.index.index_memory(owner_id, record.id)
+
     def correct(
         self, owner_id: str, memory_id: str, **changes: Any
     ) -> tuple[MemoryRecord, IndexOutcome | None]:

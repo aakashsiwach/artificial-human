@@ -115,7 +115,8 @@ Language is a communication and representation capability within this wider syst
 | Executive functions | `ExecutiveControlSystem` + `Planner` | Deterministic goal decomposition and approval gate |
 | Language | Configurable chat-completions provider | Language generation and deliberation support |
 | Learning | Existing owner-reviewed learning system | Approved demonstrations; no automatic model training |
-| Sleep / consolidation | Existing `SleepSystem` | Owner-review proposals only; no silent rewriting |
+| Sleep / consolidation | `SleepSystem` | Replay-derived owner-review proposals; no silent rewriting |
+| Schema extraction | `SchemaExtractionSystem` | Owner-annotated event-type sequences, typed slots/constants, owner-approved inferred procedural schemas |
 
 These are functional inspirations, not one-to-one anatomical mappings. Brain regions work through distributed, interacting networks and each has multiple roles.
 
