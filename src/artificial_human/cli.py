@@ -198,6 +198,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Local directory of NEMAR on003838 sub-*_task-memory_beh.tsv files (opt-in)",
     )
     cognition.add_argument(
+        "--schema-event-log-path",
+        help="Local XES or XES.GZ event log for opt-in schema holdout evaluation",
+    )
+    cognition.add_argument(
+        "--schema-event-log-attribute-key", action="append", default=[],
+        help="Allowlisted XES event attribute key (repeatable; excluded by default)",
+    )
+    cognition.add_argument(
+        "--schema-event-log-max-cases", type=int, default=500,
+        help="Maximum most-recent cases to evaluate (4-10000; default: 500)",
+    )
+    cognition.add_argument(
         "--external-limit", type=int,
         help="Evaluate only the first N LongMemEval questions (quick checks)",
     )
@@ -232,7 +244,8 @@ def _cognition_eval(args: argparse.Namespace) -> int:
     )
 
     available = [name for name, value in (("longmemeval", args.longmemeval_path),
-                                          ("digit-span", args.digit_span_dir)) if value]
+                                          ("digit-span", args.digit_span_dir),
+                                          ("schema-event-log", args.schema_event_log_path)) if value]
     try:
         resolve_suites(args.suite or ["all"], available_external=available)
     except ValueError as error:
@@ -247,6 +260,9 @@ def _cognition_eval(args: argparse.Namespace) -> int:
             progress=lambda message: print(f"[cognition-eval] {message}", file=sys.stderr),
             longmemeval_path=args.longmemeval_path, digit_span_dir=args.digit_span_dir,
             external_limit=args.external_limit,
+            schema_event_log_path=args.schema_event_log_path,
+            schema_event_log_attribute_keys=args.schema_event_log_attribute_key,
+            schema_event_log_max_cases=args.schema_event_log_max_cases,
         )
     except InvariantViolation as error:
         print(f"[cognition-eval] safety invariant failed: {error}", file=sys.stderr)
