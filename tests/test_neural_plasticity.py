@@ -17,29 +17,29 @@ def network() -> NeuralSimulation:
 def test_stdp_direction_depends_on_spike_order_and_is_bounded() -> None:
     potentiated = network()
     rule = PairBasedSTDP()
-    rule.observe(potentiated, ("post",))
     rule.observe(potentiated, ("pre",))
+    rule.observe(potentiated, ("post",))
     assert potentiated.synapses["connection"].weight > 0.5
 
     depressed = network()
     rule = PairBasedSTDP()
-    rule.observe(depressed, ("pre",))
     rule.observe(depressed, ("post",))
+    rule.observe(depressed, ("pre",))
     assert depressed.synapses["connection"].weight < 0.5
     for _ in range(100):
-        rule.observe(potentiated, ("post",))
         rule.observe(potentiated, ("pre",))
+        rule.observe(potentiated, ("post",))
     assert 0 <= potentiated.synapses["connection"].weight <= 1.0
 
 
 def test_gate_zero_disables_learning_and_reset_restores_initial_weights() -> None:
     simulation = network()
     controller = PlasticityController(simulation, PairBasedSTDP())
-    controller.observe_step(("post",), gate=0.0)
     controller.observe_step(("pre",), gate=0.0)
+    controller.observe_step(("post",), gate=0.0)
     assert simulation.synapses["connection"].weight == 0.5
-    controller.observe_step(("post",))
     controller.observe_step(("pre",))
+    controller.observe_step(("post",))
     assert simulation.synapses["connection"].weight != 0.5
     controller.reset()
     assert simulation.synapses["connection"].weight == 0.5
@@ -55,8 +55,8 @@ def test_rate_hebbian_is_a_distinct_bounded_comparator() -> None:
 def test_snapshot_restores_learned_weights_and_reset_forgets_them() -> None:
     simulation = network()
     rule = PairBasedSTDP()
-    rule.observe(simulation, ("post",))
     rule.observe(simulation, ("pre",))
+    rule.observe(simulation, ("post",))
     saved = simulation.state()
     expected = simulation.synapses["connection"].weight
     simulation.update_synapse_weight("connection", 0.1)
