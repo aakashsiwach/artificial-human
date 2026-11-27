@@ -20,6 +20,7 @@
       <div class="top-actions">
         <span id="connection-state" class="state-pill idle"><i></i> NOT CONNECTED</span>
         <button id="refresh-button" class="icon-button" type="button" disabled>↻ <span>Refresh</span></button>
+        <button id="logout-button" class="secondary-button" type="button" hidden>Sign out</button>
       </div>
     </header>
 
@@ -48,21 +49,25 @@
         <p class="founder-projects">Public projects: <a href="https://github.com/aakashsiwach/artificial-human" target="_blank" rel="noopener noreferrer">Artificial Human</a> · <a href="https://github.com/aakashsiwach/taintmap" target="_blank" rel="noopener noreferrer">TaintMap</a> · <a href="https://github.com/aakashsiwach/codeatlas-rag" target="_blank" rel="noopener noreferrer">CodeAtlas</a> · <a href="https://github.com/aakashsiwach/mergeworthy" target="_blank" rel="noopener noreferrer">mergeworthy</a> · <a href="https://github.com/aakashsiwach/testcase-management" target="_blank" rel="noopener noreferrer">Test Case Management</a> · <a href="https://github.com/aakashsiwach/ai-document-analyzer" target="_blank" rel="noopener noreferrer">AI Document Analyzer</a></p>
       </section>
 
-      <section class="connect-panel panel" aria-labelledby="connect-title">
+      <section id="login-panel" class="connect-panel panel" aria-labelledby="login-title">
         <div class="panel-heading">
-          <div><p class="eyebrow">SECURE CONNECTION</p><h2 id="connect-title">Connect to the organism</h2></div>
+          <div><p class="eyebrow">PRIVATE OWNER ACCESS</p><h2 id="login-title">Welcome back, Father</h2></div>
           <span class="lock-symbol" aria-hidden="true">⌑</span>
         </div>
-        <form id="connect-form" class="connect-form">
-          <label>API base URL
-            <input id="api-url" type="url" inputmode="url" placeholder="https://your-service.onrender.com" autocomplete="url" required>
+        <p class="login-intro">Sign in to your Artificial Human Control Room. This device can remember a passkey protected by your device's biometrics or PIN.</p>
+        <form id="login-form" class="connect-form login-form">
+          <label>Username
+            <input id="login-username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Your owner username" required>
           </label>
-          <label>Bearer token
-            <input id="api-token" type="password" placeholder="Paste your private API token" autocomplete="off" required>
+          <label>Password
+            <input id="login-password" type="password" autocomplete="current-password" placeholder="Your private password" required>
           </label>
           <div class="form-foot">
-            <p>Your token stays in this browser tab's memory only. It is not saved to local storage or sent anywhere except your API host.</p>
-            <button class="primary-button" type="submit">Connect securely <span>→</span></button>
+            <p>Password fallback is protected with PBKDF2 on the server. Passkey verification uses your device's platform authenticator; biometric data never leaves your device.</p>
+            <div class="login-actions">
+              <button class="primary-button" type="submit">Sign in securely <span>→</span></button>
+              <button id="passkey-login" class="secondary-button" type="button" hidden>Use passkey / biometrics</button>
+            </div>
           </div>
         </form>
         <p id="connection-error" class="error-message" role="alert" hidden></p>
@@ -102,6 +107,35 @@
           </form>
           <p id="chat-error" class="error-message" role="alert" hidden></p>
         </section>
+        <section class="panel camera-panel" aria-labelledby="camera-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">OPTIONAL LOCAL SENSOR</p><h3 id="camera-title">Camera access</h3></div>
+            <span id="camera-state" class="subtle-tag">CAMERA OFF</span>
+          </div>
+          <p class="camera-note">Camera stays off until you start it. Preview and snapshots remain in this browser tab; no frames are uploaded, stored, or sent to the organism. Stop the camera whenever you are finished.</p>
+          <div class="camera-stage">
+            <video id="camera-preview" autoplay muted playsinline aria-label="Local camera preview" hidden></video>
+            <img id="camera-capture" alt="Local camera snapshot preview" hidden>
+            <div id="camera-placeholder" class="camera-placeholder">Camera is off</div>
+          </div>
+          <div class="camera-actions">
+            <button id="camera-start" class="primary-button" type="button">Enable camera</button>
+            <button id="camera-capture-button" class="secondary-button" type="button" disabled>Capture local snapshot</button>
+            <button id="camera-stop" class="secondary-button" type="button" disabled>Stop camera</button>
+          </div>
+          <p id="camera-error" class="error-message" role="alert" hidden></p>
+        </section>
+
+        <section class="panel passkey-panel" aria-labelledby="passkey-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">DEVICE SECURITY</p><h3 id="passkey-title">Passkey on this device</h3></div>
+            <span id="passkey-state" class="subtle-tag">NOT REGISTERED</span>
+          </div>
+          <p class="camera-note">Add a passkey after signing in with your password. Supported devices can verify with Face ID, Touch ID, Windows Hello, Android biometrics, or a device PIN.</p>
+          <button id="passkey-register" class="secondary-button" type="button">Add this device's passkey</button>
+          <p id="passkey-error" class="error-message" role="alert" hidden></p>
+        </section>
+
         <div class="metrics-grid">
           <article class="metric-card panel"><span class="metric-label">DEVELOPMENT PHASE</span><strong id="phase-value" class="metric-value">—</strong><span id="day-value" class="metric-caption">—</span></article>
           <article class="metric-card panel"><span class="metric-label">POPULATIONS</span><strong id="population-value" class="metric-value">—</strong><span class="metric-caption">Abstract neural populations</span></article>
@@ -112,7 +146,7 @@
         <div class="content-grid">
           <section class="panel data-panel">
             <div class="panel-heading"><div><p class="eyebrow">NEURAL SUBSTRATE</p><h3>Population maturity</h3></div><span class="subtle-tag">7 ABSTRACT POPULATIONS</span></div>
-            <div id="population-list" class="population-list"><p class="empty-state">Connect to load a snapshot.</p></div>
+            <div id="population-list" class="population-list"><p class="empty-state">Waiting for the authenticated session.</p></div>
           </section>
           <section class="panel data-panel">
             <div class="panel-heading"><div><p class="eyebrow">CIRCUIT PLASTICITY</p><h3>Projection strengths</h3></div><span id="mean-strength" class="subtle-tag">MEAN —</span></div>
@@ -127,7 +161,7 @@
         <p class="model-note"><strong>Scientific boundary:</strong> The prenatal view is a deterministic engineering abstraction, not a biological fetal-brain simulator. Maturity and connection values are model parameters, not clinical or biological measurements.</p>
       </section>
     </main>
-    <footer><span>ARTIFICIAL HUMAN · BUILT BY AAKASH SIWACH</span><span>PRIVATE BY DESIGN <b>·</b> READ ONLY</span></footer>
+    <footer><span>ARTIFICIAL HUMAN · FOUNDED BY AAKASH SIWACH (FATHER)</span><span>SESSION-SECURED <b>·</b> CAMERA OPT-IN</span></footer>
   </div>
 </body>
 </html>
