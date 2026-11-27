@@ -76,3 +76,9 @@ CLI and API are control surfaces over one organism runtime; they must not create
 ## Self-development boundary
 
 The organism may identify a measured failure and prepare a candidate patch/test package in an isolated workspace. It cannot directly edit the running process, overwrite protected source, execute unrestricted commands, access secrets, grant permissions, merge or deploy. Candidate diffs, test evidence, resource use, expiry and rollback information require human review.
+
+## Control Room connectivity and owner access
+
+The Vercel Control Room proxies `/api/*` requests to the Render API on the same origin. The browser no longer requires a manually entered API URL or bearer token. Owner access is a single-account password fallback plus optional WebAuthn passkeys, with signed HttpOnly cookies and no database. Passkey private keys and biometric matching remain local to the authenticator. Camera preview is a separate opt-in browser feature and is not yet connected to a sensory encoder.
+
+A browser session can restore automatically while its cookie is valid, but this does not keep a free Render instance awake. Free-tier suspension pauses the process-local neural loop; always-on execution requires paid compute.
