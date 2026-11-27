@@ -42,10 +42,11 @@ class PlasticitySnapshot:
 
 @dataclass(slots=True)
 class PairBasedSTDP:
-    """All-to-all pair rule: post-before-pre potentiates; pre-before-post depresses.
+    """All-to-all pair rule: pre-before-post potentiates; post-before-pre depresses.
 
     Traces decay once per call to observe(), so one call represents one
     simulation step. Simultaneous pre/post spikes do not form a zero-lag pair.
+    The trace formulation is the standard all-to-all exponential pair rule.
     """
 
     parameters: STDPParameters = field(default_factory=STDPParameters)
@@ -66,9 +67,9 @@ class PairBasedSTDP:
         for synapse in simulation.synapses.values():
             delta = 0.0
             if synapse.source in spike_set:
-                delta += self.parameters.potentiation * self.post_traces[synapse.target]
+                delta -= self.parameters.depression * self.post_traces[synapse.target]
             if synapse.target in spike_set:
-                delta -= self.parameters.depression * self.pre_traces[synapse.source]
+                delta += self.parameters.potentiation * self.pre_traces[synapse.source]
             if delta:
                 weight = synapse.weight + gate * delta
                 simulation.update_synapse_weight(synapse.identifier, weight)
@@ -175,8 +176,8 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
 
     controller = PlasticityController(network, rule)
     for _ in range(trials):
-        controller.observe_step(("post_paired",))
         controller.observe_step(("pre_paired",))
+        controller.observe_step(("post_paired",))
         controller.observe_step(("pre_unpaired",))
         for _ in range(30):
             controller.observe_step(())
@@ -209,7 +210,7 @@ class _NoPlasticity:
 def run_learning_rule_comparison(*, trials: int = 12) -> dict[str, object]:
     """Compare STDP, rate-Hebbian and fixed weights on a deterministic association.
 
-    A positive pair has post-before-pre timing; the negative control has pre
+    A positive pair has pre-before-post timing; the negative control has pre
     activity without postsynaptic pairing. The task tests this chosen timing
     hypothesis only and is not evidence that it is a universal learning rule.
     """
@@ -218,16 +219,16 @@ def run_learning_rule_comparison(*, trials: int = 12) -> dict[str, object]:
     results = [_association_trial(name, trials) for name in ("stdp", "rate_hebbian", "fixed")]
     fixed_accuracy = next(cast(float, row["accuracy"]) for row in results if row["rule"] == "fixed")
     return {
-        "task": "post-before-pre temporal association with unpaired negative control",
+        "task": "pre-before-post temporal association with unpaired negative control",
         "metric": "two-example classification accuracy at weight threshold 0.6",
         "results": results,
         "stdp_improvement_over_fixed": (
-            next(float(row["accuracy"]) for row in results if row["rule"] == "stdp")
+            next(cast(float, row["accuracy"]) for row in results if row["rule"] == "stdp")
             - fixed_accuracy
         ),
         "limitations": [
             "Small deterministic mechanism test, not a biological validation.",
-            "Only the selected post-before-pre timing task is evaluated.",
+            "Only the selected pre-before-post timing task is evaluated.",
             "The rate-Hebbian comparator is a simple trace-correlation baseline.",
             "No claim is made that STDP is the unique or generally superior learning rule.",
         ],
