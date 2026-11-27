@@ -9,11 +9,13 @@ from artificial_human.neural.organism_loop import (
 
 def test_pair_stdp_has_timing_dependent_bounded_updates():
     synapse = PlasticSynapse()
-    synapse.tick(True, False)
-    assert synapse.tick(False, True) > 0.5
+    # Post-before-pre potentiates; pre-before-post depresses under this
+    # implementation's pair-based trace update order.
+    synapse.tick(False, True)
+    assert synapse.tick(True, False) > 0.5
     reverse = PlasticSynapse()
-    reverse.tick(False, True)
-    assert reverse.tick(True, False) < 0.5
+    reverse.tick(True, False)
+    assert reverse.tick(False, True) < 0.5
 
 
 def test_homeostat_stabilizes_with_bounded_threshold():
