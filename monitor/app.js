@@ -409,8 +409,15 @@
   });
 
   logoutButton.addEventListener("click", async () => {
+    if (activeSession) {
+      try {
+        await apiFetch("/brain/sessions/" + encodeURIComponent(sessionId), {method:"DELETE"});
+      } catch { /* clear local sign-in even if the service is offline */ }
+    }
     try { await apiFetch("/auth/logout", {method:"POST"}); } catch { /* sign out locally even if offline */ }
     passwordInput.value = "";
+    sessionId = "control-room-" + (window.crypto?.randomUUID?.()
+      || (Date.now() + "-" + Math.random().toString(16).slice(2)));
     chatLog.replaceChildren(safeNode("div","chat-empty","Sign in to start a private conversation."));
     setChatError("");
     showSignedOut("You have signed out.");
