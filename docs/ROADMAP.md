@@ -17,34 +17,36 @@ The north star is one executable computational organism grounded in human neuros
 
 ## Verified current baseline
 
-The merged code is a useful cognitive-software prototype, not yet the target living organism:
+The branch associated with this consolidated PR adds the following implementation foundation:
 
-- `cognition/dynamics.py` runs seven abstract population nodes over ten fixed projections using bounded rate updates. It is not a neuron/synapse simulation and has no runtime synaptic plasticity.
-- The API has a one-second low-amplitude idle activity approximation while the process is awake. Activity also runs on explicit text requests. This is not yet a general continuous simulation lifecycle or a biological resting state.
-- The prenatal scaffold is a separate seven-population/ten-projection abstraction with scalar cues and a bounded activity-dependent weight rule. It is not integrated with runtime dynamics.
-- Perception is explicit text input. There is no vision, audition, touch, proprioception, interoception, or body/environment loop.
-- The cognitive cycle has attention, working memory, memory retrieval, lexical novelty, deterministic planning, and an optional LLM language interface. Several mechanisms are heuristics or database-backed software.
-- **The current runtime is not database-free yet.** Normal local startup defaults to file-backed SQLite. Public/volatile mode uses SQLite `:memory:`. The new contract requires removing database dependence from the active organism, not renaming in-memory SQLite as "no DB".
+- The active `ArtificialOrganism` uses source-defined identity and a bounded in-memory repository in both local and public modes. Default construction does not open SQLite or create persistence files; the SQLite repository and `--legacy-sqlite` CLI path are retained only for explicit legacy work.
+- `neural/simulation.py` provides deterministic integer-step time, LIF membrane integration, excitatory/inhibitory synapses, delayed events, stable ordering, bounded event queues/currents, cancellation, pause/resume/single-step/reset and in-memory snapshot/restore.
+- `neural/circuits.py` provides a four-neuron recurrent microcircuit with feed-forward/recurrent and inhibition-on/off controls. Tests check propagation, inhibition ablation, deterministic event order and bounds.
+- The API idle loop advances this microcircuit while the process is awake. A suspended host does not execute it.
+- A reproducible benchmark reports throughput and Python-traced heap usage. On the recorded Python 3.13 GitHub runner, 20,000 steps took 1.035225 s (19,319.47 steps/s) with 150,864 bytes peak traced memory. These values are machine-specific.
+- The cognitive cycle still includes heuristic attention, working memory, lexical novelty, deterministic planning and an optional LLM language interface. Existing seven-population rate dynamics remain a separate baseline.
+- Perception is explicit text input. Vision, audition, touch, proprioception, interoception, a predictive world model and body/environment action loop remain future work.
+- The RAM repository uses typed records and consent/provenance policies, but does not yet implement distinct biologically motivated memory systems or interference/forgetting/strengthening. Full #30 remains open.
 - Code repair currently creates proposals only; there is no isolated self-authored code/test lifecycle.
 
-These facts are the starting baseline, not completed roadmap requirements. See [Brain](BRAIN.md), [Architecture](ARCHITECTURE.md), [Memory](MEMORY.md), and [Safety](SAFETY.md).
+These are engineering mechanisms, not biological equivalence or claims of consciousness. See [Brain](BRAIN.md), [Architecture](ARCHITECTURE.md), [Memory](MEMORY.md), and [Safety](SAFETY.md).
 
 ## Ordered implementation programme
 
 ### Phase 0 — align direction and establish the RAM-only runtime contract
 
-- [ ] [#17 — Align architecture and project docs with the code-first living-organism direction](https://github.com/aakashsiwach/artificial-human/issues/17). This documentation issue is in progress on the current branch.
-- [ ] [#18 — Specify the database-free organism runtime and migration boundary](https://github.com/aakashsiwach/artificial-human/issues/18). The default organism must initialise without SQLite, SQL, vector stores, database files, or persistent memory services. Legacy DB-backed tools must be isolated from the active runtime.
+- [x] [#17 — Align architecture and project docs with the code-first living-organism direction](https://github.com/aakashsiwach/artificial-human/issues/17). Closed.
+- [ ] [#18 — Specify the database-free organism runtime and migration boundary](https://github.com/aakashsiwach/artificial-human/issues/18). Implemented and tested on this PR branch; closure is tied to merging the consolidated PR.
 
 **Exit gate:** architecture docs agree; tests prove default startup creates no database and all live state is bounded RAM state.
 
 ### Phase 1 — neural simulation foundation
 
-- [ ] [#19 — Deterministic neural simulation kernel and biological timebase](https://github.com/aakashsiwach/artificial-human/issues/19).
-- [ ] [#20 — Neuron models and inspectable membrane dynamics](https://github.com/aakashsiwach/artificial-human/issues/20).
-- [ ] [#21 — Excitatory and inhibitory synapse dynamics](https://github.com/aakashsiwach/artificial-human/issues/21).
-- [ ] [#22 — Event-driven spike propagation and synaptic delays](https://github.com/aakashsiwach/artificial-human/issues/22).
-- [ ] [#23 — First recurrent neural microcircuit](https://github.com/aakashsiwach/artificial-human/issues/23).
+- [ ] [#19 — Deterministic neural simulation kernel and biological timebase](https://github.com/aakashsiwach/artificial-human/issues/19). Implemented on this PR branch, including a reproducible performance/RAM baseline.
+- [ ] [#20 — Neuron models and inspectable membrane dynamics](https://github.com/aakashsiwach/artificial-human/issues/20). Implemented on this PR branch with LIF state, spike timestamps, leak, threshold, reset and refractory tests.
+- [ ] [#21 — Excitatory and inhibitory synapse dynamics](https://github.com/aakashsiwach/artificial-human/issues/21). Implemented on this PR branch with signed, delayed transmission, bounded current and inhibition ablation.
+- [ ] [#22 — Event-driven spike propagation and synaptic delays](https://github.com/aakashsiwach/artificial-human/issues/22). Implemented on this PR branch with stable event ordering, queue limits and pending-event cancellation.
+- [ ] [#23 — First recurrent neural microcircuit](https://github.com/aakashsiwach/artificial-human/issues/23). Implemented on this PR branch with feed-forward and inhibition-off controls; full biological fidelity is not claimed.
 
 **Exit gate:** a deterministic runnable experiment shows individual neurons communicating through delayed excitatory/inhibitory synapses, recurrent activity, and stable decay—not just named population counters.
 
@@ -53,7 +55,7 @@ These facts are the starting baseline, not completed roadmap requirements. See [
 - [ ] [#24 — Local synaptic plasticity and learning-rule comparisons](https://github.com/aakashsiwach/artificial-human/issues/24).
 - [ ] [#25 — Neural homeostasis and bounded internal regulation](https://github.com/aakashsiwach/artificial-human/issues/25).
 - [ ] [#26 — Population coding and distributed neural representations](https://github.com/aakashsiwach/artificial-human/issues/26).
-- [ ] [#30 — Replace database-backed memory with bounded in-memory cognitive memory](https://github.com/aakashsiwach/artificial-human/issues/30).
+- [ ] [#30 — Replace database-backed memory with bounded in-memory cognitive memory](https://github.com/aakashsiwach/artificial-human/issues/30). The active storage adapter is RAM-only in this PR; distinct memory systems, forgetting, interference and retrieval-dependent strengthening remain open.
 
 **Exit gate:** independent, bounded RAM mechanisms learn, retrieve, associate, forget, and replay without an LLM or database; learning is compared against fixed-weight and simpler baselines.
 

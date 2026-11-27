@@ -37,7 +37,7 @@ These are functional research mappings, not one-to-one anatomical equivalents. B
 
 The target is an executable organism: a deterministic simulation clock continuously advances neural and cognitive state; neurons communicate through synapses; bounded plasticity changes live parameters; perception, memory, prediction, regulation and action form a feedback loop. All live state belongs in RAM, while source code defines the organism and its initial mechanisms. The LLM is optional and replaceable. The active runtime must not depend on SQL/SQLite, a vector database or an external persistence service.
 
-This target is **not yet implemented**. The current code has an abstract rate-based population experiment and a database-backed legacy memory implementation. The programme in [ROADMAP.md](docs/ROADMAP.md) starts by reconciling architecture and establishing the no-database runtime contract.
+A first executable neural substrate and the RAM-only runtime foundation are now implemented on this branch. The active `ArtificialOrganism` uses bounded in-process memory and source-defined identity; a deterministic LIF network advances on the API idle loop. This is a foundation, not the finished organism: weights are fixed, sensory input is still explicit text, and the neural microcircuit is not yet connected to the full cognitive pipeline.
 
 ## Current human-brain-inspired implementation
 
@@ -129,7 +129,7 @@ python -m artificial_human serve
 
 The API binds to 127.0.0.1:8000. OpenAPI docs: http://127.0.0.1:8000/docs.
 
-**Current implementation note:** normal local startup still uses file-backed SQLite by default; `ARTIFICIAL_HUMAN_DB_PATH` selects its path (default `.artificial-human/organism.sqlite3`). Public/volatile mode uses SQLite `:memory:`, which is still a database. Neither path satisfies the new target. Migration to a database-free active runtime is tracked by [issue #18](https://github.com/aakashsiwach/artificial-human/issues/18).
+**Runtime storage note:** local and public `ArtificialOrganism` construction now use the same bounded RAM-only memory adapter. The active runtime does not open SQLite or create memory/identity files; restart clears personal experience, consents, neural activity and learned runtime state. The SQLite repository remains available only for explicit legacy evaluation and CLI operations (for example, `memory-search ... --legacy-sqlite`).
 
 ## Source-defined identity and foundational knowledge
 
@@ -143,11 +143,7 @@ A small reviewable knowledge corpus in `src/artificial_human/cognition/core_know
 holds stable project facts. Relevant facts are retrieved directly from source code and
 provided to the cognitive cycle without an external vector index or database.
 
-The public deployment runs in **volatile in-process mode**. It uses an in-memory store,
-does not connect to an external database, and does not write an identity file or persistent
-personal-memory database. Runtime experiences and working sessions disappear when the
-process restarts or redeploys. The source code is durable; runtime experiences are not.
-This setting does not make source code rewrite itself or automatically learn permanently.
+The active runtime runs in **volatile in-process mode** in both local and public deployments. Identity and foundational knowledge are source-defined; personal memory, consents, neural state and working sessions live only in bounded RAM. Runtime experience disappears when the process restarts or redeploys. The source code is durable; the process does not automatically modify or permanently rewrite itself.
 
 ## Associative knowledge
 
@@ -224,6 +220,21 @@ low-amplitude resting-state approximation runs only while the API process is awa
 not retain raw input text, train weights, or claim to simulate biological neurons. A suspended
 free-tier instance does not execute the loop. See [Brain and intelligence](docs/BRAIN.md).
 
+## Neural simulation substrate (first executable prototype)
+
+The separate `neural/` package contains a deterministic leaky-integrate-and-fire (LIF)
+simulation with individual membrane potentials, threshold/reset/refractory behaviour, last
+spike timestamps, directed excitatory and inhibitory synapses, decaying postsynaptic currents,
+delayed event delivery, stable same-time ordering, queue limits, cancellation, pause/resume,
+single-step, reset, and in-memory snapshots. The API idle loop advances a four-neuron,
+five-synapse recurrent microcircuit without an LLM request.
+
+This is a reduced engineering model, not a biologically faithful neuron or anatomical brain.
+Synaptic weights are fixed, plasticity and homeostasis are not implemented, and the circuit
+is not yet integrated with the complete cognitive pipeline. The older seven-population
+rate-based experiment remains a separate comparison baseline. See [Brain and intelligence](docs/BRAIN.md)
+and the [neural simulation baseline](docs/benchmarks/neural-simulation-baseline.md).
+
 ## Brain provider configuration
 
 The cognitive architecture uses a configurable OpenAI-compatible local or remote reasoning model. For local development with an Ollama-compatible endpoint:
@@ -279,10 +290,10 @@ CLI equivalents: `artificial-human memory-search`, `memory-index status|rebuild`
 
 - Modular Python runtime and explicit subsystem boundaries.
 - Owner-authored identity profile and explicit observation intake.
-- Local SQLite memory for episodic, semantic, procedural, preference, decision, and working data.
+- Bounded RAM-only active memory repository with purpose-specific consent, source provenance, typed memory kinds, reset and capacity limits. The legacy SQLite repository remains isolated for explicit compatibility/evaluation tools.
 - Purpose-specific consent for personal memory writes; source provenance retained.
-- Consent revocation, deletion, owner erasure, and export (including derived embeddings).
-- Versioned, transactional SQLite schema migrations that preserve existing records.
+- Consent revocation, deletion, owner erasure, and export within the process lifetime. Restart clears the in-memory records.
+- Legacy SQLite schema migrations are retained outside the active organism runtime.
 - Semantic, hybrid and temporal long-term memory retrieval with a measured benchmark.
 - Reproducible, offline cognitive evaluation of attention, working memory, prediction/novelty, memory and multi-turn behaviour.
 - Internal event bus, priority queue, and declared resource budgets.
@@ -292,7 +303,7 @@ CLI equivalents: `artificial-human memory-search`, `memory-index status|rebuild`
 
 ## First-run personalisation
 
-Personal memory is **off until the owner explicitly grants consent**.
+Personal memory is **off until the owner explicitly grants consent**. Approved records remain process-local and are lost on restart.
 
 1. Start the API.
 2. Create a personal-memory consent grant with `POST /consents`.
@@ -333,7 +344,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Project status
 
-The repository has useful foundations: source-defined identity, a text-driven cognitive cycle, consent-aware legacy SQLite memory, associative/episodic software mechanisms, an isolated prenatal scaffold, resource/incident utilities and reproducible evaluations. These are not yet a neural brain or a database-free living organism. The next work is **not** another memory feature or benchmark adapter: it is the Phase 0 runtime contract, followed by the deterministic neuron/synapse kernel and recurrent microcircuit. It is not a complete artificial human, a biologically faithful brain simulation, an autonomous self-modifying system, or evidence of consciousness. See the [Research Charter](docs/RESEARCH_CHARTER.md) and [Roadmap](docs/ROADMAP.md).
+The current branch implements the database-free active runtime and the first deterministic LIF neuron/synapse microcircuit, with disconnected, feed-forward, fixed-rate, recurrent, and inhibition-off controls, event cancellation, decay-to-rest tests, snapshots, and a measured throughput/RAM baseline. The full cognitive memory system described by #30 remains unfinished: typed records are RAM-only, but distinct working/episodic/semantic/procedural/spatial mechanisms, biological-style forgetting, interference and retrieval-dependent strengthening are not yet implemented. Plasticity, homeostasis, distributed coding, sensory grounding, world modelling, embodied action and supervised self-development remain future work. This is not a complete artificial human, a biologically faithful brain simulation, an autonomous self-modifying system, or evidence of consciousness. See the [Research Charter](docs/RESEARCH_CHARTER.md) and [Roadmap](docs/ROADMAP.md).
 
 ## License
 

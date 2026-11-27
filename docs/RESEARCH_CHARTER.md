@@ -113,7 +113,7 @@ The following is the research map for the artificial mind. It is not a claim tha
 
 | Domain | Relevant neuroscience / cognitive science | Computational direction | Current project status |
 |---|---|---|---|
-| Neural substrate and plasticity | Neurons, excitatory/inhibitory circuits, synapses, short- and long-term plasticity, neuromodulation, neural dynamics | Neural populations, trainable networks, local plasticity rules, recurrent and spiking models where testable | No biologically realistic neural substrate yet |
+| Neural substrate and plasticity | Neurons, excitatory/inhibitory circuits, synapses, short- and long-term plasticity, neuromodulation, neural dynamics | Neural populations, trainable networks, local plasticity rules, recurrent and spiking models where testable | Reduced LIF neuron/synapse and recurrent microcircuit engineering prototype; fixed weights, no biological fidelity claim |
 | Perception and sensory pathways | Vision, audition, touch, proprioception, vestibular and interoceptive signals | Permission-scoped sensory encoders, temporal alignment, uncertainty, multimodal fusion | Explicit text perception only |
 | Attention and selection | Distributed attentional systems, competition, salience, task-dependent selection | Competitive selection, limited processing budgets, context-sensitive gating | Bounded relevance/salience heuristic |
 | Working memory and executive control | Maintenance, updating, interference, cognitive control, goal management | Limited active state, task state, gating, control policies | Volatile bounded workspace; deterministic plan and approval gate |
@@ -251,7 +251,7 @@ The repository also contains identity, consent, learning-review, event-bus, circ
 - Memory has no retrieval-dependent strengthening, biological forgetting, interference model, contiguity-based recall, or gradual hippocampal-cortical consolidation.
 - Temporal intent is based on English rules and may fail on unusual wording or other languages.
 - There is no affective appraisal, interoceptive body model, homeostatic drive system, or reinforcement-based action selection.
-- There is no individual-neuron/spiking neural substrate, no runtime synaptic plasticity in `cognition/dynamics.py`, and no neuromorphic hardware integration. The seven-population/ten-projection rate model is an abstract prototype.
+- A reduced individual-neuron LIF simulator and four-neuron recurrent excitatory/inhibitory microcircuit now exist under `neural/`. They use fixed weights and are not yet integrated with cognitive learning or the wider rate-based population engine. There is no STDP, synaptic homeostasis, neuromorphic hardware integration or claim of biological neuron fidelity. The seven-population/ten-projection rate model remains an abstract comparison prototype.
 - The benchmarks are small, synthetic, English-only, and authored within the project. They are regression tools, not evidence of human-like cognition. Independently authored data now cover long-term recall (LongMemEval Oracle) and a human digit-span reference, but not attention or prediction.
 - Measured baseline weaknesses (see the cognitive evaluation report): salient distractors defeat the attention formula; per-source normalisation lets weak learning examples take attention slots; working-memory forgetting is decay-driven, recency-only and content-agnostic; lexical novelty treats contradictions and script violations as familiar; retrieval ignores the conversational context held in working memory.
 - The system is not a complete artificial human, a biologically faithful brain simulation, or evidence of consciousness.
@@ -320,16 +320,18 @@ Reject technologies that add complexity without measurable value.
 The active delivery sequence is the code-first living-organism programme in [ROADMAP.md](ROADMAP.md) and parent tracker [GitHub issue #16](https://github.com/aakashsiwach/artificial-human/issues/16). It supersedes the older sequence that placed neural substrate research after further memory and benchmark extensions.
 
 ### Phase 0 — architecture and RAM-only runtime
-- [ ] Align the README, charter, roadmap, brain, blueprint, architecture, memory and safety documents.
-- [ ] Specify and test a database-free runtime boundary. The active organism must not initialise SQLite, SQL, a vector store or an external persistence service.
-- [ ] Keep runtime activity, synaptic state, memory, goals and internal drives in bounded process memory. Restart resets learned state in this first phase.
-- [ ] Keep the legacy SQLite implementation isolated while migration proceeds; do not mislabel `:memory:` SQLite as database-free.
+- [x] Align the README, charter, roadmap, brain, blueprint, architecture, memory and safety documents in this PR.
+- [x] Specify and test the database-free active runtime boundary. Default organism construction uses bounded in-process state and performs no SQLite connection or file creation.
+- [x] Keep active runtime activity, consented memory records and neural state in bounded process memory. Restart resets runtime experience.
+- [x] Isolate the legacy SQLite implementation and make its driver lazy-loaded; default CLI memory tools use RAM.
 
 ### Phase 1 — neural simulation substrate
-- [ ] Implement a deterministic simulation clock, event scheduler and bounded network state.
-- [ ] Implement inspectable individual neuron dynamics, starting with a justified reduced model.
-- [ ] Implement excitatory/inhibitory synapses, transmission delays and event-driven spike propagation.
-- [ ] Demonstrate a recurrent microcircuit with causal propagation, inhibition, recurrent activity and stable decay.
+- [x] Implement deterministic integer-step simulation time, stable event ordering, bounded network state and in-memory snapshots.
+- [x] Implement inspectable LIF membrane dynamics, including threshold, reset, refractory period and spike timestamps.
+- [x] Implement excitatory/inhibitory synapses, decaying postsynaptic current, delayed transmission, cancellation and queue-overflow behaviour.
+- [x] Demonstrate a recurrent four-neuron microcircuit with propagation, feed-forward and inhibition-off controls, bounded activity traces and a recorded performance/RAM baseline.
+
+These are reduced engineering models, not biologically complete mechanisms. Local plasticity, homeostasis, sensory grounding and integration with the cognitive pipeline remain future work.
 
 ### Phase 2 — learning, regulation, representations and memory
 - [ ] Compare local plasticity rules, including STDP-inspired and rate-based baselines, with bounded weights and reproducible updates.

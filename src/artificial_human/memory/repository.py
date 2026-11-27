@@ -4,14 +4,26 @@ import builtins
 import hashlib
 import json
 import os
-import sqlite3
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Final, Literal
+from typing import TYPE_CHECKING, Any, Final, Literal
 from uuid import uuid4
+
+if TYPE_CHECKING:
+    import sqlite3
+else:
+    class _SQLiteModuleProxy:
+        """Load sqlite3 only when an explicit legacy SQLite operation is used."""
+
+        def __getattr__(self, name: str) -> Any:
+            import sqlite3 as module
+
+            return getattr(module, name)
+
+    sqlite3 = _SQLiteModuleProxy()
 
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.temporal import optional_utc_iso

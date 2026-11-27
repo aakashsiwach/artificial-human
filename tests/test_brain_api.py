@@ -48,8 +48,8 @@ def test_brain_endpoint_uses_consent_memory_and_returns_evidence(tmp_path) -> No
         "boundaries": ["Do not send anything without approval."],
         "communication_preferences": {"tone": "natural"},
     })
-    assert profile.status_code == 200
-    assert client.get("/identity").json()["display_name"] == "Aakash"
+    assert profile.status_code == 409
+    assert client.get("/identity").json()["display_name"] == "Artificial Human"
 
     consent = client.post("/consents", json={"purpose": "personal_memory"}).json()
     memory = client.post("/memories", json={
@@ -262,7 +262,7 @@ def test_public_runtime_uses_code_identity_and_volatile_memory_only(
     )
 
     assert organism.volatile_runtime is True
-    assert organism.memory.path.as_posix() == ":memory:"
+    assert organism.memory.path.as_posix() == "<in-memory>"
     assert organism.identity_repository is None
     assert organism.identity.display_name == "Artificial Human"
     assert organism.identity.description
@@ -271,7 +271,7 @@ def test_public_runtime_uses_code_identity_and_volatile_memory_only(
     assert not identity_path.exists()
     runtime = organism.status()["runtime"]
     assert runtime["external_database_connected"] is False
-    assert runtime["storage_mode"] == "volatile_in_process"
+    assert runtime["storage_mode"] == "in_memory_no_database"
     assert runtime["personal_experience_persists_restart"] is False
 
 
@@ -328,6 +328,10 @@ def test_api_lifespan_advances_idle_population_activity(tmp_path) -> None:
         assert state["idle_ticks"] >= 1
         assert state["inputs_processed"] == 0
         assert state["integration_steps"] >= 1
+        neural = organism.status()["neural_simulation"]
+        assert neural["step_index"] >= 1
+        assert neural["neuron_count"] == 4
+        assert neural["synapse_count"] == 5
 
 
 def test_father_linkedin_question_returns_founder_supplied_profile(tmp_path) -> None:

@@ -30,11 +30,13 @@ Consider prompt injection in imported content, malicious documents, compromised 
 A repair approval in this release only records that a named reviewer approved the proposal. It does not run the fix. Future approval must bind to an immutable diff, test evidence, target environment, and expiry. Deployment must be a separate permission from patch preparation.
 
 
-## Current volatile deployment mode and migration status
+## Active runtime storage and privacy status
 
-The public Artificial Human service uses source-defined identity and process-local runtime storage. Its current typed, consent-aware personal-memory adapter is SQLite `:memory:`. It does not use a disk-backed personal-memory SQLite file or external database, and no external embedding provider is enabled in this mode. However, in-memory SQLite remains a database: **the current runtime is not yet compliant with the project's new database-free target**. Normal local development still defaults to file-backed SQLite.
+The active local and public `ArtificialOrganism` paths now use the same bounded in-process memory adapter. It does not initialise SQLite, create personal-memory or identity files, or connect to an external database. Memory writes still require a purpose-specific in-memory consent grant; records retain owner, source and consent provenance. Revocation removes the owner's affected volatile records and derived state; process restart clears all runtime memories and consents.
 
-The target runtime will use bounded in-process data structures for neural activity, synapses, memory, goals and internal drives. Restart resets these runtime experiences and learned parameters in this phase. Issue #18 defines the migration and tests. Stable identity and architecture remain version-controlled source and cannot be rewritten through the public API.
+The legacy SQLite repository is retained for explicit compatibility and offline evaluation only. Its driver is lazy-loaded and normal active-runtime startup does not open a database. CLI commands use RAM by default; operators must explicitly request legacy SQLite mode.
+
+The active memory adapter bounds records, consents, embeddings, index failures, links and training examples. Neural simulation separately bounds neurons, synapses, pending events, synaptic currents and externally applied current. Capacity exhaustion is explicit; the repository does not silently evict memory records. These controls reduce runaway state growth but are not a certified privacy or security product. Stable identity and architecture remain version-controlled source and cannot be rewritten through the public API.
 
 ## Self-development safety boundary
 

@@ -170,7 +170,7 @@ def test_index_status_rebuild_and_deletion(setup) -> None:
     status = client.get("/memories/index/status").json()
     assert status["retrieval_mode"] == "hybrid"
     assert status["indexed_memories"] == 1
-    assert status["schema_version"] == 2
+    assert status["schema_version"] == 0  # RAM-only adapter has no database schema
     rebuilt = client.post("/memories/index/rebuild", json={"full": True}).json()
     assert rebuilt["indexed"] == 1
     assert client.delete(f"/memories/{record['id']}").status_code == 200

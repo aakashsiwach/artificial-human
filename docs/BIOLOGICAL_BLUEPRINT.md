@@ -6,7 +6,7 @@ The [Research Charter](RESEARCH_CHARTER.md) is the authoritative project north s
 
 The human brain is the scientific reference for the artificial mind. We study biological mechanisms and cognitive theories, translate selected functions into explicit computational models, and evaluate those models. A biological label must never imply that ordinary software is a real organ or that code reproduces the biology.
 
-**Living-code target:** build a source-defined organism whose simulation, neural mechanisms, memory and adaptation execute continuously with bounded RAM state. The LLM is an optional language adapter, not the brain. No SQL/SQLite, vector database, external memory service or persistent runtime database belongs in the target active runtime. Current merged code does not satisfy this yet: normal local runtime uses file-backed SQLite and public/volatile mode uses SQLite `:memory:`; migration is tracked in issues #18 and #30.
+**Living-code target:** build a source-defined organism whose simulation, neural mechanisms, memory and adaptation execute continuously with bounded RAM state. The LLM is an optional language adapter, not the brain. The active runtime now follows the RAM-only contract; the SQLite repository is an explicitly isolated legacy tool. The first LIF neuron/synapse microcircuit is an engineering prototype with fixed weights, not a biological replica. Full cognitive-memory mechanisms remain open under #30.
 
 Brain functions are distributed across interacting networks. The table below is a research map, not a one-region/one-module anatomical claim.
 
@@ -22,6 +22,7 @@ Use modern foundation models, deep-learning runtimes, embeddings, graph and rela
 
 | Brain function / research area | Artificial Human subsystem | Current implementation |
 | --- | --- | --- |
+| Neuronal communication | Neural substrate | Deterministic LIF neurons, excitatory/inhibitory synapses and a small recurrent microcircuit; fixed weights, not a biological replica |
 | Sensory pathways and perception | Perception | Explicit language percepts; multimodal sensing is future work |
 | Selective attention | Attention | Bounded relevance/salience selection |
 | Working-memory networks | Working memory | Capacity-limited volatile workspace |
