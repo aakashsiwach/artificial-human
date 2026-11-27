@@ -39,7 +39,7 @@ The camera panel is opt-in. The browser requests `getUserMedia` only after the o
 
 ## Always-connected availability
 
-The Control Room automatically restores a valid session after reload, polls its same-origin API while open, and refreshes when the tab becomes visible again. This removes manual API connection steps; it does not guarantee that the hosting process is continuously running.
+The Control Room automatically restores a valid session after reload and fetches the latest snapshot after sign-in. It refreshes when the owner opens the tab again or uses the refresh control; it does not send artificial background traffic to keep a free service awake. This removes manual API connection steps; it does not guarantee that the hosting process is continuously running.
 
 Render documents that free web services spin down after 15 minutes without inbound traffic and take about a minute to wake on the next request. Paid compute instances do not spin down. Do not generate synthetic keep-alive traffic to bypass that limit. True always-on organism execution requires a paid, continuously running Render instance and explicit approval of the resulting charge. The current free service can still sleep, restart or pause its in-memory simulation.
 
