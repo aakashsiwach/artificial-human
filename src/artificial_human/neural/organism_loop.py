@@ -115,7 +115,7 @@ class EpisodicMemory:
         def similarity(item: tuple[int, tuple[float, ...], str]) -> float:
             other = item[1]
             n = min(len(cue), len(other))
-            dot = sum(a * b for a, b in zip(cue[:n], other[:n]))
+            dot = sum(a * b for a, b in zip(cue[:n], other[:n], strict=True))
             norm = math.sqrt(sum(a*a for a in cue[:n]) * sum(b*b for b in other[:n]))
             return dot / norm if norm else 0.0
         return max(self.episodes, key=similarity)[2]
@@ -127,7 +127,7 @@ class WorldModel:
     learning_rate: float = 0.05
 
     @classmethod
-    def create(cls, dimensions: int = 4) -> "WorldModel":
+    def create(cls, dimensions: int = 4) -> WorldModel:
         if not 1 <= dimensions <= 64:
             raise ValueError("dimensions must be in [1, 64]")
         return cls([0.0] * dimensions)
@@ -135,7 +135,7 @@ class WorldModel:
     def predict(self, state: tuple[float, ...]) -> float:
         if len(state) != len(self.weights) or not all(map(math.isfinite, state)):
             raise ValueError("invalid world state")
-        return sum(w * x for w, x in zip(self.weights, state))
+        return sum(w * x for w, x in zip(self.weights, state, strict=True))
 
     def observe(self, state: tuple[float, ...], outcome: float) -> float:
         error = outcome - self.predict(state)
