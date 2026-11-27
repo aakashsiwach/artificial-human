@@ -51,6 +51,6 @@ def test_memory_search_with_content_prints_on_cp1252_stdout(tmp_path, monkeypatc
     repository.close()
     stream = _cp1252_stdout()
     monkeypatch.setattr(sys, "stdout", stream)
-    assert main(["memory-search", "tea", "--show-content"]) == 0
+    assert main(["memory-search", "tea", "--show-content", "--legacy-sqlite"]) == 0
     stream.flush()
     assert "9–10 am − always" in stream.buffer.getvalue().decode("utf-8")

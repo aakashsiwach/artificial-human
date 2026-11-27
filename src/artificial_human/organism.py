@@ -20,13 +20,14 @@ from artificial_human.identity.repository import IdentityRepository
 from artificial_human.immune.engine import ImmuneSystem
 from artificial_human.learning import LearningSystem
 from artificial_human.memory.embeddings import EmbeddingProvider, embedding_provider_from_env
-from artificial_human.memory.repository import MemoryRepository
+from artificial_human.memory.volatile_repository import InMemoryMemoryRepository
 from artificial_human.memory.search import SearchConfig
 from artificial_human.memory.system import LongTermMemory
 from artificial_human.metabolism.governor import ResourceGovernor
 from artificial_human.regeneration.engine import RepairEngine
 from artificial_human.sensory.manual import ManualSensor
 from artificial_human.sleep.consolidation import SleepSystem
+from artificial_human.neural.circuits import build_recurrent_microcircuit
 
 
 class ArtificialOrganism:
@@ -39,32 +40,22 @@ class ArtificialOrganism:
         database_path: str | Path | None = None,
         identity_path: str | Path | None = None,
         brain_provider: ChatProvider | None = None,
-        embedding_provider: EmbeddingProvider | Literal["env"] | None = "env",
+        embedding_provider: EmbeddingProvider | Literal["env"] | None = None,
         search_config: SearchConfig | None = None,
     ) -> None:
         self.owner_id: str = (
             owner_id or os.getenv("ARTIFICIAL_HUMAN_OWNER_ID") or "local-owner"
         )
-        public_deployment = os.getenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "").lower() in {
-            "1", "true", "yes",
-        }
-        requested_storage = os.getenv("ARTIFICIAL_HUMAN_STORAGE_MODE", "").strip().lower()
-        self.volatile_runtime = public_deployment or requested_storage == "volatile"
-        if self.volatile_runtime:
-            # No file-backed identity, SQLite database, or external vector service
-            # is used in the public runtime. Foundational identity lives in source.
-            self.identity_repository: IdentityRepository | None = None
-            self.identity = core_identity_profile(self.owner_id)
-            self.memory = MemoryRepository(":memory:")
-            self.embedding_provider = None
+        # The active organism is always RAM-only. Legacy path arguments remain
+        # accepted for compatibility but are intentionally ignored.
+        self.volatile_runtime = True
+        self.identity_repository: IdentityRepository | None = None
+        self.identity = core_identity_profile(self.owner_id)
+        self.memory = InMemoryMemoryRepository()
+        if embedding_provider == "env":
+            self.embedding_provider = embedding_provider_from_env()
         else:
-            self.identity_repository = IdentityRepository(self.owner_id, identity_path)
-            self.identity = self.identity_repository.load()
-            self.memory = MemoryRepository(database_path)
-            # Semantic indexing is off unless explicitly configured; see docs/MEMORY.md.
-            self.embedding_provider = (
-                embedding_provider_from_env() if embedding_provider == "env" else embedding_provider
-            )
+            self.embedding_provider = embedding_provider
         self.learning = LearningSystem(self.memory)
         self.long_term_memory = LongTermMemory(
             self.memory, self.embedding_provider, search_config or SearchConfig.from_env()
@@ -72,6 +63,9 @@ class ArtificialOrganism:
         self.brain = Planner()
         self.chat_provider = brain_provider or OpenAICompatibleProvider()
         self.neural_dynamics = RecurrentDynamicsEngine()
+        # Individual-neuron/synapse circuit. The older population engine is
+        # retained temporarily as a behavioural baseline during migration.
+        self.neural_simulation = build_recurrent_microcircuit()
         retriever = MemoryRetriever()
         self.cognitive_brain = BrainService(
             self.chat_provider,
@@ -103,6 +97,7 @@ class ArtificialOrganism:
                 "authentication_configured": None,
             }
         provider_status["neural_dynamics"] = self.neural_dynamics.snapshot().as_dict()
+        provider_status["neural_simulation"] = self.neural_simulation.snapshot().as_dict()
         return provider_status
 
     def status(self) -> dict[str, Any]:
@@ -115,16 +110,8 @@ class ArtificialOrganism:
             "systems": {
                 "brain": "cognitive_cycle_ready" if reasoning["configured"] else "cognitive_cycle_ready_provider_not_configured",
                 "identity": "ready",
-                "memory": (
-                    "volatile_in_process_no_external_database"
-                    if self.volatile_runtime
-                    else "ready_consent_required"
-                ),
-                "storage": (
-                    "volatile_process_memory_restart_resets_state"
-                    if self.volatile_runtime
-                    else "local_persistent_storage"
-                ),
+                "memory": "bounded_in_memory_consent_scoped",
+                "storage": "bounded_process_memory_restart_resets_state",
                 "memory_retrieval": (
                     "hybrid_lexical_semantic_temporal"
                     if self.embedding_provider is not None
@@ -141,13 +128,14 @@ class ArtificialOrganism:
             },
             "reasoning_provider": reasoning,
             "runtime": {
-                "storage_mode": "volatile_in_process" if self.volatile_runtime else "local_persistent",
+                "storage_mode": "in_memory_no_database",
                 "external_database_connected": False,
-                "personal_experience_persists_restart": not self.volatile_runtime,
-                "identity_source": "version_controlled_source_code" if self.volatile_runtime else "local_owner_profile",
+                "personal_experience_persists_restart": False,
+                "identity_source": "version_controlled_source_code",
             },
             "cognitive_systems": self.cognitive_brain.architecture.status(),
             "neural_dynamics": self.neural_dynamics.snapshot().as_dict(),
+            "neural_simulation": self.neural_simulation.snapshot().as_dict(),
             "associative_memory": self.cognitive_brain.knowledge_network.snapshot(),
             "relational_memory": self.cognitive_brain.architecture.relational_memory.snapshot(),
             "episodic_memory": self.cognitive_brain.architecture.episodic_memory.snapshot(),

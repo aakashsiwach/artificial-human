@@ -2,19 +2,27 @@
 
 This document describes what the long-term memory subsystem actually implements, how to configure and evaluate it, and how far it is from biological human memory. The implementation lives in `src/artificial_human/memory/`. Design decisions are recorded in [ADR 0001](adr/0001-semantic-hybrid-temporal-memory.md).
 
-**Scope note.** This document records the current/legacy long-term-memory implementation: SQLite records, pretrained text embeddings, ranking formulas and rules. None of it simulates neurons, synapses or hippocampal circuitry. The new project target is a database-free, in-memory cognitive memory architecture integrated with the neural substrate. The SQLite implementation must be migrated or isolated from the active organism runtime under issue #30; do not extend database dependence as a new brain feature.
+**Scope note.** This document describes the legacy long-term-memory retrieval model and its implementation/evaluation details. The active organism now uses `memory/volatile_repository.py`, a bounded consent-aware RAM adapter; the SQLite `MemoryRepository` is lazy-loaded and retained only for explicit compatibility/evaluation tooling. This storage migration does not complete #30: distinct working, episodic, semantic, procedural and spatial memory mechanisms, interference, forgetting, replay dynamics and retrieval-dependent strengthening remain future work. Neither the SQLite records nor this RAM adapter are biological neural mechanisms.
 
 ## 1. Components
 
 | Module | Responsibility |
 | --- | --- |
-| `memory/repository.py` | Source of truth: consent-gated records, temporal fields, supersession/contradiction links, embedding rows, schema migrations |
+| `memory/volatile_repository.py` | Active organism store: bounded consent-gated process-local records, temporal fields, links, RAM embeddings and review examples |
+| `memory/repository.py` | Legacy SQLite implementation: consent-gated records, temporal fields, index rows and schema migrations; explicitly selected only |
 | `memory/temporal.py` | UTC timestamp handling and rule-based temporal intent ("now", "previously", "in January") |
 | `memory/embeddings.py` | Replaceable embedding backends behind one interface |
 | `memory/index.py` | Consent-aware indexing, re-indexing, failure tracking, vector similarity |
 | `memory/search.py` | Unified hybrid search: filters, lexical/semantic/temporal channels, Reciprocal Rank Fusion, explanations, timeline |
 | `memory/system.py` | `LongTermMemory` facade: write first, then index |
 | `memory/benchmark/` | Synthetic dataset, metrics, evaluation runner and report writer |
+
+### Active organism storage
+
+The active organism writes to bounded in-process dictionaries. The SQLite schema and
+migration sections below describe the retained legacy repository, not the default runtime.
+The default CLI search/index operations use RAM; add `--legacy-sqlite` only when deliberately
+operating on a legacy SQLite database. Restart clears the active organism's personal memory.
 
 ## 2. Semantic memory
 

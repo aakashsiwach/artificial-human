@@ -4,7 +4,7 @@
 
 Read the [Research Charter](RESEARCH_CHARTER.md) before planning a new cognitive subsystem. It is the durable north star for the project, documents the scientific evidence hierarchy and technology strategy, and includes a context-recovery prompt for future AI-assisted sessions.
 
-Artificial Human is intended to be an artificial mind whose architecture is informed by human neuroscience and cognitive science. The human brain is the research reference, not a decorative metaphor. The current implementation is a set of transparent software mechanisms inspired by selected cognitive functions; it is not a neural simulation, a complete human brain, or evidence of consciousness.
+Artificial Human is intended to be an artificial mind whose architecture is informed by human neuroscience and cognitive science. The human brain is the research reference, not a decorative metaphor. The current implementation now includes a reduced LIF neuron/synapse simulation prototype alongside the existing transparent cognitive software mechanisms. It is not a complete human brain, a biologically faithful simulation, or evidence of consciousness.
 
 The language model is a component used for language generation and deliberation. It is not the architecture itself and must not be treated as a replacement for perception, attention, memory, learning, prediction, executive control, or action selection.
 
@@ -62,29 +62,37 @@ A deterministic keyword scorer retrieves relevant facts in-process and includes 
 language-model context with source labels. This is code-defined knowledge, not a user-memory
 database and not a claim that all general world knowledge is stored in this repository.
 
-## Current storage paths — not yet database-free
+## Active runtime storage — RAM-only
 
-The current implementation has two storage modes, neither of which satisfies the new no-database target:
+Local and public `ArtificialOrganism` instances now use the same bounded process-local memory adapter. The active runtime does not initialise SQLite, create memory/identity files or connect to an external persistence service. Identity and foundational knowledge remain source-defined; consent grants, typed personal-memory records, index metadata, neural state and working sessions live in RAM and reset on process restart.
 
-- Normal local construction uses a file-backed SQLite `MemoryRepository` by default.
-- `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` or `ARTIFICIAL_HUMAN_STORAGE_MODE=volatile` selects SQLite `:memory:`, disables embeddings, and uses source-defined identity.
-- Public/volatile runtime experiences disappear on process restart, but the SQLite adapter is still a database.
-- The local identity repository is bypassed in public/volatile mode; constitutional identity remains source-defined and read-only.
+`memory/repository.py` remains as a legacy SQLite implementation for explicit compatibility and benchmark tooling. Its SQLite driver is lazy-loaded; normal organism construction and default CLI memory operations use the RAM adapter. The explicit legacy CLI mode is selected with `--legacy-sqlite`.
 
-This is a truthful description of the merged baseline, not the target. Phase 0 issue #18 must remove DB initialisation from the active organism runtime and prove it with tests before we call the runtime database-free.
+The RAM storage migration is not the complete cognitive-memory redesign in #30. Memory records retain typed kinds, consent, provenance and temporal metadata, but separate working/episodic/semantic/procedural/spatial mechanisms, biological-style forgetting, interference, retrieval-dependent strengthening and a richer associative memory model remain future work.
 
-## Living-code target — not yet implemented
+## Neural simulation substrate — first LIF microcircuit
 
-The intended organism is source-defined architecture executing continuously with bounded process-local state. The simulation kernel, neural substrate, synapses, memory dynamics, internal drives and development programme are code. Their live state changes in RAM as the simulation advances.
+`neural/simulation.py` implements a deterministic discrete-time engine. It contains inspectable LIF neurons with resting potential, membrane time constant, input current, threshold, reset, refractory interval, spike count and last-spike timestamp. Directed synapses carry excitatory or inhibitory sign, bounded weight, transmission delay and a postsynaptic-current decay time constant. Spikes schedule events by integer simulation step with a stable insertion-order tie-break.
 
-Required properties:
-- Simulation time advances without a user request, HTTP handler or LLM call.
-- Neural and cognitive mechanisms continue when the LLM adapter is disabled.
-- Inputs enter as explicit sensory/environment events; neural state evolves; predictions are compared with outcomes; local learning changes bounded parameters.
-- Restart resets runtime experiences and learned parameters during this phase. There is no database or automatic disk persistence.
-- Self-development may create isolated candidate code, tests and immutable diffs only. Human review is required before source adoption, merge or deployment. The running organism never silently rewrites itself.
+The engine provides explicit event queue capacity and overflow accounting, pending-event cancellation, deterministic simultaneous delivery, pause/resume, single-step, bounded fast-forward, reset, and in-memory state snapshot/restore. No wall-clock scheduler, database or LLM call is needed by the kernel.
 
-“Living” here describes a continuously executing and adapting computational process. It is not a claim of biological life, subjective experience, sentience or consciousness.
+`neural/circuits.py` builds a four-neuron recurrent demonstration with sensory, excitatory and inhibitory roles. The experiment includes feed-forward and inhibition-off controls; it is an engineering microcircuit, not a claim of anatomical replication. Synaptic weights are fixed. There is no STDP, homeostasis, population coding, sensory encoder, predictive world model or body/environment loop yet.
+
+The API idle task advances this LIF circuit while the process is awake. The experiment includes disconnected, feed-forward, recurrent, inhibition-off and same-size fixed-rate controls. In the current fixed-parameter demo, the four-step sensory stimulus produces a finite transient; with the inhibitory projection enabled, spiking stops after the transient and membrane potentials return to rest. In the matched inhibition-off control, recurrent excitatory firing persists. The fixed-rate control has continuous bounded activity but no membrane threshold, refractory period or event delays. The older `cognition/dynamics.py` seven-population rate model remains a separate comparison baseline; the LIF package has not yet replaced or been integrated into the full cognitive cycle.
+
+The benchmark and its recorded Python 3.13 runner result are in [Neural simulation baseline](benchmarks/neural-simulation-baseline.md). The 20,000-step CI run recorded 19,319.47 steps/second and 150,864 bytes peak Python-traced memory on that runner. These are host-specific measurements, not biological or cross-machine performance claims.
+
+## Living-code status — partial foundation
+
+The source-defined organism and first neural simulation substrate now have bounded RAM execution, but the full living-organism goal remains future work. In particular:
+- The idle simulation advances while the API process is awake; a suspended host does not execute it.
+- The current LIF circuit uses fixed parameters and weights. Learning and adaptation are not yet implemented in this network.
+- The cognitive cycle still relies on text perception and heuristic software stages; it is not driven by neural circuit outputs.
+- Sensory events, world-state prediction, homeostasis, action selection and a closed-loop simulated body/environment are not implemented.
+- Restart resets runtime experience and learned state. No automatic persistence or source rewrite occurs.
+- Self-development may only produce isolated candidate code, tests and immutable diffs; human approval remains required before source adoption, merge or deployment.
+
+“Living” describes the research goal of a continuously executing and adapting computational process. It is not a claim of biological life, subjective experience, sentience or consciousness.
 
 ## Implemented cognitive cycle
 

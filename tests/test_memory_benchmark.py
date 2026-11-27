@@ -104,11 +104,11 @@ def test_cli_memory_index_and_search(tmp_path, monkeypatch, capsys) -> None:
         owner_id="cli-owner", kind=MemoryKind.SEMANTIC, content="Private tea preference",
         source="test", consent_id=consent.id,
     )
-    assert main(["memory-index", "status"]) == 0
+    assert main(["memory-index", "status", "--legacy-sqlite"]) == 0
     assert '"retrieval_mode": "lexical_only"' in capsys.readouterr().out
-    assert main(["memory-search", "tea"]) == 0
+    assert main(["memory-search", "tea", "--legacy-sqlite"]) == 0
     output = capsys.readouterr().out
     assert '"strategy": "lexical"' in output
     assert "Private tea preference" not in output  # content hidden unless requested
-    assert main(["memory-search", "tea", "--show-content"]) == 0
+    assert main(["memory-search", "tea", "--show-content", "--legacy-sqlite"]) == 0
     assert "Private tea preference" in capsys.readouterr().out

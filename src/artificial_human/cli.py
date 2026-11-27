@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict
 import json
+import os
 import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -17,7 +18,12 @@ from artificial_human.memory.embeddings import (
     DEFAULT_FASTEMBED_MODEL,
     EmbeddingProvider,
     FastEmbedProvider,
+    embedding_provider_from_env,
 )
+from artificial_human.memory.repository import MemoryRepository
+from artificial_human.memory.search import SearchConfig
+from artificial_human.memory.system import LongTermMemory
+
 from artificial_human.memory.search import SearchFilters
 from artificial_human.organism import ArtificialOrganism
 
@@ -109,26 +115,48 @@ def _memory_eval(args: argparse.Namespace) -> int:
     return 0
 
 
-def _memory_search(args: argparse.Namespace) -> int:
-    organism = ArtificialOrganism()
-    response = organism.long_term_memory.search(
-        organism.owner_id, args.query, top_k=args.top_k,
-        filters=SearchFilters(kinds=tuple(MemoryKind(kind) for kind in args.kind or ())),
+def _memory_search_service(args: argparse.Namespace):
+    """Return the default RAM-only service or an explicitly selected legacy SQLite tool."""
+    if not args.legacy_sqlite:
+        organism = ArtificialOrganism()
+        return organism.owner_id, organism.long_term_memory, None
+
+    owner_id = os.getenv("ARTIFICIAL_HUMAN_OWNER_ID", "local-owner")
+    repository = MemoryRepository(os.getenv("ARTIFICIAL_HUMAN_DB_PATH"))
+    service = LongTermMemory(
+        repository, embedding_provider_from_env(), SearchConfig.from_env()
     )
-    payload = response.explain()
-    for item, result in zip(payload["results"], response.results, strict=True):
-        if args.show_content:
-            item["content"] = result.memory.content
-    _emit(json.dumps(payload, indent=2, ensure_ascii=False))
+    return owner_id, service, repository
+
+
+def _memory_search(args: argparse.Namespace) -> int:
+    owner_id, service, repository = _memory_search_service(args)
+    try:
+        response = service.search(
+            owner_id, args.query, top_k=args.top_k,
+            filters=SearchFilters(kinds=tuple(MemoryKind(kind) for kind in args.kind or ())),
+        )
+        payload = response.explain()
+        for item, result in zip(payload["results"], response.results, strict=True):
+            if args.show_content:
+                item["content"] = result.memory.content
+        _emit(json.dumps(payload, indent=2, ensure_ascii=False))
+    finally:
+        if repository is not None:
+            repository.close()
     return 0
 
 
 def _memory_index(args: argparse.Namespace) -> int:
-    organism = ArtificialOrganism()
-    if args.action == "rebuild":
-        report = organism.long_term_memory.reindex(organism.owner_id, full=args.full)
-        print(json.dumps(report.as_dict(), indent=2))
-    print(json.dumps(organism.long_term_memory.status(organism.owner_id), indent=2))
+    owner_id, service, repository = _memory_search_service(args)
+    try:
+        if args.action == "rebuild":
+            report = service.reindex(owner_id, full=args.full)
+            print(json.dumps(report.as_dict(), indent=2))
+        print(json.dumps(service.status(owner_id), indent=2))
+    finally:
+        if repository is not None:
+            repository.close()
     return 0
 
 
@@ -167,10 +195,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--show-content", action="store_true",
         help="Include memory content in the output (omitted by default)",
     )
+    search.add_argument(
+        "--legacy-sqlite", action="store_true",
+        help="Explicitly use the legacy SQLite store; default search is RAM-only",
+    )
 
     index = commands.add_parser("memory-index", help="Inspect or rebuild the semantic index")
     index.add_argument("action", choices=("status", "rebuild"))
     index.add_argument("--full", action="store_true", help="Re-embed every eligible memory")
+    index.add_argument(
+        "--legacy-sqlite", action="store_true",
+        help="Explicitly use the legacy SQLite store; default index is RAM-only",
+    )
 
     evaluate = commands.add_parser("memory-eval", help="Run the retrieval benchmark")
     evaluate.add_argument("--backend", choices=("fastembed", "none"), default="fastembed")

@@ -38,6 +38,9 @@ jobs:
         run: artificial-human memory-eval --backend none --output-dir benchmark-output
       - name: Cognitive evaluation (offline, deterministic, no LLM or model download)
         run: artificial-human cognition-eval --suite all --output-dir benchmark-output
+      - name: Neural simulation performance and memory baseline
+        if: matrix.python-version == '3.13'
+        run: python scripts/benchmark_neural_simulation.py --steps 20000 --output benchmark-output/neural-simulation-baseline.json
       - name: Upload offline benchmark reports
         uses: actions/upload-artifact@v4
         with:

@@ -8,17 +8,14 @@ The [Research Charter](RESEARCH_CHARTER.md) defines evidence standards; the [Roa
 
 ## Current baseline — honest status
 
-The merged repository is a Python modular monolith with FastAPI, a cognitive software pipeline and a legacy SQLite memory subsystem.
+The repository is a Python modular monolith with FastAPI, a cognitive software pipeline, a bounded RAM-only active memory adapter, a legacy SQLite repository, and a first individual-neuron simulation package.
 
-- Normal local `ArtificialOrganism` construction defaults to file-backed SQLite.
-- Public/volatile mode uses SQLite `:memory:`; this is process-local but remains a database.
-- `cognition/dynamics.py` has seven abstract populations and ten fixed projections, performs bounded rate updates, and does not model individual neurons, spike timing, synaptic delays or runtime plasticity.
-- The API lifespan runs a low-amplitude idle activity approximation once per second while the process is awake. It is not a complete simulation clock or evidence of biological resting-state activity.
-- The prenatal scaffold is a separate experimental abstraction and is not integrated with runtime dynamics.
-- Perception is explicit text; the current world model, sensory body and simulated action loop do not exist.
-- The cognitive cycle has attention, working memory, memory retrieval, lexical novelty, deterministic planning and an optional LLM language interface. Several mechanisms are heuristics or database-backed software.
-
-The current implementation is **not yet database-free**. Phase 0 issue #18 must establish and test that boundary before active runtime migration.
+- Local and public `ArtificialOrganism` construction now use the same RAM-only runtime contract. The active path creates no database file and does not call SQLite; the legacy SQLite implementation is lazy-loaded for explicit legacy operations only.
+- `neural/simulation.py` implements deterministic discrete simulation time, LIF membrane state, refractory periods and spike timestamps, excitatory/inhibitory synapses, decaying postsynaptic currents, delayed event ordering, cancellation, bounded queues/currents, pause/resume/single-step/reset and in-memory snapshot/restore.
+- `neural/circuits.py` defines a small recurrent four-neuron circuit. It is an engineering experiment, not an anatomical model; weights are fixed.
+- The API idle task advances the LIF circuit while the process is awake. The existing seven-population rate engine remains a separate comparison baseline.
+- Perception is explicit text. Vision, audition, touch, proprioception, interoception, predictive world state and a body/environment loop do not yet exist.
+- The cognitive cycle still uses attention, working memory, lexical novelty, deterministic planning and an optional LLM language interface. The RAM memory repository keeps consented typed records, but full distinct cognitive-memory dynamics remain #30.
 
 ## Target runtime layers
 
@@ -67,7 +64,7 @@ Brain-region names are research pointers, not module design instructions. A modu
 
 - `cognition/dynamics.py`: legacy abstract rate-based population experiment. Replace or adapt only after the neuron/synapse kernel demonstrates equivalent or improved behaviours.
 - `development/prenatal.py`: separate seven-population/ten-projection scaffold. It must ultimately share the neural substrate rather than remain a competing engine.
-- `memory/*`: current SQLite repository, hybrid retrieval, temporal fields and consent-aware index. This is legacy infrastructure to migrate or isolate; do not expand its database dependence.
+`memory/volatile_repository.py`: bounded, consent-aware RAM storage used by the active organism. `memory/repository.py` retains the legacy SQLite implementation and is lazy-loaded for explicit compatibility/evaluation tools only. The active RAM adapter does not yet satisfy #30's distinct memory-system, interference, forgetting and strengthening requirements.
 - `cognition/*`: existing attention, working memory, prediction and executive software are useful baselines, not proof of neural implementation.
 - `brain/*`: optional language and planning adapters. The core organism must work without a configured provider.
 - `circulation/*`, `metabolism/*`, `immune/*`, `regeneration/*`, `sleep/*`: bounded software infrastructure, not literal organs.

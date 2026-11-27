@@ -199,6 +199,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
                 # Run the deterministic activity step off the event loop.
                 # The engine serialises access with its internal lock.
                 await asyncio.to_thread(runtime_organism.neural_dynamics.tick_idle)
+                await asyncio.to_thread(runtime_organism.neural_simulation.step)
 
         task = asyncio.create_task(idle_activity_loop(), name="artificial-human-idle-activity")
         try:
