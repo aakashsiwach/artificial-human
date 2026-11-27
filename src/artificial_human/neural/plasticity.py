@@ -178,6 +178,8 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
         controller.observe_step(("post_paired",))
         controller.observe_step(("pre_paired",))
         controller.observe_step(("pre_unpaired",))
+        for _ in range(30):
+            controller.observe_step(())
     paired = network.synapses["paired"].weight
     unpaired = network.synapses["unpaired"].weight
     threshold = 0.6
