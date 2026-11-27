@@ -9,3 +9,27 @@
 
 .founder-panel{padding:22px;margin:0 0 16px}.founder-panel h2{font:650 17px var(--display);margin:0}.founder-name{font:700 23px var(--display);letter-spacing:-.5px;margin:4px 0 3px;color:var(--text)}.founder-role{font:10px var(--mono);letter-spacing:.7px;color:var(--accent);margin:0 0 10px}.founder-bio{font-size:12px;color:var(--muted);line-height:1.7;max-width:850px;margin:0 0 13px}.founder-links{display:flex;flex-wrap:wrap;gap:10px 22px;font:10px var(--mono);margin-bottom:11px}.founder-links a,.founder-projects a{color:var(--blue);text-decoration:none}.founder-links a:hover,.founder-projects a:hover{text-decoration:underline}.founder-links span{color:var(--soft)}.founder-projects{font-size:10px;line-height:1.8;color:var(--soft);margin:0}
 @media(max-width:600px){.founder-panel{padding:18px 15px}.founder-name{font-size:21px}.founder-links{flex-direction:column;gap:8px}}
+
+
+.login-intro,.camera-note{color:var(--muted);font-size:12px;line-height:1.7;margin:12px 0 0}
+.login-form{grid-template-columns:1fr 1fr}
+.login-actions{display:flex;flex-wrap:wrap;gap:9px;justify-content:flex-end}
+.secondary-button{border:1px solid #3a4e64;background:#152235;color:#d7e5f5;border-radius:7px;padding:10px 13px;font-size:11px;font-weight:650;cursor:pointer}
+.secondary-button:hover{border-color:#77bba0;color:var(--accent)}
+.secondary-button:disabled{opacity:.4;cursor:not-allowed}
+.camera-panel,.passkey-panel{padding:21px;margin:15px 0}
+.camera-panel h3,.passkey-panel h3{font:650 17px var(--display);margin:0}
+.camera-stage{margin-top:14px;min-height:200px;background:#070d16;border:1px solid #26364b;border-radius:10px;display:grid;place-items:center;overflow:hidden}
+.camera-stage video,.camera-stage img{display:block;width:100%;max-height:460px;object-fit:contain;background:#070d16}
+.camera-stage [hidden]{display:none}
+.camera-placeholder{color:var(--soft);font:11px var(--mono);padding:40px 20px;text-align:center}
+.camera-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+.camera-actions .secondary-button:disabled{opacity:.4}
+.passkey-panel>.secondary-button{margin-top:12px}
+@media(max-width:600px){
+ .login-form{grid-template-columns:1fr}
+ .login-actions{justify-content:stretch;flex-direction:column}
+ .login-actions button{width:100%}
+ .camera-panel,.passkey-panel{padding:18px 15px}
+ .camera-stage{min-height:150px}
+}
