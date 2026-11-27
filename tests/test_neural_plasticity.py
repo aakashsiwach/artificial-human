@@ -66,6 +66,25 @@ def test_snapshot_restores_learned_weights_and_reset_forgets_them() -> None:
     assert simulation.synapses["connection"].weight == 0.5
 
 
+
+def test_plasticity_trace_snapshot_replays_deterministically() -> None:
+    simulation = network()
+    rule = PairBasedSTDP()
+    rule.observe(simulation, ("pre",))
+    saved_simulation = simulation.state()
+    saved_traces = rule.snapshot()
+
+    rule.observe(simulation, ("post",))
+    expected_weight = simulation.synapses["connection"].weight
+    expected_traces = rule.snapshot()
+
+    simulation.restore(saved_simulation)
+    rule.restore(saved_traces, simulation)
+    rule.observe(simulation, ("post",))
+    assert simulation.synapses["connection"].weight == expected_weight
+    assert rule.snapshot() == expected_traces
+
+
 def test_learning_rule_comparison_reports_fixed_baseline_and_limits() -> None:
     report = run_learning_rule_comparison(trials=12)
     rows = {row["rule"]: row for row in report["results"]}
