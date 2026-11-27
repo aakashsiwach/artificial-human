@@ -27,7 +27,6 @@
       ]
     }
   ],
-  "permissionsPolicy": "",
   "rewrites": [
     {
       "source": "/api/:path*",
