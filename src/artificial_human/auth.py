@@ -210,3 +210,8 @@ class LoginRateLimiter:
                 for item in expired_keys:
                     self._attempts.pop(item, None)
             return True
+
+    def reset(self, key: str) -> None:
+        """Clear accumulated attempts after a successful authentication."""
+        with self._lock:
+            self._attempts.pop(key, None)
