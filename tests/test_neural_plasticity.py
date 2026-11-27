@@ -71,6 +71,8 @@ def test_learning_rule_comparison_reports_fixed_baseline_and_limits() -> None:
     rows = {row["rule"]: row for row in report["results"]}
     assert rows["stdp"]["accuracy"] > rows["fixed"]["accuracy"]
     assert rows["rate_hebbian"]["rule"] == "rate_hebbian"
+    assert rows["stdp_gate_off"]["accuracy"] == rows["fixed"]["accuracy"]
+    assert report["stdp_gate_off_accuracy"] == rows["fixed"]["accuracy"]
     assert report["stdp_improvement_over_fixed"] > 0
     with pytest.raises(ValueError):
         run_learning_rule_comparison(trials=0)
