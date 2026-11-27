@@ -157,7 +157,7 @@ def _validate_gate(gate: float) -> None:
 
 
 def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
-    """Train one temporally paired association against an unpaired control."""
+    """Train paired and unpaired connections using spikes from the LIF simulator."""
     from artificial_human.neural.simulation import LIFNeuron, Synapse
 
     network = NeuralSimulation()
@@ -176,11 +176,17 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
 
     controller = PlasticityController(network, rule)
     for _ in range(trials):
-        controller.observe_step(("pre_paired",))
-        controller.observe_step(("post_paired",))
-        controller.observe_step(("pre_unpaired",))
+        # Paired pathway: presynaptic neuron fires, then postsynaptic neuron
+        # receives an external pulse one simulation step later.
+        first = network.step({"pre_paired": 400.0, "pre_unpaired": 400.0})
+        controller.observe_step(first.spikes)
+        second = network.step({"post_paired": 400.0})
+        controller.observe_step(second.spikes)
+        # The unpaired control receives presynaptic activity only.
         for _ in range(30):
-            controller.observe_step(())
+            quiet = network.step()
+            controller.observe_step(quiet.spikes)
+
     paired = network.synapses["paired"].weight
     unpaired = network.synapses["unpaired"].weight
     threshold = 0.6
@@ -194,7 +200,6 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
         "correct": correct,
         "accuracy": correct / 2,
     }
-
 
 @dataclass(slots=True)
 class _NoPlasticity:
