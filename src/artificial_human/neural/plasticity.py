@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Protocol, cast
 
 from artificial_human.neural.simulation import NeuralSimulation
 
@@ -216,7 +216,7 @@ def run_learning_rule_comparison(*, trials: int = 12) -> dict[str, object]:
     if isinstance(trials, bool) or not isinstance(trials, int) or not 1 <= trials <= 1_000:
         raise ValueError("trials must be an integer in [1, 1000]")
     results = [_association_trial(name, trials) for name in ("stdp", "rate_hebbian", "fixed")]
-    fixed_accuracy = next(float(row["accuracy"]) for row in results if row["rule"] == "fixed")
+    fixed_accuracy = next(cast(float, row["accuracy"]) for row in results if row["rule"] == "fixed")
     return {
         "task": "post-before-pre temporal association with unpaired negative control",
         "metric": "two-example classification accuracy at weight threshold 0.6",
