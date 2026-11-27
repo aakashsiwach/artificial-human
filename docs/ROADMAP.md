@@ -17,7 +17,7 @@ The north star is one executable computational organism grounded in human neuros
 
 ## Verified current baseline
 
-The branch associated with this consolidated PR adds the following implementation foundation:
+The merged main branch contains the following implementation foundation:
 
 - The active `ArtificialOrganism` uses source-defined identity and a bounded in-memory repository in both local and public modes. Default construction does not open SQLite or create persistence files; the SQLite repository and `--legacy-sqlite` CLI path are retained only for explicit legacy work.
 - `neural/simulation.py` provides deterministic integer-step time, LIF membrane integration, excitatory/inhibitory synapses, delayed events, stable ordering, bounded event queues/currents, cancellation, pause/resume/single-step/reset and in-memory snapshot/restore.
@@ -36,17 +36,17 @@ These are engineering mechanisms, not biological equivalence or claims of consci
 ### Phase 0 — align direction and establish the RAM-only runtime contract
 
 - [x] [#17 — Align architecture and project docs with the code-first living-organism direction](https://github.com/aakashsiwach/artificial-human/issues/17). Closed.
-- [ ] [#18 — Specify the database-free organism runtime and migration boundary](https://github.com/aakashsiwach/artificial-human/issues/18). Implemented and tested on this PR branch; closure is tied to merging the consolidated PR.
+- [x] [#18 — Specify the database-free organism runtime and migration boundary](https://github.com/aakashsiwach/artificial-human/issues/18). Merged and closed after PR #43.
 
 **Exit gate:** architecture docs agree; tests prove default startup creates no database and all live state is bounded RAM state.
 
 ### Phase 1 — neural simulation foundation
 
-- [ ] [#19 — Deterministic neural simulation kernel and biological timebase](https://github.com/aakashsiwach/artificial-human/issues/19). Implemented on this PR branch, including a reproducible performance/RAM baseline.
-- [ ] [#20 — Neuron models and inspectable membrane dynamics](https://github.com/aakashsiwach/artificial-human/issues/20). Implemented on this PR branch with LIF state, spike timestamps, leak, threshold, reset and refractory tests.
-- [ ] [#21 — Excitatory and inhibitory synapse dynamics](https://github.com/aakashsiwach/artificial-human/issues/21). Implemented on this PR branch with signed, delayed transmission, bounded current and inhibition ablation.
-- [ ] [#22 — Event-driven spike propagation and synaptic delays](https://github.com/aakashsiwach/artificial-human/issues/22). Implemented on this PR branch with stable event ordering, queue limits and pending-event cancellation.
-- [ ] [#23 — First recurrent neural microcircuit](https://github.com/aakashsiwach/artificial-human/issues/23). Implemented on this PR branch with feed-forward and inhibition-off controls; full biological fidelity is not claimed.
+- [x] [#19 — Deterministic neural simulation kernel and biological timebase](https://github.com/aakashsiwach/artificial-human/issues/19). Merged and closed after PR #43, including a reproducible performance/RAM baseline.
+- [x] [#20 — Neuron models and inspectable membrane dynamics](https://github.com/aakashsiwach/artificial-human/issues/20). Merged and closed after PR #43 with LIF state, spike timestamps, leak, threshold, reset and refractory tests.
+- [x] [#21 — Excitatory and inhibitory synapse dynamics](https://github.com/aakashsiwach/artificial-human/issues/21). Merged and closed after PR #43 with signed, delayed transmission, bounded current and inhibition ablation.
+- [x] [#22 — Event-driven spike propagation and synaptic delays](https://github.com/aakashsiwach/artificial-human/issues/22). Merged and closed after PR #43 with stable event ordering, queue limits and pending-event cancellation.
+- [x] [#23 — First recurrent neural microcircuit](https://github.com/aakashsiwach/artificial-human/issues/23). Merged and closed after PR #43 with disconnected, feed-forward, recurrent, fixed-rate and inhibition-off controls; full biological fidelity is not claimed.
 
 **Exit gate:** a deterministic runnable experiment shows individual neurons communicating through delayed excitatory/inhibitory synapses, recurrent activity, and stable decay—not just named population counters.
 
@@ -55,7 +55,7 @@ These are engineering mechanisms, not biological equivalence or claims of consci
 - [ ] [#24 — Local synaptic plasticity and learning-rule comparisons](https://github.com/aakashsiwach/artificial-human/issues/24).
 - [ ] [#25 — Neural homeostasis and bounded internal regulation](https://github.com/aakashsiwach/artificial-human/issues/25).
 - [ ] [#26 — Population coding and distributed neural representations](https://github.com/aakashsiwach/artificial-human/issues/26).
-- [ ] [#30 — Replace database-backed memory with bounded in-memory cognitive memory](https://github.com/aakashsiwach/artificial-human/issues/30). The active storage adapter is RAM-only in this PR; distinct memory systems, forgetting, interference and retrieval-dependent strengthening remain open.
+- [ ] [#30 — Replace database-backed memory with bounded in-memory cognitive memory](https://github.com/aakashsiwach/artificial-human/issues/30). The active storage adapter is RAM-only; distinct memory systems, forgetting, interference and retrieval-dependent strengthening remain open.
 
 **Exit gate:** independent, bounded RAM mechanisms learn, retrieve, associate, forget, and replay without an LLM or database; learning is compared against fixed-weight and simpler baselines.
 

@@ -112,7 +112,7 @@ These are software benchmarks on synthetic data, not measures of human cognition
 
 See the [external evaluation report](docs/benchmarks/external-evaluation-report.md). The project is still in Stage 1: attention and prediction have no external evaluation data yet.
 
-**Important:** the attention and novelty calculations are transparent engineering heuristics. Language perception is currently text-only. This milestone does not implement spiking neurons, realistic neural networks, emotion, homeostatic drives, reinforcement learning, or the full range of human cognitive abilities.
+**Important:** attention and novelty remain transparent engineering heuristics and language perception is currently text-only. The merged foundation includes a reduced LIF neuron/synapse simulator and a four-neuron fixed-weight recurrent microcircuit, but the circuit is not yet integrated into the cognitive cycle. Plasticity, homeostasis, multimodal sensing, world modelling, embodied action and the wider range of human cognitive abilities remain future work.
 
 ## Quick start
 
@@ -349,3 +349,10 @@ The current branch implements the database-free active runtime and the first det
 ## License
 
 Apache-2.0. See LICENSE.
+
+
+## Control Room access
+
+The Control Room uses a same-origin API proxy and owner sign-in; no API URL or bearer token is entered in the browser. Password sign-in uses a PBKDF2-SHA256 verifier in Render environment settings. After signing in, the owner can register a WebAuthn passkey for platform authentication (Face ID, Touch ID, Windows Hello, Android biometrics or device PIN). Passkey private keys and biometric matching remain on the device.
+
+The dashboard restores its HttpOnly session cookie on reload. Camera preview is separately opt-in and remains local to the current browser tab; captured frames are not uploaded or passed to the organism. See [Control Room deployment and security](docs/MONITORING.md) for required environment settings and hosting limits.

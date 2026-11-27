@@ -16,5 +16,17 @@ services:
         value: "true"
       - key: ARTIFICIAL_HUMAN_API_TOKEN
         generateValue: true
+      - key: ARTIFICIAL_HUMAN_INTERACTIVE_MODE
+        value: "true"
+      - key: ARTIFICIAL_HUMAN_AUTH_USERNAME
+        value: "aakash"
+      - key: ARTIFICIAL_HUMAN_AUTH_PASSWORD_HASH
+        sync: false
+      - key: ARTIFICIAL_HUMAN_AUTH_SESSION_SECRET
+        generateValue: true
+      - key: ARTIFICIAL_HUMAN_AUTH_ORIGIN
+        value: "https://artificial-human-control-room.vercel.app"
+      - key: ARTIFICIAL_HUMAN_WEBAUTHN_RP_ID
+        value: "artificial-human-control-room.vercel.app"
       - key: ARTIFICIAL_HUMAN_CORS_ORIGINS
         sync: false

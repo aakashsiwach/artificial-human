@@ -41,3 +41,10 @@ The active memory adapter bounds records, consents, embeddings, index failures, 
 ## Self-development safety boundary
 
 The long-term system may generate candidate code and regression tests for its next version, but generated content is untrusted. Candidate work must occur in a separate, resource-limited workspace with no secrets, unrestricted shell, network, or access to the live process. The organism cannot approve its own patch, modify its live executable, grant itself permissions, merge, or deploy. Human review must bind approval to an immutable diff and reproducible test evidence; deployment requires separate approval.
+
+
+## Camera and passkey boundaries
+
+The Control Room camera is disabled until the owner explicitly starts it in the browser. Captures remain local to the current tab and are never uploaded, persisted or passed into neural state. All media tracks stop on logout or page exit. This is not yet a camera perception feature.
+
+Passkeys use WebAuthn platform authentication and require user verification. Biometric matching and private keys remain on the user's device; the server receives the signed assertion and retains only a signed public-key credential record in an HttpOnly cookie. Password fallback uses a salted PBKDF2-SHA256 verifier; no plaintext password is stored in source or organism memory.

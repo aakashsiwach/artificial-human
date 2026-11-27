@@ -4,15 +4,33 @@ import asyncio
 from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict, replace
 from datetime import datetime
+import hashlib
 import hmac
+import json
 import os
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from artificial_human.auth import (
+    CHALLENGE_COOKIE,
+    PASSKEY_COOKIE,
+    SESSION_COOKIE,
+    AuthenticationConfigurationError,
+    InvalidSignedValue,
+    LoginRateLimiter,
+    create_challenge_token,
+    create_credential_token,
+    create_session_token,
+    get_signing_secret,
+    read_challenge_token,
+    read_credential_token,
+    read_session_token,
+    verify_password,
+)
 from artificial_human.brain.evaluation import evaluate_text_similarity
 from artificial_human.brain.providers.base import (
     ProviderNotConfiguredError,
@@ -183,6 +201,15 @@ class BrainRequest(BaseModel):
     session_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
+class AuthenticationRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=120)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class PasskeyCredentialRequest(BaseModel):
+    credential: dict[str, Any]
+
+
 class BrainEvaluationRequest(BaseModel):
     message: str = Field(min_length=1, max_length=20_000)
     reference_response: str = Field(min_length=1, max_length=20_000)
@@ -216,6 +243,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         "1", "true", "yes",
     }
     docs_enabled = not public_deployment
+    login_limiter = LoginRateLimiter(limit=5, window_seconds=900)
     app = FastAPI(
         title="Artificial Human",
         version="0.1.0",
@@ -244,44 +272,82 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             return await call_next(request)
         if request.url.path == "/health":
             return await call_next(request)
-        if monitor_only:
-            monitor_route = request.method == "GET" and request.url.path == "/monitor/overview"
-            interactive_route = (
-                os.getenv("ARTIFICIAL_HUMAN_INTERACTIVE_MODE", "").lower()
-                in {"1", "true", "yes"}
-                and (
-                    (request.method == "GET" and request.url.path == "/brain/status")
-                    or (request.method == "POST" and request.url.path == "/brain/respond")
-                    or (
-                        request.method == "DELETE"
-                        and request.url.path.startswith("/brain/sessions/")
-                    )
-                )
+        auth_public_routes = {
+            ("GET", "/auth/session"),
+            ("POST", "/auth/password"),
+            ("POST", "/auth/logout"),
+            ("POST", "/auth/passkey/options"),
+            ("POST", "/auth/passkey/verify"),
+        }
+        auth_public = (request.method, request.url.path) in auth_public_routes
+        monitor_route = request.method == "GET" and request.url.path == "/monitor/overview"
+        interactive_enabled = os.getenv("ARTIFICIAL_HUMAN_INTERACTIVE_MODE", "").lower() in {
+            "1", "true", "yes",
+        }
+        interactive_route = interactive_enabled and (
+            (request.method == "GET" and request.url.path == "/brain/status")
+            or (request.method == "POST" and request.url.path == "/brain/respond")
+            or (
+                request.method == "DELETE"
+                and request.url.path.startswith("/brain/sessions/")
             )
-            if not monitor_route and not interactive_route:
-                return JSONResponse(
-                    status_code=404,
-                    content={
-                        "detail": (
-                            "This deployment exposes only monitoring and its explicitly "
-                            "enabled interactive endpoints."
-                        )
-                    },
-                )
-        expected = os.getenv("ARTIFICIAL_HUMAN_API_TOKEN", "")
-        if not expected:
+        )
+        passkey_enrolment_route = request.url.path.startswith("/auth/passkey/register/")
+        if monitor_only and not (
+            auth_public or monitor_route or (interactive_route and not passkey_enrolment_route)
+            or passkey_enrolment_route
+        ):
             return JSONResponse(
-                status_code=503,
-                content={"detail": "Public API authentication is not configured."},
+                status_code=404,
+                content={"detail": "This deployment exposes only its authenticated Control Room."},
             )
+
+        expected_origin = os.getenv("ARTIFICIAL_HUMAN_AUTH_ORIGIN", "").rstrip("/")
+        origin = request.headers.get("origin")
+        if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and expected_origin:
+            if origin.rstrip("/") != expected_origin:
+                return JSONResponse(status_code=403, content={"detail": "Untrusted request origin."})
+
+        if auth_public:
+            auth_response = await call_next(request)
+            auth_response.headers["Cache-Control"] = "no-store"
+            auth_response.headers["Pragma"] = "no-cache"
+            return auth_response
+
+        authenticated = False
+        try:
+            secret = get_signing_secret()
+            authenticated = read_session_token(
+                request.cookies.get(SESSION_COOKIE), secret
+            ) is not None
+        except AuthenticationConfigurationError:
+            secret = b""
+
+        # Keep the old bearer token temporarily for existing private integrations.
+        expected = os.getenv("ARTIFICIAL_HUMAN_API_TOKEN", "")
         scheme, _, supplied = request.headers.get("authorization", "").partition(" ")
-        if scheme.lower() != "bearer" or not hmac.compare_digest(supplied, expected):
+        legacy_authenticated = bool(
+            expected and scheme.lower() == "bearer"
+            and hmac.compare_digest(supplied, expected)
+        )
+        if not authenticated and not legacy_authenticated:
+            if not expected and not secret:
+                return JSONResponse(
+                    status_code=503,
+                    content={"detail": "Control Room authentication is not configured."},
+                )
             return JSONResponse(
                 status_code=401,
-                content={"detail": "A valid bearer token is required."},
+                content={"detail": "Sign in to the Artificial Human Control Room."},
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        return await call_next(request)
+        if passkey_enrolment_route and not authenticated:
+            return JSONResponse(status_code=401, content={"detail": "Sign in before adding a passkey."})
+        protected_response = await call_next(request)
+        if request.url.path.startswith("/auth/"):
+            protected_response.headers["Cache-Control"] = "no-store"
+            protected_response.headers["Pragma"] = "no-cache"
+        return protected_response
 
     app.state.public_deployment = public_deployment
     app.state.monitor_only = monitor_only
@@ -300,6 +366,274 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             "status": "/status",
             "monitor": "/monitor/overview",
         }
+
+
+    def auth_cookie_options(request: Request) -> dict[str, Any]:
+        return {
+            "httponly": True,
+            "secure": public_deployment or request.url.scheme == "https",
+            "samesite": "strict",
+            "path": "/",
+        }
+
+    def auth_configuration() -> tuple[str, str, bytes, str, str]:
+        username = os.getenv("ARTIFICIAL_HUMAN_AUTH_USERNAME", "").strip()
+        encoded_hash = os.getenv("ARTIFICIAL_HUMAN_AUTH_PASSWORD_HASH", "")
+        origin = os.getenv("ARTIFICIAL_HUMAN_AUTH_ORIGIN", "").rstrip("/")
+        rp_id = os.getenv("ARTIFICIAL_HUMAN_WEBAUTHN_RP_ID", "").strip()
+        secret = get_signing_secret()
+        if not username or not encoded_hash:
+            raise AuthenticationConfigurationError(
+                "Set ARTIFICIAL_HUMAN_AUTH_USERNAME and ARTIFICIAL_HUMAN_AUTH_PASSWORD_HASH."
+            )
+        if not origin or not rp_id:
+            raise AuthenticationConfigurationError(
+                "Set ARTIFICIAL_HUMAN_AUTH_ORIGIN and ARTIFICIAL_HUMAN_WEBAUTHN_RP_ID."
+            )
+        if not origin.startswith(("https://", "http://localhost", "http://127.0.0.1")):
+            raise AuthenticationConfigurationError("Authentication origin must use HTTPS.")
+        return username, encoded_hash, secret, origin, rp_id
+
+    def current_authenticated_user(request: Request) -> str | None:
+        try:
+            return read_session_token(
+                request.cookies.get(SESSION_COOKIE), get_signing_secret()
+            )
+        except AuthenticationConfigurationError:
+            return None
+
+    @app.get("/auth/session")
+    def auth_session(request: Request) -> dict[str, Any]:
+        try:
+            username, _encoded_hash, secret, _origin, _rp_id = auth_configuration()
+            authenticated_user = read_session_token(
+                request.cookies.get(SESSION_COOKIE), secret
+            )
+            credential = read_credential_token(
+                request.cookies.get(PASSKEY_COOKIE), secret=secret
+            )
+            return {
+                "authenticated": authenticated_user == username,
+                "username": username if authenticated_user == username else None,
+                "passkey_registered": bool(
+                    credential and credential["username"] == username
+                ),
+                "session_expires_in_seconds": 7 * 24 * 60 * 60,
+            }
+        except AuthenticationConfigurationError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+
+    @app.post("/auth/password")
+    def auth_password(payload: AuthenticationRequest, request: Request, response: Response) -> dict[str, Any]:
+        try:
+            username, encoded_hash, secret, _origin, _rp_id = auth_configuration()
+        except AuthenticationConfigurationError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+        attempt_key = (request.client.host if request.client else "unknown") + ":" + payload.username.casefold()
+        if not login_limiter.allow(attempt_key):
+            raise HTTPException(
+                status_code=429,
+                detail="Too many sign-in attempts. Wait 15 minutes and try again.",
+                headers={"Retry-After": "900"},
+            )
+        supplied_username = payload.username.strip()
+        username_ok = hmac.compare_digest(
+            supplied_username.casefold().encode("utf-8"),
+            username.casefold().encode("utf-8"),
+        )
+        password_ok = verify_password(payload.password, encoded_hash)
+        if not (username_ok and password_ok):
+            raise HTTPException(status_code=401, detail="Username or password is incorrect.")
+        login_limiter.reset(attempt_key)
+        response.set_cookie(
+            SESSION_COOKIE,
+            create_session_token(username, secret),
+            max_age=7 * 24 * 60 * 60,
+            **auth_cookie_options(request),
+        )
+        return {"authenticated": True, "username": username, "passkey_registered": bool(
+            read_credential_token(request.cookies.get(PASSKEY_COOKIE), secret=secret)
+        )}
+
+    @app.post("/auth/logout")
+    def auth_logout(request: Request, response: Response) -> dict[str, bool]:
+        response.delete_cookie(SESSION_COOKIE, path="/", secure=public_deployment, httponly=True, samesite="strict")
+        response.delete_cookie(CHALLENGE_COOKIE, path="/", secure=public_deployment, httponly=True, samesite="strict")
+        return {"logged_out": True}
+
+    @app.post("/auth/passkey/register/options")
+    def passkey_registration_options(request: Request, response: Response) -> dict[str, Any]:
+        username = current_authenticated_user(request)
+        if not username:
+            raise HTTPException(status_code=401, detail="Sign in with your password before adding a passkey.")
+        try:
+            from webauthn import generate_registration_options, options_to_json
+            from webauthn.helpers.structs import (
+                AttestationConveyancePreference,
+                AuthenticatorAttachment,
+                AuthenticatorSelectionCriteria,
+                ResidentKeyRequirement,
+                UserVerificationRequirement,
+            )
+            _owner, _hash, secret, _origin, rp_id = auth_configuration()
+            options = generate_registration_options(
+                rp_id=rp_id,
+                rp_name="Artificial Human",
+                user_id=hashlib.sha256(username.encode("utf-8")).digest(),
+                user_name=username,
+                user_display_name="Aakash Siwach · Father and creator",
+                attestation=AttestationConveyancePreference.NONE,
+                authenticator_selection=AuthenticatorSelectionCriteria(
+                    authenticator_attachment=AuthenticatorAttachment.PLATFORM,
+                    resident_key=ResidentKeyRequirement.REQUIRED,
+                    user_verification=UserVerificationRequirement.REQUIRED,
+                ),
+            )
+            options_json = json.loads(options_to_json(options))
+            response.set_cookie(
+                CHALLENGE_COOKIE,
+                create_challenge_token(
+                    options.challenge, purpose="registration", username=username, secret=secret
+                ),
+                max_age=180,
+                **auth_cookie_options(request),
+            )
+            return options_json
+        except ImportError as error:
+            raise HTTPException(status_code=503, detail="Passkey support is not installed.") from error
+        except AuthenticationConfigurationError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+
+    @app.post("/auth/passkey/register/verify")
+    def passkey_registration_verify(
+        payload: PasskeyCredentialRequest, request: Request, response: Response
+    ) -> dict[str, Any]:
+        username = current_authenticated_user(request)
+        if not username:
+            raise HTTPException(status_code=401, detail="Sign in before adding a passkey.")
+        try:
+            from webauthn import verify_registration_response
+            _owner, _hash, secret, origin, rp_id = auth_configuration()
+            challenge = read_challenge_token(
+                request.cookies.get(CHALLENGE_COOKIE), purpose="registration",
+                username=username, secret=secret,
+            )
+            verification = verify_registration_response(
+                credential=payload.credential,
+                expected_challenge=challenge,
+                expected_rp_id=rp_id,
+                expected_origin=origin,
+                require_user_verification=True,
+            )
+            response.set_cookie(
+                PASSKEY_COOKIE,
+                create_credential_token(
+                    username=username,
+                    credential_id=verification.credential_id,
+                    credential_public_key=verification.credential_public_key,
+                    sign_count=verification.sign_count,
+                    secret=secret,
+                ),
+                max_age=365 * 24 * 60 * 60,
+                **auth_cookie_options(request),
+            )
+            response.delete_cookie(CHALLENGE_COOKIE, path="/", secure=public_deployment, httponly=True, samesite="strict")
+            return {"registered": True, "passkey_registered": True}
+        except ImportError as error:
+            raise HTTPException(status_code=503, detail="Passkey support is not installed.") from error
+        except (InvalidSignedValue, ValueError) as error:
+            raise HTTPException(status_code=400, detail="Passkey registration could not be verified.") from error
+        except Exception as error:
+            raise HTTPException(status_code=400, detail="Passkey registration could not be verified.") from error
+
+    @app.post("/auth/passkey/options")
+    def passkey_authentication_options(request: Request, response: Response) -> dict[str, Any]:
+        try:
+            from webauthn import generate_authentication_options, options_to_json
+            from webauthn.helpers.structs import (
+                PublicKeyCredentialDescriptor,
+                UserVerificationRequirement,
+            )
+            username, _hash, secret, _origin, rp_id = auth_configuration()
+            credential = read_credential_token(
+                request.cookies.get(PASSKEY_COOKIE), secret=secret
+            )
+            if not credential or credential["username"] != username:
+                raise HTTPException(status_code=404, detail="No passkey is registered in this browser.")
+            options = generate_authentication_options(
+                rp_id=rp_id,
+                allow_credentials=[
+                    PublicKeyCredentialDescriptor(id=credential["credential_id"])
+                ],
+                user_verification=UserVerificationRequirement.REQUIRED,
+            )
+            response.set_cookie(
+                CHALLENGE_COOKIE,
+                create_challenge_token(
+                    options.challenge, purpose="authentication", username=username, secret=secret
+                ),
+                max_age=180,
+                **auth_cookie_options(request),
+            )
+            return json.loads(options_to_json(options))
+        except ImportError as error:
+            raise HTTPException(status_code=503, detail="Passkey support is not installed.") from error
+        except AuthenticationConfigurationError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+
+    @app.post("/auth/passkey/verify")
+    def passkey_authentication_verify(
+        payload: PasskeyCredentialRequest, request: Request, response: Response
+    ) -> dict[str, Any]:
+        try:
+            from webauthn import verify_authentication_response
+            username, _hash, secret, origin, rp_id = auth_configuration()
+            credential = read_credential_token(
+                request.cookies.get(PASSKEY_COOKIE), secret=secret
+            )
+            if not credential or credential["username"] != username:
+                raise HTTPException(status_code=404, detail="No passkey is registered in this browser.")
+            challenge = read_challenge_token(
+                request.cookies.get(CHALLENGE_COOKIE), purpose="authentication",
+                username=username, secret=secret,
+            )
+            verification = verify_authentication_response(
+                credential=payload.credential,
+                expected_challenge=challenge,
+                expected_rp_id=rp_id,
+                expected_origin=origin,
+                credential_public_key=credential["credential_public_key"],
+                credential_current_sign_count=credential["sign_count"],
+                require_user_verification=True,
+            )
+            response.set_cookie(
+                SESSION_COOKIE,
+                create_session_token(username, secret),
+                max_age=7 * 24 * 60 * 60,
+                **auth_cookie_options(request),
+            )
+            response.set_cookie(
+                PASSKEY_COOKIE,
+                create_credential_token(
+                    username=username,
+                    credential_id=credential["credential_id"],
+                    credential_public_key=credential["credential_public_key"],
+                    sign_count=verification.new_sign_count,
+                    secret=secret,
+                ),
+                max_age=365 * 24 * 60 * 60,
+                **auth_cookie_options(request),
+            )
+            response.delete_cookie(CHALLENGE_COOKIE, path="/", secure=public_deployment, httponly=True, samesite="strict")
+            return {"authenticated": True, "username": username}
+        except ImportError as error:
+            raise HTTPException(status_code=503, detail="Passkey support is not installed.") from error
+        except (InvalidSignedValue, ValueError) as error:
+            raise HTTPException(status_code=400, detail="Passkey sign-in could not be verified.") from error
+        except HTTPException:
+            raise
+        except Exception as error:
+            raise HTTPException(status_code=401, detail="Passkey sign-in could not be verified.") from error
 
     @app.get("/health")
     def health() -> dict[str, str]:

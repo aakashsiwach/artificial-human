@@ -2,18 +2,46 @@
 
 The Control Room is a separate static dashboard under `monitor/`. It connects to a protected Render API. The dashboard provides an aggregate prenatal-development view and, when a reasoning provider is configured, an authenticated conversation panel.
 
-## Security model
+## Owner authentication and passkeys
 
-- Public deployment mode is enabled with `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true`. In this mode, API docs and the OpenAPI schema are disabled.
-- `ARTIFICIAL_HUMAN_API_TOKEN` is a private bearer secret. Keep it in Render environment settings; never commit it, put it in a URL, or paste it into issue reports.
-- Set `ARTIFICIAL_HUMAN_CORS_ORIGINS` to the exact HTTPS Control Room origin. The current deployment uses `https://artificial-human-control-room.vercel.app`.
-- `/health` is the only unauthenticated route and exists for platform health checks.
-- `ARTIFICIAL_HUMAN_MONITOR_ONLY=true` applies a public route allowlist. The monitoring route `GET /monitor/overview` requires bearer authentication.
-- When `ARTIFICIAL_HUMAN_INTERACTIVE_MODE=true` is also set, three additional authenticated routes are allowed: `GET /brain/status`, `POST /brain/respond`, and `DELETE /brain/sessions/{session_id}`. Every other API route remains unavailable (404), including memory, consent, identity, training, repair, and write-management endpoints.
-- The dashboard holds the bearer token only in JavaScript memory for the current tab. It does not write the token to localStorage, cookies, URL parameters, logs, or telemetry. It clears the token when the page is closed.
-- The monitor overview returns aggregate organism status, cognitive subsystem labels, and deterministic prenatal scaffold snapshots. It does not return owner IDs, prompts, memory records, or sensory content.
+The Control Room is served from its Vercel origin and calls the Render API through the same-origin `/api/*` rewrite. The browser never asks the owner for an API URL or bearer token.
 
-Use HTTPS for both dashboard and API. Do not reuse a token from another application. Rotate the token by changing the Render environment value and redeploying; reconnect the dashboard with the new token.
+- The owner signs in with a username and password. The server checks a salted PBKDF2-SHA256 verifier (600,000 iterations) from protected environment configuration and issues a 7-day `HttpOnly; Secure; SameSite=Strict` session cookie.
+- Failed password attempts are limited to five per source/username within 15 minutes per running process. The login identity is a single configured owner; this is not a general multi-user account system.
+- After password login, the owner can register a platform passkey. WebAuthn requires user verification and binds the challenge, credential, RP ID and origin. Supported authenticators can prompt for Face ID, Touch ID, Windows Hello, Android biometrics or a device PIN. The private key and biometric matching remain on the authenticator.
+- The server stores only a signed public-key credential record in an `HttpOnly` cookie. No passkey private key, biometric template or credential database is created. Passkey state is browser-specific; use password sign-in on another device and enroll that device separately.
+- Password hashes and signing secrets are environment settings only. They must never be committed to Git, placed in URLs, exposed to the browser or written to organism memory.
+- Legacy bearer-token authentication remains temporarily accepted for existing private integrations. The Control Room frontend no longer uses or prompts for it.
+- The founder identity remains source-defined: Aakash Siwach is Father, founder and project owner; Artificial Human is the software project. This is project terminology, not a biological relationship.
+
+Required Render environment variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `ARTIFICIAL_HUMAN_INTERACTIVE_MODE` | Set to `true` to enable the protected conversation routes |
+| `ARTIFICIAL_HUMAN_AUTH_USERNAME` | Owner login name (template default: `aakash`) |
+| `ARTIFICIAL_HUMAN_AUTH_PASSWORD_HASH` | PBKDF2-SHA256 verifier; never a plaintext password |
+| `ARTIFICIAL_HUMAN_AUTH_SESSION_SECRET` | Random signing secret of at least 32 characters |
+| `ARTIFICIAL_HUMAN_AUTH_ORIGIN` | Exact Control Room origin, e.g. `https://artificial-human-control-room.vercel.app` |
+| `ARTIFICIAL_HUMAN_WEBAUTHN_RP_ID` | Control Room hostname, without scheme or path |
+
+Generate a password verifier locally without printing the password:
+
+```bash
+python -c "from getpass import getpass; from artificial_human.auth import password_hash; print(password_hash(getpass('New Control Room password: ')))"
+```
+
+Set the printed verifier as `ARTIFICIAL_HUMAN_AUTH_PASSWORD_HASH` in Render. Generate the signing secret with a cryptographically secure random generator, for example `openssl rand -hex 32`. Keep both values private. `render.yaml` documents the required configuration, but the existing Render service was created directly and is not managed by a Blueprint; configure the live service through its Environment page.
+
+## Camera privacy
+
+The camera panel is opt-in. The browser requests `getUserMedia` only after the owner presses **Enable camera**. A captured image remains a local object URL in the current tab: no frame is uploaded to Render, Vercel, an LLM or the organism, and no camera frame is written to memory or disk. Tracks stop on explicit stop, sign-out, or page exit. Camera input is not yet a sensory encoder and does not contribute to neural state; that requires the later permission-scoped vision work in issue #27.
+
+## Always-connected availability
+
+The Control Room automatically restores a valid session after reload and fetches the latest snapshot after sign-in. It refreshes when the owner opens the tab again or uses the refresh control; it does not send artificial background traffic to keep a free service awake. This removes manual API connection steps; it does not guarantee that the hosting process is continuously running.
+
+Render documents that free web services spin down after 15 minutes without inbound traffic and take about a minute to wake on the next request. Paid compute instances do not spin down. Do not generate synthetic keep-alive traffic to bypass that limit. True always-on organism execution requires a paid, continuously running Render instance and explicit approval of the resulting charge. The current free service can still sleep, restart or pause its in-memory simulation.
 
 ## Interactive reasoning provider
 
@@ -34,7 +62,7 @@ To activate it:
 3. Add the key as `ARTIFICIAL_HUMAN_LLM_API_KEY`. Do not paste it into the dashboard or into chat.
 4. Save the environment changes and let Render redeploy. Reopen the Control Room and check that it shows **MODEL READY**.
 
-The API key must be created by the account owner; it cannot safely be generated on the user's behalf. The API key is never sent to the browser. The browser sends its separate Artificial Human bearer token to the server; the server calls Groq.
+The API key must be created by the account owner; it cannot safely be generated on the user's behalf. The API key is never sent to the browser. The browser sends its HttpOnly owner session cookie to the Render API through the same-origin Vercel proxy; the server calls Groq. Provider credentials never reach the browser.
 
 Groq currently documents GPT-OSS 120B as a reasoning model. Its published free-tier limits are 30 requests per minute, 1,000 requests per day, 8,000 tokens per minute, and 200,000 tokens per day; these are account/model limits and can change. Review the [model list](https://console.groq.com/docs/models), [reasoning documentation](https://console.groq.com/docs/reasoning), and [rate limits](https://console.groq.com/docs/rate-limits) before sustained use.
 
