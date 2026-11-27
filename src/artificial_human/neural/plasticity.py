@@ -165,7 +165,7 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
         network.add_neuron(LIFNeuron(identifier))
     network.add_synapse(Synapse("paired", "pre_paired", "post_paired", 0.5))
     network.add_synapse(Synapse("unpaired", "pre_unpaired", "post_unpaired", 0.5))
-    if rule_name == "stdp":
+    if rule_name in {"stdp", "stdp_gate_off"}:
         rule: PlasticityRule = PairBasedSTDP()
     elif rule_name == "rate_hebbian":
         rule = RateBasedHebbian()
@@ -179,9 +179,10 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
         # Paired pathway: presynaptic neuron fires, then postsynaptic neuron
         # receives an external pulse one simulation step later.
         first = network.step({"pre_paired": 400.0, "pre_unpaired": 400.0})
-        controller.observe_step(first.spikes)
+        gate = 0.0 if rule_name == "stdp_gate_off" else 1.0
+        controller.observe_step(first.spikes, gate=gate)
         second = network.step({"post_paired": 400.0})
-        controller.observe_step(second.spikes)
+        controller.observe_step(second.spikes, gate=gate)
         # The unpaired control receives presynaptic activity only.
         for _ in range(30):
             quiet = network.step()
@@ -221,7 +222,10 @@ def run_learning_rule_comparison(*, trials: int = 12) -> dict[str, object]:
     """
     if isinstance(trials, bool) or not isinstance(trials, int) or not 1 <= trials <= 1_000:
         raise ValueError("trials must be an integer in [1, 1000]")
-    results = [_association_trial(name, trials) for name in ("stdp", "rate_hebbian", "fixed")]
+    results = [
+        _association_trial(name, trials)
+        for name in ("stdp", "stdp_gate_off", "rate_hebbian", "fixed")
+    ]
     fixed_accuracy = next(cast(float, row["accuracy"]) for row in results if row["rule"] == "fixed")
     return {
         "task": "pre-before-post temporal association with unpaired negative control",
@@ -230,6 +234,9 @@ def run_learning_rule_comparison(*, trials: int = 12) -> dict[str, object]:
         "stdp_improvement_over_fixed": (
             next(cast(float, row["accuracy"]) for row in results if row["rule"] == "stdp")
             - fixed_accuracy
+        ),
+        "stdp_gate_off_accuracy": next(
+            cast(float, row["accuracy"]) for row in results if row["rule"] == "stdp_gate_off"
         ),
         "limitations": [
             "Small deterministic mechanism test, not a biological validation.",
