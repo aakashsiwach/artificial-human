@@ -270,7 +270,7 @@ class OrganismLoop:
         self.memory.store(self.tick_index, code.values, f"action={action};reward={reward:.3f}")
         threshold = self.homeostat.update(min(1.0, abs(delta) * 2))
         stage = self.development.advance()
-        result = {"tick": self.tick_index, "modality": event.modality.value, "code": code.values,
+        result: dict[str, object] = {"tick": self.tick_index, "modality": event.modality.value, "code": code.values,
                   "uncertainty": code.uncertainty, "recalled": recalled, "prediction": predicted,
                   "prediction_error": error, "action": action, "reward": reward,
                   "position": self.environment.position, "threshold": threshold, "stage": stage.value}
