@@ -62,7 +62,7 @@ To activate it:
 3. Add the key as `ARTIFICIAL_HUMAN_LLM_API_KEY`. Do not paste it into the dashboard or into chat.
 4. Save the environment changes and let Render redeploy. Reopen the Control Room and check that it shows **MODEL READY**.
 
-The API key must be created by the account owner; it cannot safely be generated on the user's behalf. The API key is never sent to the browser. The browser sends its separate Artificial Human bearer token to the server; the server calls Groq.
+The API key must be created by the account owner; it cannot safely be generated on the user's behalf. The API key is never sent to the browser. The browser sends its HttpOnly owner session cookie to the Render API through the same-origin Vercel proxy; the server calls Groq. Provider credentials never reach the browser.
 
 Groq currently documents GPT-OSS 120B as a reasoning model. Its published free-tier limits are 30 requests per minute, 1,000 requests per day, 8,000 tokens per minute, and 200,000 tokens per day; these are account/model limits and can change. Review the [model list](https://console.groq.com/docs/models), [reasoning documentation](https://console.groq.com/docs/reasoning), and [rate limits](https://console.groq.com/docs/rate-limits) before sustained use.
 
