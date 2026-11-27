@@ -70,7 +70,7 @@ def test_password_login_restores_session_and_logout_revokes_browser_cookie(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     password = configure_auth(monkeypatch)
-    organism = ArtificialOrganism(storage_mode="volatile", brain_provider=None)
+    organism = ArtificialOrganism(owner_id="auth-test-owner", brain_provider=None)
     client = TestClient(
         create_app(organism),
         base_url="https://control.example",
@@ -116,7 +116,7 @@ def test_password_login_rejects_wrong_password_and_foreign_origin(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     configure_auth(monkeypatch)
-    organism = ArtificialOrganism(storage_mode="volatile", brain_provider=None)
+    organism = ArtificialOrganism(owner_id="auth-test-owner", brain_provider=None)
     client = TestClient(create_app(organism), base_url="https://control.example")
 
     foreign = client.post(
@@ -138,7 +138,7 @@ def test_authenticated_owner_can_generate_a_passkey_registration_challenge(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     password = configure_auth(monkeypatch)
-    organism = ArtificialOrganism(storage_mode="volatile", brain_provider=None)
+    organism = ArtificialOrganism(owner_id="auth-test-owner", brain_provider=None)
     client = TestClient(create_app(organism), base_url="https://control.example")
     login = client.post(
         "/auth/password",
@@ -165,7 +165,7 @@ def test_public_control_room_requires_cookie_or_legacy_bearer(
 ) -> None:
     configure_auth(monkeypatch)
     monkeypatch.setenv("ARTIFICIAL_HUMAN_API_TOKEN", "legacy-private-token")
-    organism = ArtificialOrganism(storage_mode="volatile", brain_provider=None)
+    organism = ArtificialOrganism(owner_id="auth-test-owner", brain_provider=None)
     client = TestClient(create_app(organism), base_url="https://control.example")
 
     missing = client.get("/monitor/overview")
