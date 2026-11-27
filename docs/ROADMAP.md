@@ -1,147 +1,115 @@
-# Roadmap
+# Roadmap — the code-first living organism
 
-The long-term goal is a computational artificial mind whose architecture is grounded in human neuroscience and cognitive science. The project proceeds through explicit research hypotheses and measurable implementations. It does not claim that present-day code is a complete human brain or conscious.
+The north star is one executable computational organism grounded in human neuroscience and cognitive science. Its brain must be implemented as explicit, continuously advancing code with bounded RAM state. This is not an LLM wrapped around a memory database.
 
-**Source of truth:** [Research Charter](RESEARCH_CHARTER.md). It records the north star, scientific evidence standards, current baseline, technology strategy, staged research plan, and a reusable context-recovery prompt. The roadmap records delivery status; the charter records why and how we choose the work. Always verify merged code and CI before changing checkboxes.
+**Source of truth:** [Research Charter](RESEARCH_CHARTER.md). This roadmap tracks implementation and evidence. The charter records the scientific principles and research rationale. Verify merged code and CI before changing any status.
 
-## Strategic execution order
+## Non-negotiable runtime contract
 
-1. **Close the measurement gap (in progress):** build held-out, multi-turn benchmarks for attention, working-memory retention, prediction, and memory recall. Expand beyond the current small, project-authored English memory dataset and record baselines, ablations, failure cases, and resource use. *Status:* a synthetic, reproducible baseline across all five areas exists ([report](benchmarks/cognitive-evaluation-report.md)). Opt-in external evaluation now covers long-term recall (LongMemEval Oracle) and a human working-memory reference (NEMAR digit span) ([report](benchmarks/external-evaluation-report.md)), together with novelty-score calibration and generalisation tests. Still open: external material for attention and prediction, calibration of other scores, cross-language and cross-domain generalisation, and failure-recovery measures.
-2. **Deepen memory and learning:** add associative/relational memory, temporal context and contiguity, retrieval-dependent strengthening, forgetting/interference, source monitoring, and owner-reviewed consolidation. Compare each mechanism with the current static memory baseline.
-3. **Ground the mind in the environment:** add permission-scoped multimodal perception, spatial/world-state representations, and uncertainty-aware multisensory integration.
-4. **Add affect and regulation:** research bounded appraisal, interoception, homeostasis, and motivation, with explicit state and no unsupported claims about feelings.
-5. **Develop adaptive action:** compare safe, simulation-first reinforcement and action-selection approaches under independent approval boundaries.
-6. **Research neural substrates and alternative architectures:** compare recurrent, state-space, local-plasticity, spiking, and neuromorphic approaches only on tasks where their proposed mechanisms can be measured.
-7. **Integrate and compare cognitive architectures:** evaluate closed-loop behaviour, generalisation, adaptation, calibration, robustness, and resource efficiency. Keep consciousness research separate from capability claims.
+- Source code defines the organism's architecture, neural mechanisms, initial parameters, developmental programme, and stable constitution.
+- The active brain runtime uses bounded RAM state only: no SQLite/SQL, database, vector database, external memory service, or disk-backed runtime state.
+- Neuron activity, synapses, weights, working state, episodic/semantic/procedural memory, goals, and internal drives live in process memory for this phase.
+- A deterministic simulation clock advances the organism independently of HTTP requests and language-model calls.
+- Core neural activity, adaptation, memory dynamics, prediction, and simulated action must run with the LLM disabled.
+- Restart resets runtime experience and learned parameters for now. Durable learning may later be exported as reviewed, version-controlled source artefacts.
+- Self-development creates isolated candidate patches, tests, immutable diffs, and evidence. It never silently mutates the running executable, merges, deploys, expands permissions, or accesses secrets.
+- Biological labels identify research questions, not one-to-one anatomical replicas. No claims of consciousness, sentience, or human-level intelligence.
 
-Do not skip the evaluation stage merely to add a visually impressive subsystem. Follow the charter's scientific protocol and minimum acceptance criteria.
+## Verified current baseline
 
-## Milestone 0 — organism foundation
+The merged code is a useful cognitive-software prototype, not yet the target living organism:
 
-- [x] Modular organism subsystem boundaries.
-- [x] Consent-gated SQLite memory with provenance and deletion.
-- [x] Explicit manual observation intake.
-- [x] Typed internal event bus.
-- [x] Resource budget and priority queue.
-- [x] Deterministic goal planning skeleton.
-- [x] Health signal detection and incident creation.
-- [x] Reviewable regeneration proposals.
-- [x] Add a bounded, process-local proposal queue with owner-only review status and explicit approval/rejection.
-- [x] Local API, CLI, tests, and CI.
-- [x] Separate consent scope for owner-supervised learning examples.
-- [x] Pending-review, approve/reject, delete, and approved-corpus export workflow.
+- `cognition/dynamics.py` runs seven abstract population nodes over ten fixed projections using bounded rate updates. It is not a neuron/synapse simulation and has no runtime synaptic plasticity.
+- The API has a one-second low-amplitude idle activity approximation while the process is awake. Activity also runs on explicit text requests. This is not yet a general continuous simulation lifecycle or a biological resting state.
+- The prenatal scaffold is a separate seven-population/ten-projection abstraction with scalar cues and a bounded activity-dependent weight rule. It is not integrated with runtime dynamics.
+- Perception is explicit text input. There is no vision, audition, touch, proprioception, interoception, or body/environment loop.
+- The cognitive cycle has attention, working memory, memory retrieval, lexical novelty, deterministic planning, and an optional LLM language interface. Several mechanisms are heuristics or database-backed software.
+- **The current runtime is not database-free yet.** Normal local startup defaults to file-backed SQLite. Public/volatile mode uses SQLite `:memory:`. The new contract requires removing database dependence from the active organism, not renaming in-memory SQLite as "no DB".
+- Code repair currently creates proposals only; there is no isolated self-authored code/test lifecycle.
 
-### Associative memory research track
+These facts are the starting baseline, not completed roadmap requirements. See [Brain](BRAIN.md), [Architecture](ARCHITECTURE.md), [Memory](MEMORY.md), and [Safety](SAFETY.md).
 
-- [x] Add a bounded volatile association graph over source-defined fact identifiers.
-- [x] Strengthen concept links through co-activation; retrieve related facts through spreading activation.
-- [x] Add bounded link decay and a hard association-count limit.
-- [x] Evaluate associative recall against keyword-only retrieval and random-link baselines ([PR #8](https://github.com/aakashsiwach/artificial-human/pull/8), merged with CI passing).
-- [x] Add context-sensitive source monitoring with owner/session-scoped links, request cleanup, and a cross-context leakage benchmark (merged in [PR #10](https://github.com/aakashsiwach/artificial-human/pull/10)).
-- [x] Add contradiction-sensitive association, retrieval-dependent strengthening, and bounded-interference experiments ([PR #11](https://github.com/aakashsiwach/artificial-human/pull/11), merged).
-- [x] Extend beyond source facts to carefully governed volatile episodic representations, with explicit privacy controls ([PR #12](https://github.com/aakashsiwach/artificial-human/pull/12), merged).
+## Ordered implementation programme
 
-### Recurrent activity research track
+### Phase 0 — align direction and establish the RAM-only runtime contract
 
-- [x] Add a process-local recurrent population activity engine with fixed abstract topology, bounded updates, activity leak, inhibitory projection, and content-free telemetry.
-- [x] Integrate activity updates into every cognitive response, including deterministic identity responses.
-- [x] Report aggregate population activity and cycle counts in organism status.
-- [x] Run a low-amplitude deterministic idle-activity approximation while the API process is awake; stop with process suspension/shutdown.
-- [ ] Compare recurrent update rules and stability under controlled inputs and no-input decay.
-- [ ] Add external cognitive tasks that test whether recurrent state improves sequence recall, context integration, or prediction over a non-recurrent baseline.
-- [ ] Add reviewed, reward-gated plasticity only after a falsifiable learning hypothesis and regression suite exist.
+- [ ] [#17 — Align architecture and project docs with the code-first living-organism direction](https://github.com/aakashsiwach/artificial-human/issues/17). This documentation issue is in progress on the current branch.
+- [ ] [#18 — Specify the database-free organism runtime and migration boundary](https://github.com/aakashsiwach/artificial-human/issues/18). The default organism must initialise without SQLite, SQL, vector stores, database files, or persistent memory services. Legacy DB-backed tools must be isolated from the active runtime.
 
-## Current delivery — source-defined identity and volatile runtime
+**Exit gate:** architecture docs agree; tests prove default startup creates no database and all live state is bounded RAM state.
 
-- [x] Define family roles, identity, purpose, principles, and boundaries in version-controlled source code.
-- [x] Answer direct identity questions deterministically without relying on a hosted model or personal-memory store.
-- [x] Add a small source-code foundational knowledge corpus with deterministic in-process retrieval.
-- [x] Make the public runtime use volatile in-process personal-memory storage and code-defined identity, with no external database or persistent identity file.
-- [x] Expose storage/identity mode in organism status and the Control Room.
-- [ ] Expand core knowledge through reviewed, source-attributed modules and domain-specific evaluation.
-- [x] Build a bounded in-process relational/episodic memory mechanism with retrieval-dependent strengthening, interference, forgetting, and replay, and compare against simple baselines (PRs #11 and #12, merged).
-- [ ] Develop recurrent neural/population dynamics as explicit, testable mechanisms rather than naming conventional software services after biological organs.
+### Phase 1 — neural simulation foundation
 
-## Milestone 1 — integrated cognitive-cycle foundation
+- [ ] [#19 — Deterministic neural simulation kernel and biological timebase](https://github.com/aakashsiwach/artificial-human/issues/19).
+- [ ] [#20 — Neuron models and inspectable membrane dynamics](https://github.com/aakashsiwach/artificial-human/issues/20).
+- [ ] [#21 — Excitatory and inhibitory synapse dynamics](https://github.com/aakashsiwach/artificial-human/issues/21).
+- [ ] [#22 — Event-driven spike propagation and synaptic delays](https://github.com/aakashsiwach/artificial-human/issues/22).
+- [ ] [#23 — First recurrent neural microcircuit](https://github.com/aakashsiwach/artificial-human/issues/23).
 
-- [x] Explicit language perception with source provenance.
-- [x] Bounded attention over retrieved memory and approved learning candidates.
-- [x] Capacity-limited volatile working memory with salience decay and reactivation.
-- [x] Owner-scoped, bounded, explicitly clearable in-process working-memory sessions.
-- [x] Contextual lexical novelty / prediction-error heuristic.
-- [x] Executive goal decomposition with an explicit approval boundary.
-- [x] Orchestrate the systems through a cognitive architecture before model generation.
-- [x] Return inspectable cognitive traces and subsystem status.
-- [x] Keep long-term memory and learning consent-gated.
-- [x] Add semantic/vector/hybrid and temporal memory with measured retrieval evaluations ([docs](MEMORY.md), [ADR 0001](adr/0001-semantic-hybrid-temporal-memory.md), [report](benchmarks/memory-retrieval-report.md)).
-  - [x] Replaceable embedding interface with a local in-process backend (fastembed/ONNX); remote backends need operator opt-in, HTTPS and owner consent.
-  - [x] Consent-aware incremental indexing, re-indexing on model change, failure isolation, and deletion/revocation of vectors.
-  - [x] Unified hybrid search (BM25 + embeddings + temporal channel, Reciprocal Rank Fusion) with filters and per-result explanations.
-  - [x] Bitemporal records (event, recorded, validity times), supersession links, `known_at`/`valid_at` queries, contradiction preservation.
-  - [x] Integration before attention in the cognitive cycle, with retrieval channels in the trace.
-  - [x] Reproducible synthetic benchmark with tuning/eval split, baselines and ablations (Recall@K, Precision@K, MRR, nDCG@K).
-- [ ] Build held-out benchmarks for attention, working-memory retention, recall, and prediction. (Remains open: attention and prediction/novelty still have no externally authored evaluation material.)
-  - [x] Reproducible synthetic benchmarks with tuning/eval splits, fixed seeds, baselines, ablations, failure cases and resource measurements for attention, working memory, prediction/novelty, long-term recall, and six integrated multi-turn scenarios. Offline `artificial-human cognition-eval` runs in CI on Python 3.12 and 3.13 ([research record](COGNITIVE_EVALUATION.md), [report](benchmarks/cognitive-evaluation-report.md)).
-  - [x] Externally authored evaluation for long-term recall: LongMemEval Oracle (MIT), turn-level evidence retrieval over 500 held-out questions. Opt-in, local, never downloaded or tuned on ([governance](benchmarks/EXTERNAL_DATASETS.md), [report](benchmarks/external-evaluation-report.md)).
-  - [x] Independent human behavioural reference for working memory: NEMAR on003838 digit span (CC0), participant-level held-out split, aggregates only.
-  - [ ] Externally authored material for attention and prediction/novelty. NEMAR on004574 (cross-modal oddball) was reviewed and not adopted: undocumented behavioural columns, a mostly clinical population, and no defensible mapping to text novelty. LoCoMo and STS-B were rejected on licence grounds.
-  - [x] Calibration of the novelty score (logistic mapping fitted on the tuning split only; Brier, ECE, reliability bins, calibration slope/intercept, base-rate reference) and generalisation tests (attention held-out conditions, a 216-cell working-memory grid, LongMemEval breakdowns by category, history length, evidence position and temporal distance).
-  - [ ] Calibration of other scores (attention weights, retrieval scores), cross-language and cross-domain generalisation, and failure-recovery measures. External suites are not run in CI (by design: no data downloads in CI).
-- [ ] Add multimodal perception behind permission-scoped sensory interfaces.
+**Exit gate:** a deterministic runnable experiment shows individual neurons communicating through delayed excitatory/inhibitory synapses, recurrent activity, and stable decay—not just named population counters.
 
-## Milestone 2 — deeper biological and cognitive mechanisms
+### Phase 2 — learning, regulation, representation, and memory
 
-### Developmental substrate research track
+- [ ] [#24 — Local synaptic plasticity and learning-rule comparisons](https://github.com/aakashsiwach/artificial-human/issues/24).
+- [ ] [#25 — Neural homeostasis and bounded internal regulation](https://github.com/aakashsiwach/artificial-human/issues/25).
+- [ ] [#26 — Population coding and distributed neural representations](https://github.com/aakashsiwach/artificial-human/issues/26).
+- [ ] [#30 — Replace database-backed memory with bounded in-memory cognitive memory](https://github.com/aakashsiwach/artificial-human/issues/30).
 
-- [x] Deliver the first in-memory prenatal scaffold prototype: 40-week developmental clock, fixed abstract population/projection topology, maturity gates, intrinsic activity, explicit scalar sensory input, bounded connection plasticity, CLI, tests and documentation.
-- [ ] Replace scalar channel adaptation with temporally structured population activity and distributed feature representations.
-- [ ] Compare alternative plasticity rules, including rate-based Hebbian, BCM-like, STDP-inspired and homeostatic mechanisms, against frozen-scaffold baselines.
-- [ ] Add independently authored developmental/behavioural validation tasks and parameter sensitivity analysis before making biological-fidelity claims.
+**Exit gate:** independent, bounded RAM mechanisms learn, retrieve, associate, forget, and replay without an LLM or database; learning is compared against fixed-weight and simpler baselines.
 
+### Phase 3 — perception and world modelling
 
-- [ ] Research and specify affective appraisal and salience without unsupported emotion inference.
-- [ ] Implement homeostatic drives and motivation with bounded, inspectable state.
-- [ ] Implement action selection and reinforcement learning with approval constraints.
-- [ ] Add associative and relational memory, source reconciliation, and contradiction handling. (Contradictions are now preserved, linked and surfaced; reconciliation, source credibility and associative graphs are not implemented.)
-- [ ] Add memory dynamics: retrieval-dependent strengthening, decay/interference, and contiguity-based temporal cueing, each evaluated against the current static retrieval.
-- [ ] Replace English keyword temporal-intent rules with an evaluated parser; extend the memory benchmark with externally authored, larger held-out data.
-- [ ] Investigate sleep-stage-inspired offline replay and systems consolidation. PR #13 adds manually triggered replay-pattern proposals and owner-reviewed inferred-memory creation; it does not simulate sleep stages or run an autonomous sleep cycle.
-- [ ] Compare symbolic, predictive-processing, global-workspace, and neural-network approaches.
-- [ ] Evaluate each mechanism against baselines and held-out cognitive tasks.
-- [ ] Experiment with neural/spiking models only where they produce testable benefits.
+- [ ] [#27 — Permission-scoped sensory encoders](https://github.com/aakashsiwach/artificial-human/issues/27).
+- [ ] [#28 — Multimodal integration and perceptual state estimation](https://github.com/aakashsiwach/artificial-human/issues/28).
+- [ ] [#29 — Predictive world-state model and prediction-error loop](https://github.com/aakashsiwach/artificial-human/issues/29).
 
-## Milestone 3 — adaptive intelligence and learning
+**Exit gate:** explicit, permission-scoped sensory streams produce uncertainty-aware neural state; predicted environment changes are compared with observed outcomes.
 
-- [ ] Add continual learning with replay, forgetting controls, and catastrophic-forgetting evaluations.
-- [ ] Evaluate model adaptation separately from memory retrieval and prompt conditioning.
-- [ ] Measure factual recall, generalization, decision consistency, calibration, and transfer.
-- [ ] Extend owner-reviewed schema extraction beyond synthetic, explicitly annotated event-type metadata to independently authored held-out workflows and transfer tasks.
-- [ ] Maintain a benchmark suite that catches regressions across cognitive functions. (A baseline suite exists via `cognition-eval`; automatic regression thresholds are not yet enforced in CI.)
-- [ ] Add multimodal perception and grounded prediction as separately evaluated capabilities.
+### Phase 4 — connected brain circuits, body, and action
 
-## Milestone 4 — organism telemetry and immune system
+- [ ] [#31 — Episodic binding, replay, and consolidation circuits](https://github.com/aakashsiwach/artificial-human/issues/31).
+- [ ] [#32 — Action selection and reward learning](https://github.com/aakashsiwach/artificial-human/issues/32).
+- [ ] [#33 — Forward prediction and adaptive control](https://github.com/aakashsiwach/artificial-human/issues/33).
+- [ ] [#34 — Simulated body and environment](https://github.com/aakashsiwach/artificial-human/issues/34).
 
-- [ ] Add read-only, permission-scoped host and application monitoring.
-- [ ] Add event correlation, incident timelines, and severity calibration.
-- [ ] Add safe containment proposals and operator escalation.
-- [ ] Evaluate false positives, missed incidents, and recovery time.
+**Exit gate:** complete at least one reproducible perception → internal state → prediction → action → outcome → learning task in a deterministic simulated environment.
 
-## Milestone 5 — regeneration and self-maintenance
+### Phase 5 — development and continuous organism runtime
 
-- [ ] Add ephemeral sandbox/worktree workers.
-- [ ] Reproduce incidents with generated regression tests.
-- [ ] Prepare immutable diffs and evidence bundles.
-- [ ] Require review and separate deployment approval.
-- [ ] Add rollback plans and post-repair verification.
-- [ ] Add owner-reviewed self-maintenance proposals with independent tests and audit trails.
+- [ ] [#35 — Unify prenatal and runtime substrate; extend postnatal development](https://github.com/aakashsiwach/artificial-human/issues/35).
+- [ ] [#36 — Run the organism as a continuous in-memory process](https://github.com/aakashsiwach/artificial-human/issues/36).
 
-## Research discipline
+**Exit gate:** one coherent substrate follows a developmental clock and continues bounded internal neural, regulatory, memory, and predictive processes without incoming requests or LLM calls.
 
-For every brain-inspired capability, record:
-1. The biological or cognitive-science evidence and competing explanations.
-2. The computational abstraction and what it deliberately leaves out.
-3. Falsifiable expected behavior and benchmark tasks.
-4. Baseline comparisons, failure cases, and ablations.
-5. Safety, consent, privacy, and human oversight requirements.
+### Phase 6 — safe self-development and integration
 
-Do not mark a biological function complete because a module has a brain-region name. Completion requires tests and evidence that the intended computational behavior works.
+- [ ] [#37 — Safe self-development through isolated code proposals, tests, and verified diffs](https://github.com/aakashsiwach/artificial-human/issues/37).
+- [ ] [#38 — Integrate brain circuits into one executable artificial organism](https://github.com/aakashsiwach/artificial-human/issues/38).
+
+**Exit gate:** the organism can identify a measured failure, propose a candidate code/test change in isolation, and provide reproducible evidence; human approval remains required before source changes are adopted.
+
+### Phase 7 — evaluation and completion
+
+- [ ] [#39 — Behavioural, neural, and organism-level evaluation gates](https://github.com/aakashsiwach/artificial-human/issues/39).
+- [ ] [#40 — Verify the living-organism completion gate](https://github.com/aakashsiwach/artificial-human/issues/40).
+
+**Exit gate:** each mechanism has fixed-seed tests, baselines, ablations, failure cases, resource bounds, limitations, and green CI. Issue #40 validates the complete system; merged PRs alone do not constitute completion.
+
+## Historical foundations (already merged)
+
+The earlier work remains useful as research baseline: modular organism composition, consent-aware SQLite memory, source-defined identity/knowledge, explicit text perception, attention and working memory, lexical prediction, executive planning, associative/relational software graphs, replay/consolidation proposals, owner-reviewed schema extraction, the prenatal scaffold, benchmark infrastructure, event bus, resource governor, immune/incident, and regeneration proposal modules.
+
+These are not evidence of a neural brain or a no-database runtime. Reuse them where tests and interfaces fit the new architecture; migrate or retire them when they conflict with the runtime contract.
+
+## Delivery rules
+
+1. Work in dependency order. Complete one foundational issue and one substantial PR at a time.
+2. Do not start the next branch while the current foundational PR is under review.
+3. Make coherent commits, run local targeted/full checks before pushing, and avoid one-file commits that trigger repeated CI runs.
+4. Do not mark work complete because it compiles, has a biological name, or passes only synthetic unit tests. Require a runnable demonstration and baseline comparison.
+5. No dashboard, dataset adapter, external service, database feature, or unrelated agent framework may displace the neural substrate.
+6. Do not merge a PR without the repository owner's explicit instruction.
+
+## Scientific completion standard
+
+For every mechanism, document the empirical constraint, competing explanations, computational hypothesis, abstraction level, omitted biology, discriminating task, baseline, ablation, failure cases, resource bounds, privacy/safety controls, and reproducible result. The project does not claim a literal biological brain, consciousness, sentience, or human-level general intelligence.

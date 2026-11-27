@@ -30,13 +30,12 @@ Consider prompt injection in imported content, malicious documents, compromised 
 A repair approval in this release only records that a named reviewer approved the proposal. It does not run the fix. Future approval must bind to an immutable diff, test evidence, target environment, and expiry. Deployment must be a separate permission from patch preparation.
 
 
-## Volatile deployment mode
+## Current volatile deployment mode and migration status
 
-The public Artificial Human service runs with source-defined identity and process-local
-runtime storage. It does not connect to an external database or write personal memories
-to a disk-backed SQLite file. An in-memory SQLite adapter is used only inside the process
-for the existing typed, consent-aware memory interface; it is destroyed with the process.
-No external embedding provider is enabled in this mode. This is not durable learning:
-all runtime experiences and sessions reset on restart or redeployment. The stable identity
-constitution is kept in version-controlled source code and cannot be edited through the
-public API.
+The public Artificial Human service uses source-defined identity and process-local runtime storage. Its current typed, consent-aware personal-memory adapter is SQLite `:memory:`. It does not use a disk-backed personal-memory SQLite file or external database, and no external embedding provider is enabled in this mode. However, in-memory SQLite remains a database: **the current runtime is not yet compliant with the project's new database-free target**. Normal local development still defaults to file-backed SQLite.
+
+The target runtime will use bounded in-process data structures for neural activity, synapses, memory, goals and internal drives. Restart resets these runtime experiences and learned parameters in this phase. Issue #18 defines the migration and tests. Stable identity and architecture remain version-controlled source and cannot be rewritten through the public API.
+
+## Self-development safety boundary
+
+The long-term system may generate candidate code and regression tests for its next version, but generated content is untrusted. Candidate work must occur in a separate, resource-limited workspace with no secrets, unrestricted shell, network, or access to the live process. The organism cannot approve its own patch, modify its live executable, grant itself permissions, merge, or deploy. Human review must bind approval to an immutable diff and reproducible test evidence; deployment requires separate approval.

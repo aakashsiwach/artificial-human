@@ -62,22 +62,29 @@ A deterministic keyword scorer retrieves relevant facts in-process and includes 
 language-model context with source labels. This is code-defined knowledge, not a user-memory
 database and not a claim that all general world knowledge is stored in this repository.
 
-## Volatile public runtime
+## Current storage paths — not yet database-free
 
-When `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` or
-`ARTIFICIAL_HUMAN_STORAGE_MODE=volatile`, the organism:
+The current implementation has two storage modes, neither of which satisfies the new no-database target:
 
-- loads its foundational identity from source code and does not initialise the identity-file repository;
-- creates its personal-memory repository using SQLite's in-memory mode only (`:memory:`);
-- disables the embedding provider, avoiding an external vector service;
-- reports that no external database is connected;
-- loses runtime experiences and working-memory sessions when the process restarts.
+- Normal local construction uses a file-backed SQLite `MemoryRepository` by default.
+- `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true` or `ARTIFICIAL_HUMAN_STORAGE_MODE=volatile` selects SQLite `:memory:`, disables embeddings, and uses source-defined identity.
+- Public/volatile runtime experiences disappear on process restart, but the SQLite adapter is still a database.
+- The local identity repository is bypassed in public/volatile mode; constitutional identity remains source-defined and read-only.
 
-No hosted database, local disk-backed identity file, or disk-backed personal-memory database
-is used by this public runtime. The in-memory SQLite adapter is process-local implementation
-plumbing, not an external service. In this mode the source-defined identity is read-only.
-Source code is version-controlled and changes only through reviewed development; the running
-organism does not rewrite its own constitution.
+This is a truthful description of the merged baseline, not the target. Phase 0 issue #18 must remove DB initialisation from the active organism runtime and prove it with tests before we call the runtime database-free.
+
+## Living-code target — not yet implemented
+
+The intended organism is source-defined architecture executing continuously with bounded process-local state. The simulation kernel, neural substrate, synapses, memory dynamics, internal drives and development programme are code. Their live state changes in RAM as the simulation advances.
+
+Required properties:
+- Simulation time advances without a user request, HTTP handler or LLM call.
+- Neural and cognitive mechanisms continue when the LLM adapter is disabled.
+- Inputs enter as explicit sensory/environment events; neural state evolves; predictions are compared with outcomes; local learning changes bounded parameters.
+- Restart resets runtime experiences and learned parameters during this phase. There is no database or automatic disk persistence.
+- Self-development may create isolated candidate code, tests and immutable diffs only. Human review is required before source adoption, merge or deployment. The running organism never silently rewrites itself.
+
+“Living” here describes a continuously executing and adapting computational process. It is not a claim of biological life, subjective experience, sentience or consciousness.
 
 ## Implemented cognitive cycle
 

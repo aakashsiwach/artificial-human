@@ -16,6 +16,10 @@ This repository is building a computational artificial mind grounded in human ne
 - Build a coherent cognitive architecture with interacting perception, attention, memory, learning, prediction, affect/appraisal, motivation/homeostasis, executive control, action, and adaptation systems.
 - The language model is one replaceable component. It is not the whole brain and must not conceal missing cognitive subsystems.
 - Prefer modular, explicit, independently testable components over a single prompt or opaque agent loop.
+- The target active organism runtime is source-defined and RAM-only: no SQLite/SQL, database, vector database or external persistence service. Do not confuse SQLite `:memory:` with a database-free architecture.
+- Keep architecture and initial mechanisms in version-controlled source. Live neuron, synapse, memory, goal and drive state belongs in bounded in-process memory during this phase; restart resets learned runtime state.
+- Core simulation, neural dynamics and learning must not require an LLM call. Treat the LLM as an optional language adapter.
+- Self-development prepares isolated candidate patches, tests and immutable diffs only. No silent source mutation, unrestricted shell, permission expansion, automatic merge or deployment.
 - Use modern technologies (foundation models, deep learning, recurrent/state-space models, graphs, reinforcement learning, simulation, spiking networks, neuromorphic hardware) only when they test a defined hypothesis and provide measurable value.
 - Distinguish established empirical evidence, supported but incomplete computational accounts, contested theories, and practical engineering choices.
 - Do not claim biological equivalence, human-level intelligence, subjective feelings, sentience, or consciousness.
@@ -34,14 +38,18 @@ Passing unit tests is not proof of cognitive ability or biological fidelity. Do 
 
 ## Current sequencing
 
-Follow `docs/ROADMAP.md` and the Research Charter. The present priorities are:
-1. Close evaluation gaps for attention, working-memory retention, prediction, and recall.
-2. Build associative/relational memory and measurable memory dynamics.
-3. Develop permission-scoped multimodal perception and grounding.
-4. Research affect, interoception, homeostasis, and motivation.
-5. Develop simulation-first action selection and adaptive learning.
-6. Compare neural, recurrent, spiking, and neuromorphic approaches where testable.
-7. Integrate and evaluate the closed-loop artificial cognitive architecture.
+Follow [parent issue #16](https://github.com/aakashsiwach/artificial-human/issues/16) and `docs/ROADMAP.md`. The former evaluation-first/associative-memory-first sequence is superseded by the code-first living-organism programme:
+
+1. Reconcile architecture and documentation; define the database-free runtime boundary.
+2. Build deterministic simulation time, individual neurons, excitatory/inhibitory synapses, event scheduling and a recurrent microcircuit.
+3. Add local plasticity, homeostasis and distributed representations.
+4. Migrate active cognitive memory to bounded RAM mechanisms.
+5. Add sensory encoders, multimodal state estimation and predictive world modelling.
+6. Connect circuits to a simulated body/environment and adaptive action.
+7. Unify development and continuous runtime; add supervised self-development only after measurable core behaviour exists.
+8. Evaluate each mechanism against baselines and verify the final completion gate.
+
+Do not return to peripheral benchmark adapters, dashboards, databases or generic agent features ahead of the neural substrate.
 
 The roadmap and merged code always override this summary if project status has changed.
 

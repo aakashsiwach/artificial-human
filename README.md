@@ -33,6 +33,12 @@ Build one coherent artificial organism with interacting cognitive and body-inspi
 
 These are functional research mappings, not one-to-one anatomical equivalents. Brain regions and networks have distributed, overlapping functions.
 
+### What “living code” means here
+
+The target is an executable organism: a deterministic simulation clock continuously advances neural and cognitive state; neurons communicate through synapses; bounded plasticity changes live parameters; perception, memory, prediction, regulation and action form a feedback loop. All live state belongs in RAM, while source code defines the organism and its initial mechanisms. The LLM is optional and replaceable. The active runtime must not depend on SQL/SQLite, a vector database or an external persistence service.
+
+This target is **not yet implemented**. The current code has an abstract rate-based population experiment and a database-backed legacy memory implementation. The programme in [ROADMAP.md](docs/ROADMAP.md) starts by reconciling architecture and establishing the no-database runtime contract.
+
 ## Current human-brain-inspired implementation
 
 The Brain now runs an explicit cognitive cycle before calling the language model:
@@ -123,7 +129,7 @@ python -m artificial_human serve
 
 The API binds to 127.0.0.1:8000. OpenAPI docs: http://127.0.0.1:8000/docs.
 
-Set `ARTIFICIAL_HUMAN_DB_PATH` to choose the SQLite database location. The default is `.artificial-human/organism.sqlite3`.
+**Current implementation note:** normal local startup still uses file-backed SQLite by default; `ARTIFICIAL_HUMAN_DB_PATH` selects its path (default `.artificial-human/organism.sqlite3`). Public/volatile mode uses SQLite `:memory:`, which is still a database. Neither path satisfies the new target. Migration to a database-free active runtime is tracked by [issue #18](https://github.com/aakashsiwach/artificial-human/issues/18).
 
 ## Source-defined identity and foundational knowledge
 
@@ -327,7 +333,7 @@ Do not store passwords, API keys, authentication tokens, or other secrets in per
 
 ## Project status
 
-The project has an executable organism foundation, an integrated neuroscience-informed cognitive cycle, a first in-memory prenatal developmental-substrate prototype, semantic/hybrid/temporal long-term memory, and reproducible cognitive evaluations. The evaluation still lacks externally authored data. The next work is to develop associative memory and memory dynamics before expanding into multimodal perception, affect/homeostasis, action selection, and neural/neuromorphic experiments. It is not yet a complete artificial human, a biologically faithful brain simulation, an autonomous self-repair system, or artificial consciousness. See the [research charter](docs/RESEARCH_CHARTER.md) and [roadmap](docs/ROADMAP.md) for the scientific principles and implementation sequence.
+The repository has useful foundations: source-defined identity, a text-driven cognitive cycle, consent-aware legacy SQLite memory, associative/episodic software mechanisms, an isolated prenatal scaffold, resource/incident utilities and reproducible evaluations. These are not yet a neural brain or a database-free living organism. The next work is **not** another memory feature or benchmark adapter: it is the Phase 0 runtime contract, followed by the deterministic neuron/synapse kernel and recurrent microcircuit. It is not a complete artificial human, a biologically faithful brain simulation, an autonomous self-modifying system, or evidence of consciousness. See the [Research Charter](docs/RESEARCH_CHARTER.md) and [Roadmap](docs/ROADMAP.md).
 
 ## License
 
