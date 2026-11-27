@@ -35,7 +35,6 @@
   const cameraError = byId("camera-error");
 
   const apiBase = "/api";
-  let pollHandle = null;
   let providerReady = false;
   let activeSession = false;
   let cameraStream = null;
@@ -236,9 +235,7 @@
     logoutButton.hidden = false;
     setError("");
     setConnection("connected", " CONNECTED");
-    if (pollHandle) window.clearInterval(pollHandle);
     await refresh();
-    pollHandle = window.setInterval(refresh, 30000);
   };
   const showSignedOut = (message = "") => {
     activeSession = false;
@@ -249,8 +246,6 @@
     chatInput.disabled = true;
     sendChat.disabled = true;
     clearChat.disabled = true;
-    if (pollHandle) window.clearInterval(pollHandle);
-    pollHandle = null;
     stopCamera();
     setConnection("idle", " SIGN IN");
     setError(message);
@@ -577,7 +572,6 @@
     if (!document.hidden && activeSession) refresh();
   });
   window.addEventListener("pagehide", () => {
-    if (pollHandle) window.clearInterval(pollHandle);
     stopCamera();
     providerReady = false;
     chatInput.disabled = true;
