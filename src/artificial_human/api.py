@@ -4,6 +4,7 @@ import asyncio
 from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict, replace
 from datetime import datetime
+import hashlib
 import hmac
 import json
 import os
@@ -25,7 +26,6 @@ from artificial_human.auth import (
     create_credential_token,
     create_session_token,
     get_signing_secret,
-    password_hash,
     read_challenge_token,
     read_credential_token,
     read_session_token,
@@ -309,7 +309,10 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
                 return JSONResponse(status_code=403, content={"detail": "Untrusted request origin."})
 
         if auth_public:
-            return await call_next(request)
+            auth_response = await call_next(request)
+            auth_response.headers["Cache-Control"] = "no-store"
+            auth_response.headers["Pragma"] = "no-cache"
+            return auth_response
 
         authenticated = False
         try:
@@ -340,7 +343,11 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             )
         if passkey_enrolment_route and not authenticated:
             return JSONResponse(status_code=401, content={"detail": "Sign in before adding a passkey."})
-        return await call_next(request)
+        protected_response = await call_next(request)
+        if request.url.path.startswith("/auth/"):
+            protected_response.headers["Cache-Control"] = "no-store"
+            protected_response.headers["Pragma"] = "no-cache"
+        return protected_response
 
     app.state.public_deployment = public_deployment
     app.state.monitor_only = monitor_only
@@ -437,6 +444,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         password_ok = verify_password(payload.password, encoded_hash)
         if not (username_ok and password_ok):
             raise HTTPException(status_code=401, detail="Username or password is incorrect.")
+        login_limiter.reset(attempt_key)
         response.set_cookie(
             SESSION_COOKIE,
             create_session_token(username, secret),
@@ -471,7 +479,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             options = generate_registration_options(
                 rp_id=rp_id,
                 rp_name="Artificial Human",
-                user_id=__import__("hashlib").sha256(username.encode("utf-8")).digest(),
+                user_id=hashlib.sha256(username.encode("utf-8")).digest(),
                 user_name=username,
                 user_display_name="Aakash Siwach · Father and creator",
                 attestation=AttestationConveyancePreference.NONE,
@@ -504,7 +512,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         if not username:
             raise HTTPException(status_code=401, detail="Sign in before adding a passkey.")
         try:
-            from webauthn import base64url_to_bytes, verify_registration_response
+            from webauthn import verify_registration_response
             _owner, _hash, secret, origin, rp_id = auth_configuration()
             challenge = read_challenge_token(
                 request.cookies.get(CHALLENGE_COOKIE), purpose="registration",
