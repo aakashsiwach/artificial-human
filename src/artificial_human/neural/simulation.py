@@ -11,6 +11,7 @@ import math
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from collections.abc import Mapping
+from typing import ClassVar
 
 
 class SimulationCapacityError(RuntimeError):
@@ -58,11 +59,15 @@ class NeuronSnapshot:
     spike_count: int
     refractory_until_ms: float
     last_spike_time_ms: float | None
+    input_gain: float = 1.0
 
 
 @dataclass(slots=True)
 class LIFNeuron:
-    """Leaky integrate-and-fire neuron using an exact passive decay update."""
+    """Leaky integrate-and-fire neuron with a bounded software input gain."""
+
+    MIN_INPUT_GAIN: ClassVar[float] = 0.001
+    MAX_INPUT_GAIN: ClassVar[float] = 1.0
 
     identifier: str
     parameters: LIFParameters = field(default_factory=LIFParameters)
@@ -70,6 +75,8 @@ class LIFNeuron:
     spike_count: int = 0
     refractory_until_ms: float = 0.0
     last_spike_time_ms: float | None = None
+    input_gain: float = 1.0
+    _initial_input_gain: float = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         if not self.identifier or not self.identifier.strip():
@@ -78,6 +85,18 @@ class LIFNeuron:
             self.membrane_potential_mV = self.parameters.resting_potential_mV
         if not math.isfinite(self.potential_mV):
             raise ValueError("membrane potential must be finite")
+        self.set_input_gain(self.input_gain)
+        self._initial_input_gain = self.input_gain
+
+    def set_input_gain(self, gain: float) -> None:
+        """Set a bounded dimensionless input-current gain for homeostatic control."""
+        if (
+            isinstance(gain, bool)
+            or not math.isfinite(gain)
+            or not self.MIN_INPUT_GAIN <= gain <= self.MAX_INPUT_GAIN
+        ):
+            raise ValueError("input_gain must be finite and in [0.001, 1.0]")
+        self.input_gain = gain
 
     def update(self, current: float, *, time_ms: float, dt_ms: float) -> bool:
         """Advance one step and return True exactly when this step emits a spike."""
@@ -93,7 +112,7 @@ class LIFNeuron:
         potential = (
             self.parameters.resting_potential_mV
             + (self.potential_mV - self.parameters.resting_potential_mV) * decay
-            + self.parameters.membrane_resistance * current * (1.0 - decay)
+            + self.parameters.membrane_resistance * (current * self.input_gain) * (1.0 - decay)
         )
         if not math.isfinite(potential):
             raise ArithmeticError("neuron membrane update became non-finite")
@@ -121,6 +140,7 @@ class LIFNeuron:
                 round(self.last_spike_time_ms, 8)
                 if self.last_spike_time_ms is not None else None
             ),
+            input_gain=round(self.input_gain, 12),
         )
 
     def reset(self) -> None:
@@ -128,6 +148,7 @@ class LIFNeuron:
         self.spike_count = 0
         self.refractory_until_ms = 0.0
         self.last_spike_time_ms = None
+        self.input_gain = self._initial_input_gain
 
 
 @dataclass(frozen=True, slots=True)
@@ -234,6 +255,7 @@ class SimulationSnapshot:
                     "spike_count": state.spike_count,
                     "refractory_until_ms": state.refractory_until_ms,
                     "last_spike_time_ms": state.last_spike_time_ms,
+                    "input_gain": state.input_gain,
                 }
                 for state in self.neuron_states
             ],
@@ -243,7 +265,7 @@ class SimulationSnapshot:
 class NeuralSimulation:
     """Bounded deterministic network with delayed spike events and synaptic currents."""
 
-    VERSION = "lif-event-simulation-v1"
+    VERSION = "lif-event-simulation-v2"
 
     def __init__(
         self,
@@ -526,6 +548,8 @@ class NeuralSimulation:
                     and not math.isfinite(snapshot.last_spike_time_ms)
                 )
                 or snapshot.spike_count < 0
+                or not math.isfinite(snapshot.input_gain)
+                or not LIFNeuron.MIN_INPUT_GAIN <= snapshot.input_gain <= LIFNeuron.MAX_INPUT_GAIN
             ):
                 raise ValueError("snapshot contains invalid neuron state")
         weights = dict(state.synaptic_weights)
@@ -560,6 +584,7 @@ class NeuralSimulation:
             neuron.spike_count = snapshot.spike_count
             neuron.refractory_until_ms = snapshot.refractory_until_ms
             neuron.last_spike_time_ms = snapshot.last_spike_time_ms
+            neuron.input_gain = snapshot.input_gain
         self._synaptic_current = currents
         for synapse_id, weight in weights.items():
             self.update_synapse_weight(synapse_id, weight)
