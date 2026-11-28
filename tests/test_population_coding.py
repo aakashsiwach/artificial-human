@@ -191,3 +191,26 @@ def test_reproducible_comparison_reports_distinct_hypotheses_and_baselines() -> 
     assert first["pattern_completion"]["retrieved_identifier"] == "target-pattern"
     assert first["pattern_completion"]["missing_feature_recovered"] is True
     assert first["lif_projection"]["spike_count"] > 0
+
+
+
+def test_associative_memory_rejects_mixed_geometry_and_empty_zero_confidence_cues() -> None:
+    encoder = PopulationEncoder()
+    code = encoder.encode((0.1, 0.2))
+    memory = PopulationAssociativeMemory(capacity=3)
+    memory.store("base", code)
+
+    incompatible = PopulationEncoder(units_per_feature=8).encode((0.1, 0.2))
+    with pytest.raises(ValueError, match="geometry"):
+        memory.store("incompatible", incompatible)
+
+    zero_confidence = encoder.encode((0.1, 0.2), confidence=0.0)
+    assert memory.complete(zero_confidence) is None
+
+    partial_zero = zero_confidence.mask_features(1)
+    assert memory.complete(partial_zero) is None
+
+    memory.clear()
+    assert len(memory) == 0
+    memory.store("new-geometry", incompatible)
+    assert memory.complete(incompatible) is not None
