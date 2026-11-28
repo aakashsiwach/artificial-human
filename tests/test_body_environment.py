@@ -34,6 +34,11 @@ def test_closed_loop_task_reaches_goal_through_sensing_and_action() -> None:
     assert counts["approach"] > 0
     assert counts["hold"] > 0
     assert result.neural_spike_count > 0
+    first_trace = result.trace[0]
+    sensor_midpoint = (
+        first_trace.visual_position + first_trace.proprioceptive_position
+    ) / 2.0
+    assert abs(first_trace.fused_position - sensor_midpoint) < 0.06
 
 
 def test_closed_loop_trace_is_reproducible_for_fixed_seed() -> None:

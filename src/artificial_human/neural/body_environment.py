@@ -35,6 +35,11 @@ def _clamp(value: float, lower: float = -1.0, upper: float = 1.0) -> float:
     return min(upper, max(lower, value))
 
 
+def _encode_sensory_value(value: float) -> float:
+    """Invert the population encoder's tanh normalization for physical values."""
+    return math.atanh(_clamp(value, -0.95, 0.95))
+
+
 def _require_finite(value: float, name: str) -> None:
     if (
         isinstance(value, bool)
@@ -221,7 +226,7 @@ def _train_contextual_policy(seed: int) -> ActionSelectionCircuit:
 def _context_for_state(position: float, velocity: float, goal: float) -> str:
     if position > goal + 0.07:
         return "overshot"
-    if abs(goal - position) <= 0.07 and abs(velocity) <= 0.08:
+    if abs(goal - position) <= 0.12 and abs(velocity) <= 0.08:
         return "at_goal"
     return "far"
 
@@ -268,7 +273,7 @@ def run_closed_loop_task(
     state = environment.state
     initial_velocity_event = SensoryEvent(
         modality=SensoryModality.PROPRIOCEPTION,
-        values=(state.velocity + rng.gauss(0.0, sensor_noise_std),),
+        values=(_encode_sensory_value(_clamp(state.velocity + rng.gauss(0.0, sensor_noise_std))),),
         timestamp=0,
         confidence=0.98,
     )
@@ -292,7 +297,7 @@ def run_closed_loop_task(
         vision_percept = pipeline.ingest(
             SensoryEvent(
                 SensoryModality.VISION,
-                (visual_value,),
+                (_encode_sensory_value(visual_value),),
                 timestamp=tick,
                 confidence=0.95,
             )
@@ -300,7 +305,7 @@ def run_closed_loop_task(
         proprioception_percept = pipeline.ingest(
             SensoryEvent(
                 SensoryModality.PROPRIOCEPTION,
-                (proprioceptive_value,),
+                (_encode_sensory_value(proprioceptive_value),),
                 timestamp=tick,
                 confidence=0.98,
             )
@@ -357,9 +362,11 @@ def run_closed_loop_task(
         next_velocity_event = SensoryEvent(
             modality=SensoryModality.PROPRIOCEPTION,
             values=(
-                _clamp(
-                    transition.current.velocity
-                    + rng.gauss(0.0, sensor_noise_std * 0.5)
+                _encode_sensory_value(
+                    _clamp(
+                        transition.current.velocity
+                        + rng.gauss(0.0, sensor_noise_std * 0.5)
+                    )
                 ),
             ),
             timestamp=tick + 1,

@@ -14,7 +14,9 @@ and environment outcomes in one deterministic in-memory episode.
    explicit, synthetic-only, and ephemeral; raw events are not retained.
 3. Vision and proprioceptive pose estimates are fused by the uncertainty-aware
    multisensory integrator. Velocity is decoded from a separate proprioceptive
-   event.
+   event. The event adapter applies the inverse of the population encoder's
+   tanh normalization so decoded estimates remain on the simulator's physical
+   [-1, 1] scale.
 4. The fused sensory estimate drives the sensory input of the recurrent LIF
    microcircuit. Its spike trace is recorded for every simulation tick.
 5. A contextual action-selection circuit chooses approach, hold, or recovery
