@@ -1,5 +1,12 @@
 """Deterministic, in-memory neural simulation primitives."""
 
+from artificial_human.neural.adaptive_control import (
+    AdaptiveControlComparison,
+    AdaptiveForwardController,
+    ForwardMotorCommand,
+    run_adaptive_control_comparison,
+)
+
 from artificial_human.neural.action_selection import (
     ActionChoice,
     ActionLearningUpdate,
@@ -82,6 +89,8 @@ __all__ = [
     "ActionSpec", "SafeActionSpace", "ActionChoice", "ActionLearningUpdate",
     "ActionSelectionCircuit", "ActionSelectionEvaluation",
     "run_action_selection_comparison",
+    "AdaptiveForwardController", "ForwardMotorCommand",
+    "AdaptiveControlComparison", "run_adaptive_control_comparison",
     "LIFNeuron", "LIFParameters", "NeuronSnapshot", "NeuralSimulation",
     "NeuralSimulationState", "Polarity", "SimulationCapacityError",
     "SimulationSnapshot", "SimulationStep", "Synapse",
