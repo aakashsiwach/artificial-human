@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Protocol, cast
 
 from artificial_human.neural.simulation import NeuralSimulation
+from artificial_human.neural.homeostasis import InternalModulatorySignals
 
 
 class PlasticityRule(Protocol):
@@ -148,8 +149,21 @@ class PlasticityController:
     simulation: NeuralSimulation
     rule: PlasticityRule
 
-    def observe_step(self, spikes: tuple[str, ...], *, gate: float = 1.0) -> None:
-        self.rule.observe(self.simulation, spikes, gate)
+    def observe_step(
+        self,
+        spikes: tuple[str, ...],
+        *,
+        gate: float | None = None,
+        modulation: InternalModulatorySignals | None = None,
+    ) -> None:
+        if gate is not None and modulation is not None:
+            raise ValueError("provide either a direct gate or typed modulation signals")
+        effective_gate = (
+            modulation.plasticity_gate
+            if modulation is not None
+            else 1.0 if gate is None else gate
+        )
+        self.rule.observe(self.simulation, spikes, effective_gate)
 
     def reset(self) -> None:
         self.rule.reset()
