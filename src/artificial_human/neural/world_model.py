@@ -172,9 +172,26 @@ class PredictiveWorldModel:
         """Generate a multi-step open-loop rollout using predicted states as inputs."""
         current = initial_state
         predictions: list[WorldPrediction] = []
+        accumulated_variance = [0.0] * self.state_dimensions
         for action in actions:
             prediction = self.predict(current, action)
-            predictions.append(prediction)
+            accumulated_uncertainty = tuple(
+                math.sqrt(
+                    accumulated_variance[index]
+                    + prediction.standard_deviation[index] ** 2
+                )
+                for index in range(self.state_dimensions)
+            )
+            accumulated_variance = [
+                value * value for value in accumulated_uncertainty
+            ]
+            predictions.append(
+                WorldPrediction(
+                    state=prediction.state,
+                    standard_deviation=accumulated_uncertainty,
+                    model_version=prediction.model_version,
+                )
+            )
             current = prediction.state
         return tuple(predictions)
 
