@@ -108,6 +108,9 @@ def test_learning_rule_comparison_reports_fixed_baseline_and_limits() -> None:
     report = run_learning_rule_comparison(trials=12)
     rows = {row["rule"]: row for row in report["results"]}
     assert rows["stdp"]["accuracy"] > rows["fixed"]["accuracy"]
+    assert rows["stdp"]["paired_recall_spike"] is True
+    assert rows["stdp"]["unpaired_recall_spike"] is False
+    assert rows["fixed"]["paired_recall_spike"] is False
     assert rows["rate_hebbian"]["rule"] == "rate_hebbian"
     assert rows["stdp_gate_off"]["accuracy"] == rows["fixed"]["accuracy"]
     assert report["stdp_gate_off_accuracy"] == rows["fixed"]["accuracy"]
