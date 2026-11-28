@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import math
+from collections import deque
 from contextlib import suppress
 from dataclasses import dataclass
 from enum import StrEnum
@@ -108,6 +109,7 @@ class RuntimeSnapshot:
     pending_events: int
     last_error: str | None
     organism: dict[str, object]
+    recent_trace: tuple[RuntimeTick, ...]
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -120,6 +122,7 @@ class RuntimeSnapshot:
             "pending_events": self.pending_events,
             "last_error": self.last_error,
             "organism": self.organism,
+            "recent_trace": [item.as_dict() for item in self.recent_trace],
         }
 
 
@@ -149,6 +152,7 @@ class ContinuousOrganismRuntime:
         self._dropped_events = 0
         self._overload_count = 0
         self._last_error: str | None = None
+        self._trace: deque[RuntimeTick] = deque(maxlen=128)
         self._last_budget = BudgetSnapshot(
             BudgetLimits(
                 operations=self.config.max_operations_per_tick,
@@ -235,7 +239,7 @@ class ContinuousOrganismRuntime:
                 self._health = RuntimeHealth.DEGRADED
             self._tick_count += 1
             self._last_budget = governor.snapshot()
-            return RuntimeTick(
+            result = RuntimeTick(
                 tick_index=self._tick_count,
                 organism_steps=tuple(traces),
                 events_processed=events_processed,
@@ -244,6 +248,8 @@ class ContinuousOrganismRuntime:
                 health=self._health,
                 budget=self._last_budget,
             )
+            self._trace.append(result)
+            return result
 
     def run_ticks(self, ticks: int) -> tuple[RuntimeTick, ...]:
         """Run deterministic accelerated ticks; no wall-clock sleep is used."""
@@ -376,6 +382,7 @@ class ContinuousOrganismRuntime:
             self._dropped_events = 0
             self._overload_count = 0
             self._last_error = None
+            self._trace.clear()
             self._last_budget = BudgetSnapshot(
                 BudgetLimits(
                     operations=self.config.max_operations_per_tick,
@@ -399,6 +406,7 @@ class ContinuousOrganismRuntime:
                 pending_events=self._events.qsize(),
                 last_error=self._last_error,
                 organism=self.organism.snapshot(),
+                recent_trace=tuple(self._trace),
             )
 
     def _empty_tick(self) -> RuntimeTick:
