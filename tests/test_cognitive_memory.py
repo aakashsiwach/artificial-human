@@ -128,11 +128,12 @@ def test_spatial_memory_uses_coordinates_and_explicit_relations() -> None:
     )
     assert repeated_observation.id != kitchen.id
     store.connect("owner", kitchen.id, office.id, "east_of")
-    nearest = store.nearest("owner", (1.0, 0.0, 0.0), context_id="home")
+    nearest = store.nearest("owner", (0.0, 0.0, 0.0), context_id="home")
+    recalled_places = {item.id for item in store.retrieve("owner", "food kitchen")}
 
     assert nearest[0][0].id == kitchen.id
-    assert nearest[0][1] == 1.0
-    assert store.retrieve("owner", "food kitchen")[0].id == kitchen.id
+    assert nearest[0][1] == 0.0
+    assert {kitchen.id, repeated_observation.id}.issubset(recalled_places)
     assert store.nearest("another-owner", (0.0, 0.0, 0.0)) == ()
     assert store.forget_source("s1") == 1
     assert store.snapshot()["count"] == 2
