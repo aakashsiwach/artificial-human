@@ -59,7 +59,10 @@ def make_result(
         "timed_out": False,
         "isolated_worktree": True,
         "base_read_only": True,
+        "filesystem_isolated": True,
+        "process_isolated": True,
         "network_disabled": True,
+        "credentials_unavailable": True,
         "stdout_digest": "b" * 64,
         "stderr_digest": "c" * 64,
     }
@@ -208,6 +211,9 @@ def test_failed_or_unsafe_sandbox_results_are_retained_as_rejected_evidence() ->
         ({"output_bytes": 100_001}, "output budget"),
         ({"base_read_only": False}, "read-only"),
         ({"isolated_worktree": False}, "isolation"),
+        ({"filesystem_isolated": False}, "isolation"),
+        ({"process_isolated": False}, "isolation"),
+        ({"credentials_unavailable": False}, "isolation"),
         ({"base_revision": "b" * 40}, "different source revision"),
     ],
 )
