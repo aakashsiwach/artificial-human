@@ -284,7 +284,7 @@ def test_evidence_dataclasses_are_immutable() -> None:
     with pytest.raises(FrozenInstanceError):
         evidence.verified = False  # type: ignore[misc]
     with pytest.raises(ValueError, match="human approval reference"):
-        SafeSelfDevelopment.record_human_approval(proposal, evidence, " ")
+        guard.record_human_approval(proposal, evidence, " ")
 
 
 
@@ -420,3 +420,15 @@ def test_evaluation_gap_rejects_unverifiable_or_unbounded_evidence() -> None:
             evidence_digest="e" * 64,
             failing_case_ids=(),
         )
+
+
+
+def test_proposal_integrity_is_rechecked_before_sandbox_execution_and_approval() -> None:
+    proposal = make_proposal(checks=("pytest -q",))
+    tampered = replace(proposal, diff=proposal.diff.replace("new_value = 2", "new_value = 3"))
+    guard = SafeSelfDevelopment()
+
+    with pytest.raises(ValueError, match="patch digest"):
+        guard.run_checks(tampered)
+    with pytest.raises(ValueError, match="patch digest"):
+        guard.verify(tampered, (make_result("pytest -q"),))
