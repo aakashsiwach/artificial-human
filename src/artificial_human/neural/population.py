@@ -41,9 +41,9 @@ class PopulationCode:
         if (
             isinstance(self.units_per_feature, bool)
             or not isinstance(self.units_per_feature, int)
-            or not 2 <= self.units_per_feature <= 64
+            or not 2 <= self.units_per_feature <= 128
         ):
-            raise ValueError("units_per_feature must be an integer in [2, 64]")
+            raise ValueError("units_per_feature must be an integer in [2, 128]")
         if len(self.activations) != self.feature_count * self.units_per_feature:
             raise ValueError("activation count does not match population dimensions")
         if len(self.preferred_values) != self.units_per_feature:
@@ -203,7 +203,7 @@ class PopulationEncoder:
         if (
             isinstance(units_per_feature, bool)
             or not isinstance(units_per_feature, int)
-            or not 2 <= units_per_feature <= 64
+            or not 2 <= units_per_feature <= 128
         ):
             raise ValueError("units_per_feature must be an integer in [2, 64]")
         if (
