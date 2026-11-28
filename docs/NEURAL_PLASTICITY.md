@@ -13,7 +13,7 @@ RateBasedHebbian is a simple exponential rate-trace correlation comparator. A fi
     pytest -q tests/test_neural_plasticity.py tests/test_neural_simulation.py
     python -c "from artificial_human.neural.plasticity import run_learning_rule_comparison; print(run_learning_rule_comparison())"
 
-The deterministic task compares a pre-before-post temporally paired association and an unpaired negative control at a fixed weight threshold. It reports two-example classification accuracy, weights, and STDP improvement over fixed weights. The test asserts that the selected STDP timing rule improves on the fixed baseline for this task; it does not assert universal superiority over the rate-Hebbian comparator.
+The training phase uses a teacher-forced postsynaptic spike after presynaptic activity in the paired pathway; the unpaired pathway receives presynaptic activity only. A separate fresh-network recall probe then supplies only presynaptic cues. The paired learned synapse must evoke its target neuron, while the unpaired and fixed-weight controls must not. The report includes both learned weights and two-pathway recall accuracy. The test asserts improvement over fixed weights for this selected task, not universal superiority over the rate-Hebbian comparator.
 
 ## Scope and limitations
 
