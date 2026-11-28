@@ -561,8 +561,8 @@ def run_integration_ablation_comparison(
     *, ticks: int = 100
 ) -> tuple[dict[str, object], ...]:
     """Measure end-to-end subsystem ablations on identical deterministic tasks."""
-    if isinstance(ticks, bool) or not isinstance(ticks, int) or not 1 <= ticks <= 10_000:
-        raise ValueError("ticks must be an integer in [1, 10000]")
+    if isinstance(ticks, bool) or not isinstance(ticks, int) or not 1 <= ticks <= 1_000:
+        raise ValueError("ticks must be an integer in [1, 1000]")
 
     conditions = (
         ("full", OrganismIntegrationConfig()),
@@ -581,9 +581,18 @@ def run_integration_ablation_comparison(
         trace = organism.run(ticks)
         snapshot = organism.snapshot()
         neural_spikes = 0
+        attended_items = 0
+        attention_weight_total = 0.0
         reward_total = 0.0
         prediction_error_total = 0.0
         for step in trace:
+            attended = step.get("attended")
+            if isinstance(attended, (tuple, list)):
+                attended_items += len(attended)
+                if attended and isinstance(attended[0], dict):
+                    weight = attended[0].get("weight")
+                    if isinstance(weight, (int, float)):
+                        attention_weight_total += float(weight)
             neural = step.get("neural")
             if isinstance(neural, dict):
                 spikes = neural.get("spikes")
@@ -611,6 +620,8 @@ def run_integration_ablation_comparison(
             "cumulative_reward": round(reward_total, 8),
             "mean_absolute_prediction_error": round(prediction_error_total / ticks, 8),
             "neural_spikes": neural_spikes,
+            "attended_items": attended_items,
+            "mean_attention_weight": round(attention_weight_total / ticks, 8),
             "working_memory_items": working_memory_items,
             "episodic_memories": snapshot["episodes"],
             "action_learning_updates": action_updates,
