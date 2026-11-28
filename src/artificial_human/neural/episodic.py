@@ -135,7 +135,7 @@ class EpisodicNeuralCircuit:
         self._successful_strengthenings = 0
 
     def _digest(self, kind: str, value: str) -> str:
-        payload = f"{kind}:{value}".encode("utf-8")
+        payload = f"{kind}:{value}".encode()
         return hmac.new(self._secret, payload, hashlib.sha256).hexdigest()[:20]
 
     def _features(self, content: str, tags: Sequence[str] = ()) -> tuple[str, ...]:
