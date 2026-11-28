@@ -89,6 +89,8 @@ def test_experience_changes_existing_pathway_efficacy_without_retaining_stimuli(
     assert all(item.available for item in outcomes)
     assert substrate.snapshot().accepted_exposures == 12
     assert after != before
+    weights = dict(substrate.snapshot().synapse_weights)
+    assert all(weights[item] == substrate.simulation.synapses[item].weight for item in weights)
     assert all(0.0 <= item.weight <= 250.0 for item in substrate.simulation.synapses.values())
     assert not hasattr(substrate, "stimulus_history")
     assert "content" not in str(substrate.snapshot().as_dict()).lower()
