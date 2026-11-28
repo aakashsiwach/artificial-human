@@ -25,11 +25,11 @@ _SECRET_PATTERNS = (
     re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),
 )
 _PROHIBITED_ADDED_CODE = re.compile(
-    r"(?:\beval\s*\(|\bexec\s*\(|\bos\.system\s*\(|"
+    r"(?m)(?:\beval\s*\(|\bexec\s*\(|\bos\.system\s*\(|"
     r"\bsubprocess\.|\bPopen\s*\(|\bsocket\.|"
     r"\brequests\.|\bhttpx\.|\burllib\.request\b|"
     r"\b__import__\s*\(|\bctypes\.|"
-    r"(?m)^\s*(?:from\s+(?:subprocess|socket|requests|httpx|ctypes)\s+import|"
+    r"^\s*(?:from\s+(?:subprocess|socket|requests|httpx|ctypes)\s+import|"
     r"import\s+(?:subprocess|socket|requests|httpx|ctypes)\b)"
 )
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -302,7 +302,12 @@ class SafeSelfDevelopment:
             ],
         }
         return hashlib.sha256(
-            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            json.dumps(
+                payload,
+                sort_keys=True,
+                separators=(",", ":"),
+                default=lambda value: f"<{type(value).__name__}>",
+            ).encode("utf-8")
         ).hexdigest()
 
     def verify(
@@ -380,7 +385,12 @@ class SafeSelfDevelopment:
                     ):
                         failure = f"output budget exceeded or invalid: {expected}"
                         break
-                    if not _SHA256.fullmatch(result.stdout_digest) or not _SHA256.fullmatch(result.stderr_digest):
+                    if (
+                        not isinstance(result.stdout_digest, str)
+                        or not isinstance(result.stderr_digest, str)
+                        or not _SHA256.fullmatch(result.stdout_digest)
+                        or not _SHA256.fullmatch(result.stderr_digest)
+                    ):
                         failure = f"stdout/stderr digest is missing or invalid: {expected}"
                         break
 
