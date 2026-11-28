@@ -10,6 +10,7 @@ from artificial_human.memory.cognitive import (
     SpatialMemoryStore,
 )
 from artificial_human.memory.repository import MemoryRepository
+from artificial_human.memory.volatile_repository import InMemoryMemoryRepository
 from artificial_human.organism import ArtificialOrganism
 
 
