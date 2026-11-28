@@ -70,7 +70,7 @@ def _temporary_repository(root: Path) -> str:
     tests = root / "tests"
     tests.mkdir()
     (tests / "test_base.py").write_text(
-        "from sandbox_demo import VALUE\n\n"
+        "from sandbox_demo import VALUE\n\n\n"
         "def test_base_value() -> None:\n"
         "    assert VALUE == 7\n",
         encoding="utf-8",
