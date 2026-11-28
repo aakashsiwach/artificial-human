@@ -30,7 +30,7 @@ _PROHIBITED_ADDED_CODE = re.compile(
     r"\brequests\.|\bhttpx\.|\burllib\.request\b|"
     r"\b__import__\s*\(|\bctypes\.|"
     r"^\s*(?:from\s+(?:subprocess|socket|requests|httpx|ctypes)\s+import|"
-    r"import\s+(?:subprocess|socket|requests|httpx|ctypes)\b)"
+    r"import\s+(?:subprocess|socket|requests|httpx|ctypes)\b))"
 )
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _REVISION = re.compile(r"^[0-9a-f]{40}$")
@@ -355,8 +355,8 @@ class SafeSelfDevelopment:
             raise ValueError("proposal check manifest is invalid")
         expected_identifier = hashlib.sha256(
             (
-                f"{proposal.base_revision}\\0{proposal.hypothesis}\\0{proposal.patch_digest}\\0"
-                f"{proposal.trigger_benchmark_id or ''}\\0{proposal.trigger_evidence_digest or ''}"
+                f"{proposal.base_revision}\0{proposal.hypothesis}\0{proposal.patch_digest}\0"
+                f"{proposal.trigger_benchmark_id or ''}\0{proposal.trigger_evidence_digest or ''}"
             ).encode()
         ).hexdigest()[:24]
         if proposal.identifier != expected_identifier:
