@@ -59,10 +59,32 @@ class SensoryEvent:
     confidence: float = 1.0
 
     def __post_init__(self) -> None:
-        if self.timestamp < 0 or not self.values or len(self.values) > 64:
-            raise ValueError("invalid sensory event bounds")
-        if not 0 <= self.confidence <= 1 or not all(map(math.isfinite, self.values)):
-            raise ValueError("sensory values and confidence must be finite and bounded")
+        if not isinstance(self.modality, Modality):
+            raise ValueError("sensory modality must be a supported Modality")
+        if (
+            isinstance(self.timestamp, bool)
+            or not isinstance(self.timestamp, int)
+            or self.timestamp < 0
+        ):
+            raise ValueError("sensory timestamp must be a non-negative integer")
+        if (
+            not isinstance(self.values, tuple)
+            or not 1 <= len(self.values) <= 64
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                for value in self.values
+            )
+        ):
+            raise ValueError("sensory values must be a tuple of 1..64 finite numbers")
+        if (
+            isinstance(self.confidence, bool)
+            or not isinstance(self.confidence, (int, float))
+            or not math.isfinite(self.confidence)
+            or not 0.0 <= self.confidence <= 1.0
+        ):
+            raise ValueError("sensory confidence must be finite and in [0, 1]")
 
 
 @dataclass(slots=True)
