@@ -87,4 +87,6 @@ __all__ = [
     "SensoryEstimate", "MultisensoryParameters", "MultisensoryEstimate",
     "MultisensoryIntegrator", "MultisensoryComparison", "estimate_from_percept",
     "project_integrated_state", "run_multisensory_comparison",
+    "WorldState", "WorldPrediction", "PredictionError", "PredictiveWorldModel",
+    "RecoveryEvaluation", "WorldModelComparison", "run_world_model_comparison",
 ]
