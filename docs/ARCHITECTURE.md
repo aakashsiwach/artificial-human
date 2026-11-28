@@ -26,9 +26,10 @@ ArtificialOrganism
   └── ContinuousOrganismRuntime
         └── OrganismLoop
               ├── synthetic sensory event / population encoder
+              ├── bounded attention and working memory
               ├── bounded episodic memory
               ├── world-state predictor and error feedback
-              ├── bounded action learner
+              ├── opponent-channel learned action selection (fixed allowlist)
               ├── simulated environment
               ├── homeostatic and forward-control state
               └── DevelopmentalProgram
@@ -157,12 +158,24 @@ synthetic sensory event
     -> bounded learning and regulation
 ```
 
-The same event is delivered to the high-level loop and the LIF substrate, but
-the current action policy is still the high-level `ActionLearner`; it is not
-decoded from LIF population activity. Basal-ganglia-inspired reward learning,
-cerebellar forward prediction, full body/environment modelling and integrated
-circuit-to-action decoding remain later work packages. The runtime's toy
+The same event is encoded, ranked by bounded attention, placed in working
+memory, and delivered to the LIF substrate. Episodic recall and world-state
+prediction inform a fixed simulation-only action space. The active action
+selector is the opponent-channel `ActionSelectionCircuit`; the legacy
+`ActionLearner` remains only as a comparison baseline. Learned values cannot
+add actions or bypass the simulated environment's bounds. Actions are still
+selected by a high-level computational circuit, not decoded directly from LIF
+population activity. The current integration is an end-to-end software
+composition, not a claim that every cognitive process is implemented by
+spiking circuits. The runtime's toy
 environment is not a robotics interface and cannot perform real-world actions.
+
+Subsystem ablations are available through
+`run_integration_ablation_comparison`. The deterministic report compares the
+full loop with attention, working memory, episodic memory, LIF substrate and
+learned-action-selection ablations using cumulative reward, mean absolute
+prediction error, neural spikes, memory occupancy and action-learning updates.
+These metrics quantify this synthetic task only.
 
 The request-driven cognitive cycle is separate:
 

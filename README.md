@@ -37,7 +37,7 @@ These are functional research mappings, not one-to-one anatomical equivalents. B
 
 The target is an executable organism: a deterministic simulation clock continuously advances neural and cognitive state; neurons communicate through synapses; bounded plasticity changes live parameters; perception, memory, prediction, regulation and action form a feedback loop. All live state belongs in RAM, while source code defines the organism and its initial mechanisms. The LLM is optional and replaceable. The active runtime must not depend on SQL/SQLite, a vector database or an external persistence service.
 
-The active `ArtificialOrganism` now owns one continuous in-memory runtime. Its API lifespan and offline CLI share the same organism loop and developmental LIF substrate. The loop advances without HTTP requests or LLM calls, processes explicit synthetic sensory events, updates bounded episodic memory, predicts simulated outcomes, selects safe simulated actions, and records an inspectable trace. This remains a computational research prototype, not a complete artificial human or biological brain.
+The active `ArtificialOrganism` now owns one continuous in-memory runtime. Its API lifespan and offline CLI share the same organism loop and developmental LIF substrate. The loop advances without HTTP requests or LLM calls, processes explicit synthetic sensory events, applies bounded attention and working-memory selection, updates episodic memory, predicts simulated outcomes, learns among a fixed safe action allowlist, and records an inspectable trace. This remains a computational research prototype, not a complete artificial human or biological brain.
 
 ## Current human-brain-inspired implementation
 

@@ -9,12 +9,15 @@ The API lifespan and offline CLI simulation both operate on this composition;
 they do not construct separate background neural simulations.
 
 The high-level `OrganismLoop` performs deterministic synthetic perception,
-episodic recall, world-state prediction, action selection, simulated-environment
-feedback, and bounded memory updates. The same sensory event is also delivered
-to the developmental LIF substrate, which performs neuron/synapse updates,
-plasticity and homeostatic regulation. The current action policy is still the
-high-level `ActionLearner`; it is not yet decoded from LIF population activity.
-That circuit-to-action integration is a later work package. The old
+bounded attention selection, seven-item working-memory maintenance, episodic
+recall, world-state prediction, action selection, simulated-environment
+feedback, and bounded memory updates. The same sensory event is encoded and
+delivered to the developmental LIF substrate, which performs neuron/synapse
+updates, plasticity and homeostatic regulation. Action selection uses the
+opponent-channel `ActionSelectionCircuit` over a fixed three-action simulator
+allowlist. Learned values cannot expand that allowlist or trigger real-world
+actions. Actions are not decoded directly from LIF population activity; this
+remains an explicit integration boundary. The old
 population-dynamics engine remains available to the request-driven assistant
 path for compatibility, but it is not advanced as a second autonomous brain by
 the continuous runtime.
@@ -94,6 +97,14 @@ The API lifespan starts and stops the same runtime owned by its
 - `POST /runtime/events` — submit an explicit synthetic sensory event
 - `POST /runtime/pause` and `POST /runtime/resume` — control the scheduler
 - `POST /runtime/development` — advance postnatal model units explicitly. The default fixture is already postnatal; a custom runtime injected with a prenatal-stage program can use the Python runtime API's `prenatal_days` argument.
+
+The active loop exposes explicit ablation switches for attention, working
+memory, episodic memory, the LIF substrate and learned action selection.
+`run_integration_ablation_comparison(ticks=N)` runs the same seeded synthetic
+task across the full model and five single-subsystem ablations. It reports
+cumulative reward, mean absolute prediction error, neural spike count, memory
+occupancy and action-learning updates. These are task-specific software
+measurements, not neuroscience validation.
 
 The offline CLI runs deterministic accelerated simulation:
 
