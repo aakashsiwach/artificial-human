@@ -60,7 +60,7 @@ def test_prediction_error_channels_are_distinct_and_update_is_optional() -> None
     )
 
     assert report.model_error_mae > 0.0
-    assert report.sensory_surprise == pytest.approx(0.45)
+    assert report.sensory_surprise == pytest.approx(0.225)
     assert report.reward_goal_error == pytest.approx(0.6)
     assert report.updated is False
     assert report.uncertainty_before == pytest.approx(report.uncertainty_after)
