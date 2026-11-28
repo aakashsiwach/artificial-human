@@ -80,7 +80,6 @@ class WorldModelComparison:
     lexical_novelty_accuracy: float
     lexical_novelty_precision: float
     lexical_novelty_recall: float
-    learned_error_detector_accuracy: float
     recovery: RecoveryEvaluation
 
 
@@ -408,9 +407,6 @@ def run_world_model_comparison(
     lexical_accuracy, lexical_precision, lexical_recall = _classification_metrics(
         error_flags, lexical_predictions
     )
-    model_predictions = [error >= 0.10 for error in learned_errors]
-    model_accuracy, _, _ = _classification_metrics(error_flags, model_predictions)
-
     recovery_model = learned.clone()
     first_recovery_error = 0.0
     final_recovery_error = 0.0
@@ -457,7 +453,6 @@ def run_world_model_comparison(
         lexical_novelty_accuracy=lexical_accuracy,
         lexical_novelty_precision=lexical_precision,
         lexical_novelty_recall=lexical_recall,
-        learned_error_detector_accuracy=model_accuracy,
         recovery=RecoveryEvaluation(
             first_error=round(first_recovery_error, 8),
             final_error=round(final_recovery_error, 8),
