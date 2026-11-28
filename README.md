@@ -1,380 +1,319 @@
 # Artificial Human
 
-An experimental artificial mind and software organism grounded in human neuroscience and cognitive science. The goal is to study and engineer computational systems for perception, attention, memory, learning, prediction, reasoning, executive control, and adaptation.
+**Artificial Human is an open-source computational artificial-mind research project grounded in human neuroscience and cognitive science.** It explores how explicit neural, memory, learning, prediction, regulation, and action mechanisms can work together as one continuously advancing software organism.
 
-The human brain is the **research foundation**, not a decorative metaphor. The current implementation consists of explicit software mechanisms inspired by selected cognitive functions. It is not a biological neural simulation, a complete human brain, a literal human, or evidence of consciousness.
+The goal is not to wrap a language model around a database and call it a brain. Source code defines the architecture and initial mechanisms; the active organism keeps bounded live state in process memory. Language models are optional adapters, not the source of the organism's core neural activity.
 
-## Founder
+> **Scientific boundary:** this is an experimental computational model. It is not biological tissue, a complete human brain, a literal human, or evidence of intelligence, sentience, subjective experience, or consciousness. Biological labels describe research questions and hypotheses, not one-to-one anatomical replicas.
 
-**Aakash Siwach** is the human founder, creator and project owner of Artificial Human (Father in the project's family metaphor). His verified public developer profile is [GitHub @aakashsiwach](https://github.com/aakashsiwach). His LinkedIn URL is intentionally not published until the exact profile is confirmed. See [Founder profile](docs/FOUNDER.md) for his engineering background and selected repositories.
+<p align="center">
+  <a href="https://aakashsiwach.github.io/artificial-human/"><strong>Project website</strong></a> ·
+  <a href="https://github.com/aakashsiwach/artificial-human"><strong>Source repository</strong></a> ·
+  <a href="https://artificial-human-control-room.vercel.app"><strong>Control Room</strong></a> ·
+  <a href="https://artificial-human-monitor-api.onrender.com"><strong>Render API</strong></a>
+</p>
 
-## Vision
+## Live deployments
 
-**Project north star:** [Research Charter and Project North Star](docs/RESEARCH_CHARTER.md) is the durable source of truth for the neuroscience foundation, long-term vision, scientific principles, technology strategy, implementation sequence, and context recovery. When a chat or contributor handoff loses context, start there and reconcile it with the roadmap and actual merged code.
-
-Build one coherent artificial organism with interacting cognitive and body-inspired systems:
-
-| Human / biological reference | Artificial Human subsystem | Responsibility |
+| Surface | URL | What it is |
 | --- | --- | --- |
-| Sensory pathways | Perception | Transform explicit sensory input into structured percepts |
-| Selective attention | Attention | Prioritise relevant information |
-| Working-memory networks | Working memory | Hold and manipulate bounded active context |
-| Hippocampal memory systems | Memory | Store and retrieve consented episodes and knowledge |
-| Predictive processing | Prediction | Compare expectations/context with incoming information |
-| Prefrontal executive functions | Executive control | Plan, monitor, and gate decisions |
-| Language networks | Language interface | Language comprehension and generation |
-| Learning and reinforcement systems | Learning | Adapt from reviewed evidence and evaluated outcomes |
-| Sleep-dependent consolidation | Sleep | Review, replay, and consolidate memories |
-| Neuronal communication | Nervous system | Typed internal events |
-| Cardiovascular circulation | Circulation | Prioritised internal work scheduling |
-| Metabolic regulation | Metabolism | Bounded compute and model budgets |
-| Immune functions | Immune system | Detect anomalies and recommend defence |
-| Tissue repair | Regeneration | Propose isolated repair work |
+| Project website | [aakashsiwach.github.io/artificial-human](https://aakashsiwach.github.io/artificial-human/) | Public project overview, architecture, implementation status, deployment links, and documentation index |
+| Control Room (Vercel) | [artificial-human-control-room.vercel.app](https://artificial-human-control-room.vercel.app) | Owner-authenticated dashboard for developmental snapshots, system status, and the optional interactive cognitive interface |
+| Backend API (Render) | [artificial-human-monitor-api.onrender.com](https://artificial-human-monitor-api.onrender.com) | FastAPI service used by the Control Room |
+| API health | [artificial-human-monitor-api.onrender.com/health](https://artificial-human-monitor-api.onrender.com/health) | Render health-check endpoint |
 
-These are functional research mappings, not one-to-one anatomical equivalents. Brain regions and networks have distributed, overlapping functions.
+The Control Room calls the Render service through a same-origin Vercel /api proxy. The browser does not need a manually entered API URL or bearer token. Owner sign-in is required for private Control Room features; do not publish passwords, session secrets, provider keys, or API tokens.
 
-### What “living code” means here
+**Hosting note:** the current Render backend uses the free service plan. Free services can spin down after inactivity, and the process-local organism state is lost on a restart, sleep-related restart, or redeploy. This deployment is not durable storage or a guarantee of always-on neural execution. The Control Room's camera preview is opt-in and local to the browser; captured frames are not uploaded to the API or fed into the organism.
 
-The target is an executable organism: a deterministic simulation clock continuously advances neural and cognitive state; neurons communicate through synapses; bounded plasticity changes live parameters; perception, memory, prediction, regulation and action form a feedback loop. All live state belongs in RAM, while source code defines the organism and its initial mechanisms. The LLM is optional and replaceable. The active runtime must not depend on SQL/SQLite, a vector database or an external persistence service.
+Deployment configuration and owner setup are documented in [Control Room and monitoring deployment](docs/MONITORING.md).
 
-The active `ArtificialOrganism` now owns one continuous in-memory runtime. Its API lifespan and offline CLI share the same organism loop and developmental LIF substrate. The loop advances without HTTP requests or LLM calls, processes explicit synthetic sensory events, applies bounded attention and working-memory selection, updates episodic memory, predicts simulated outcomes, learns among a fixed safe action allowlist, and records an inspectable trace. This remains a computational research prototype, not a complete artificial human or biological brain.
+## Project at a glance
 
-## Current human-brain-inspired implementation
+| Area | Current implementation |
+| --- | --- |
+| Runtime | One composition-owned continuous in-memory organism runtime with independent neural, developmental, and wall-clock time |
+| Neural substrate | Deterministic leaky-integrate-and-fire (LIF) neurons, excitatory/inhibitory synapses, delayed events, bounded queues, and inspectable spike traces |
+| Development | A 12-neuron developmental LIF program with stage-dependent connectivity, membrane maturation, bounded STDP-inspired plasticity, homeostasis, conduction-delay refinement, and functional pruning |
+| Integration | A continuous organism loop connecting synthetic sensory input, attention, working memory, episodic recall, neural activity, world prediction, action selection, and a simulated body |
+| Memory | Consent-aware, owner-scoped memory interfaces and bounded in-memory stores; optional local semantic embeddings and temporal/hybrid retrieval in the request-oriented cognitive system |
+| Evaluation | Deterministic cognitive, neural, developmental, action-selection, adaptive-control, and organism-level benchmarks with fixed seeds and ablations |
+| Self-development | Immutable proposal and evidence contracts with strict patch validation and fail-closed sandbox integration; no built-in production sandbox executor or autonomous merge |
+| Language model | Optional OpenAI-compatible provider adapter; core continuous neural/runtime functions do not require an LLM call |
 
-The Brain now runs an explicit cognitive cycle before calling the language model:
+## How the organism loop works
 
-1. Perception normalizes explicit language input.
-2. Memory retrieval runs an owner-scoped, consent-filtered hybrid search (lexical BM25 + optional semantic embeddings + temporal reasoning, fused with Reciprocal Rank Fusion) and gathers owner-approved learning examples.
-3. Attention selects a bounded set of relevant items.
-4. Episodic memory groups attention-selected event records by event time and can replay immediate neighbours within the same owner/session context.
-5. Relational memory retrieves previously co-activated records, while explicit contradictions block conflicting positive links.
-6. Working memory maintains a capacity-limited, volatile workspace.
-7. Prediction calculates a lexical novelty signal against active context.
-8. Executive control produces an inspectable goal plan with approval gates.
-9. The language model acts as a language and deliberation component inside the architecture.
-10. A cognitive trace reports which software systems operated.
+The continuous loop runs as an in-process software lifecycle, not only when an HTTP request arrives. A tick connects the main mechanisms:
 
-Implemented modules live under `src/artificial_human/cognition/`. The details, endpoint examples, research limitations, and future mechanisms are documented in [Brain and intelligence](docs/BRAIN.md).
-
-## Prenatal development substrate (experimental)
-
-The first developmental prototype uses a fixed abstract circuit scaffold with seven neural-population abstractions and ten directed projections. A 280-day obstetric gestational clock matures the populations and runs deterministic intrinsic activity. Explicit scalar tactile, vestibular and auditory cues can alter existing connection strengths through a bounded activity-dependent rule when the corresponding model pathway is available.
-
-This prototype starts with no experience history. It retains no stimulus content and does not write exposures to SQLite. It is not a fetal-brain simulation, a semantic learner, or evidence of biological equivalence. Read [Prenatal development](docs/PRENATAL_DEVELOPMENT.md) for the developmental assumptions, model limits and reproduction steps.
-
-~~~bash
-artificial-human prenatal --days 280
-artificial-human prenatal --days 280 --seed 7 --exposure 25:auditory:0.7 --exposure 30:tactile:0.4
+~~~text
+synthetic sensory event
+        |
+        v
+sensory encoding and bounded attention
+        |
+        v
+working memory <----> episodic recall
+        |
+        v
+developmental LIF neural substrate
+        |
+        v
+bounded neural-activity summary + body state
+        |
+        v
+world prediction and learned action selection
+        |
+        v
+bounded simulated body/environment
+        |
+        v
+outcome, prediction error, reward and memory update
+        |
+        +------> bounded trace / next tick
 ~~~
 
-## Long-term memory: semantic, hybrid and temporal
+The same composition-owned runtime is used by the API lifespan and deterministic CLI simulation. Neural simulation time, developmental model time, and wall-clock scheduling are separate clocks. The runtime supports bounded sensory intake, drop-newest backpressure, per-tick resource budgets, pause/resume, safe shutdown, reset, snapshots, and a bounded recent trace.
 
-Long-term memory can retrieve by meaning as well as by keywords. "What is the boiling point of H2O?" finds "Water boils at approximately 100 degrees Celsius…". It also distinguishes when an event happened, when the system learned it, and when a fact was valid. Changed facts are stored as new versions linked to the old ones, contradictions are kept and flagged, and every result explains why it was retrieved.
+**Important integration detail:** the LIF substrate advances through a fixed propagation window so delayed downstream activity can be observed. A coarse population-state summary and working-memory focus condition the high-level tabular action selector. Individual LIF spikes are **not** decoded directly into motor commands. Actions remain in a small allowlisted simulated action space; no physical actuator or real-world action is connected.
 
-- Semantic embeddings come from a **local** model (`fastembed`/ONNX, `BAAI/bge-small-en-v1.5`), installed with `pip install -e ".[semantic]"` and enabled with `ARTIFICIAL_HUMAN_EMBEDDING_BACKEND=fastembed`. Without it, retrieval is lexical + temporal. Remote embedding services need an operator opt-in, HTTPS, and owner `external_embedding` consent.
-- Deleting a memory or revoking consent removes its vectors in the same transaction.
-- A reproducible benchmark compares lexical, semantic, hybrid, and hybrid + temporal retrieval: `artificial-human memory-eval --output-dir docs/benchmarks`. On the synthetic eval split (dataset v1.1.0), MRR is 0.681 lexical, 0.824 semantic, 0.848 hybrid, and 0.964 hybrid + temporal. Adding the lexical channel lowers irrelevant-query rejection, from 0.857 to 0.714. See the [report](docs/benchmarks/memory-retrieval-report.md).
+See [Integrated organism loop](docs/INTEGRATED_ORGANISM_LOOP.md) and [Continuous runtime](docs/CONTINUOUS_RUNTIME.md).
 
-Full details, configuration, limitations and the comparison with biological memory are in [Long-term memory](docs/MEMORY.md). The design rationale is in [ADR 0001](docs/adr/0001-semantic-hybrid-temporal-memory.md).
+## Architecture and subsystems
 
-## Cognitive evaluation
+### Neural substrate and development
 
-`artificial-human cognition-eval` measures the existing subsystems against simple baselines. It runs offline and deterministically, with no LLM and no model download:
+- Deterministic LIF membrane integration with explicit neuron state, excitatory/inhibitory synapses, delays, stable event ordering, bounded event/current resources, and snapshots.
+- A small recurrent microcircuit is retained as a controlled baseline alongside feed-forward, disconnected, inhibition-off, and fixed-rate comparisons.
+- The active developmental program uses a 12-neuron substrate. Its bounded maturation and learning rules are engineering hypotheses tested against frozen-plasticity and mature-from-start controls.
+- A prenatal scaffold remains available as a reference/compatibility model; it is not a biological fetal-brain simulation.
 
-- **Attention:** 150 eval candidate sets in five conditions. Compared with relevance-only, salience-only and input-order ranking.
-- **Working memory:** retention against intervening items and capacity, interference, reactivation, eviction and sessions. Compared with FIFO, LRU and salience without decay.
-- **Prediction/novelty:** 36 eval items (18 tuning) with authored labels. Compared with content-word overlap and Jaccard distance.
-- **Memory:** the long-term memory benchmark above.
-- **Associative memory:** source-context isolation, contradiction suppression, and bounded-interference controls.
-- **Episodic replay:** nine four-event sequences, immediate-neighbour recall, a no-replay baseline, and cross-context leakage checks.
-- **Sleep consolidation:** recurring-pattern detection, one-session and contradiction controls, non-mutating preview, and inferred-memory provenance after approval.
-- **Schema extraction:** recurrent owner-annotated event schemas, typed slot induction, constant retention, sensitive-key exclusion, singleton/contradiction controls, and owner-approved provenance.
-- **Integration:** six multi-turn scenarios through the full cognitive cycle.
+Read [Brain architecture](docs/BRAIN.md), [Prenatal development](docs/PRENATAL_DEVELOPMENT.md), [Postnatal development](docs/POSTNATAL_DEVELOPMENT.md), [Neural plasticity](docs/NEURAL_PLASTICITY.md), and [Neural homeostasis](docs/NEURAL_HOMEOSTASIS.md).
 
-```bash
-artificial-human cognition-eval --suite all --output-dir docs/benchmarks
-artificial-human cognition-eval --suite working-memory --format json
-```
+### Cognition and memory
 
-Selected measured findings:
+The request-oriented cognitive cycle provides an explicit software path for text input, memory retrieval, attention, episodic and relational context, working memory, prediction/novelty, executive planning, and optional language generation.
 
-- The attention formula is worse than relevance-only when salient distractors are present (nDCG@k 0.518 vs 0.973).
-- Working-memory retention is recency-only and content-agnostic.
-- Lexical novelty treats contradictions as familiar (eval AUROC 0.597).
-- Retrieval ignores the conversational context held in working memory.
+- Memory retrieval is owner-scoped and consent-filtered. The design combines lexical ranking, optional local semantic embeddings, temporal reasoning, and rank fusion.
+- Working memory is a bounded volatile workspace.
+- Episodic replay is a constrained event-neighbour mechanism, not a complete autobiographical memory.
+- Sleep-inspired consolidation and schema extraction produce reviewable proposals. They require explicit owner approval before creating inferred memories or schemas.
+- Semantic embeddings can use a local FastEmbed/ONNX model. Without the optional semantic extra, the system falls back to lexical and temporal retrieval.
+- Personal memory and consent state in the active runtime are volatile and process-local. Restarting the process clears them.
 
-These are software benchmarks on synthetic data, not measures of human cognition or biological fidelity. See the [cognitive evaluation report](docs/benchmarks/cognitive-evaluation-report.md) and the [research record](docs/COGNITIVE_EVALUATION.md).
+These are separable computational mechanisms; none is a biological hippocampus, cortex, or sleep process.
 
-**Independent evaluation (opt-in, local data only).** Two independently authored datasets can be evaluated with `--longmemeval-path` and `--digit-span-dir`. Nothing is downloaded automatically, and raw data are never committed; see [EXTERNAL_DATASETS.md](docs/benchmarks/EXTERNAL_DATASETS.md).
+Read [Brain and intelligence](docs/BRAIN.md), [Cognitive memory](docs/COGNITIVE_MEMORY.md), [Long-term memory](docs/MEMORY.md), [Episodic circuits](docs/EPISODIC_CIRCUITS.md), [Cognitive evaluation](docs/COGNITIVE_EVALUATION.md), and [ADR 0001](docs/adr/0001-semantic-hybrid-temporal-memory.md).
 
-- **LongMemEval Oracle** (MIT, 500 held-out questions): turn-level evidence recall@10 is 0.862 lexical and 0.882 hybrid + temporal. Semantic-only is worse than lexical on this data (MRR 0.619 vs 0.685), unlike on the project's synthetic benchmark.
-- **NEMAR digit span** (CC0, 86 participants): humans show strong primacy in serial recall; on the same sequences the software workspace shows pure recency.
+### Action, prediction, and simulated embodiment
 
-See the [external evaluation report](docs/benchmarks/external-evaluation-report.md). The project is still in Stage 1: attention and prediction have no external evaluation data yet.
+- A bounded contextual action selector learns over a small fixed action set and is evaluated against random and fixed-policy baselines.
+- The forward model and adaptive controller are tested against frozen-model baselines and under noise/delayed-feedback conditions.
+- The simulated body/environment closes the perception → prediction → action → outcome loop.
+- The integrated continuous loop runs synthetic sensory tasks and reports reward, prediction error, activity, memory, and learning metrics.
+- No camera, microphone, real-world sensor, physical body, or network-connected actuator is part of the continuous organism loop.
 
-**Important:** attention and novelty remain transparent engineering heuristics and language perception is currently text-only. The merged foundation includes a reduced LIF neuron/synapse simulator and a four-neuron fixed-weight recurrent microcircuit, but the circuit is not yet integrated into the cognitive cycle. Plasticity, homeostasis, multimodal sensing, world modelling, embodied action and the wider range of human cognitive abilities remain future work.
+Read [Action selection](docs/ACTION_SELECTION.md), [Adaptive forward control](docs/ADAPTIVE_FORWARD_CONTROL.md), [Predictive world model](docs/PREDICTIVE_WORLD_MODEL.md), and [Simulated body and environment](docs/SIMULATED_BODY_ENVIRONMENT.md).
+
+### Other software systems
+
+The repository also contains bounded event scheduling, metabolism/resource governance, immune/anomaly handling, regeneration proposals, API authentication, and a separate monitoring/Control Room frontend. These are supporting software components and should not be mistaken for evidence of corresponding biological systems.
+
+## Evaluation and quality
+
+Evaluation is designed to answer narrower, falsifiable questions about implemented mechanisms. It does not combine unrelated scores into an "intelligence" score.
+
+| Evaluation | Focus |
+| --- | --- |
+| Cognitive evaluation | Attention, working memory, novelty/prediction, memory retrieval, episodic replay, schema extraction, sleep-inspired proposals, and integrated request scenarios |
+| Neural simulation baseline | Deterministic spike propagation, recurrent dynamics, event delivery, resource use, and throughput/RAM observations |
+| Developmental learning | Experience-dependent cue prediction compared with frozen-plasticity and mature-from-start controls |
+| Action selection | Learned contextual policy compared with random and fixed-policy baselines |
+| Adaptive control | Learning-enabled and frozen forward models across noise and feedback-delay settings |
+| Organism evaluation | Fixed-seed baselines, subsystem ablations, sensitivity runs, failure counts, and host-specific resource observations |
+
+Run the offline evaluation suite from the repository root:
+
+~~~bash
+# Cognitive subsystem evaluation (offline and deterministic)
+artificial-human cognition-eval --suite all --output-dir benchmark-output
+
+# Consolidated neural and organism evaluation (fixed seeds 17, 23, 41)
+python scripts/evaluate_organism.py --output benchmark-output/organism-evaluation.json
+
+# Neural simulation performance/RAM baseline
+python scripts/benchmark_neural_simulation.py --steps 20000 --output benchmark-output/neural-simulation-baseline.json
+~~~
+
+The consolidated organism report keeps the continuous organism loop separate from the earlier noisy body/controller experiment; their results are not pooled. Timing and Python-traced memory are host-specific observations, not correctness thresholds. Regression thresholds should be introduced only after repeated-run variance and task validity are understood.
+
+Read [Cognitive evaluation](docs/COGNITIVE_EVALUATION.md), [Organism evaluation](docs/ORGANISM_EVALUATION.md), [Neural simulation baseline](docs/benchmarks/neural-simulation-baseline.md), and the [benchmark reports](docs/benchmarks/).
 
 ## Quick start
 
-Requires Python 3.12 or newer.
+Requires **Python 3.12 or newer**.
 
 ~~~bash
+# Clone
+git clone https://github.com/aakashsiwach/artificial-human.git
+cd artificial-human
+
+# Create and activate a virtual environment
 python -m venv .venv
-# Windows PowerShell: .venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+
+# Install development dependencies
 python -m pip install -e ".[dev]"
+
+# Run a deterministic simulation
 python -m artificial_human simulate --ticks 100
+
+# Inspect runtime status
 python -m artificial_human status
+
+# Start the local API (127.0.0.1:8000)
 python -m artificial_human serve
 ~~~
 
-The API binds to 127.0.0.1:8000. OpenAPI docs: http://127.0.0.1:8000/docs.
+Once the API is running, local OpenAPI documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). Keep the development API bound to loopback; do not expose it directly to a LAN or public network without the required authentication and deployment controls.
 
-**Runtime storage note:** local and public `ArtificialOrganism` construction now use the same bounded RAM-only memory adapter. The active runtime does not open SQLite or create memory/identity files; restart clears personal experience, consents, neural activity and learned runtime state. The SQLite repository remains available only for explicit legacy evaluation and CLI operations (for example, `memory-search ... --legacy-sqlite`).
+### Optional local semantic retrieval
 
-## Source-defined identity and foundational knowledge
-
-Artificial Human's constitutional identity and project-family roles are defined in
-`src/artificial_human/identity/constitution.py`. The human project creator is Father,
-ChatGPT is Mother as the AI collaborator, and Artificial Human is the project child.
-These are project roles, not biological relationships. Direct identity questions receive
-a deterministic source-code response rather than a model-generated guess.
-
-A small reviewable knowledge corpus in `src/artificial_human/cognition/core_knowledge.py`
-holds stable project facts. Relevant facts are retrieved directly from source code and
-provided to the cognitive cycle without an external vector index or database.
-
-The active runtime runs in **volatile in-process mode** in both local and public deployments. Identity and foundational knowledge are source-defined; personal memory, consents, neural state and working sessions live only in bounded RAM. Runtime experience disappears when the process restarts or redeploys. The source code is durable; the process does not automatically modify or permanently rewrite itself.
-
-## Associative knowledge
-
-The runtime can learn bounded associations between version-controlled core-knowledge facts
-when they are co-activated by a question. Later queries can spread activation to related facts.
-Only fact identifiers and link weights live in process memory; no raw user text is stored by
-this association graph. The separate relational graph uses opaque consent-visible memory IDs,
-respects owner/session boundaries, and suppresses explicit contradictions. A bounded episodic
-replay buffer stores event IDs, timestamps and adjacent transition weights; later cues can
-recover immediate earlier/later events in the same session. Associated IDs are re-resolved
-through the owner's live consent-visible repository. These volatile graphs and event sequences
-are cleared with their session and reset on restart. They are software retrieval mechanisms,
-not a complete autobiographical memory or biological hippocampal simulation.
-
-## Sleep-inspired memory consolidation
-
-The sleep subsystem scans the bounded episodic replay history when the owner explicitly
-requests a preview. It proposes only directed adjacent-event patterns observed in at least
-two distinct owner/session contexts. Single-session patterns, explicitly contradictory
-pairs, mixed-consent sources, deleted records, and records that are no longer visible are
-excluded.
-
-- `POST /sleep/preview` discovers and queues reviewable candidates; it does not write a
-  memory or change existing records.
-- `GET /sleep/proposals` lists the current owner's bounded proposal queue.
-- `POST /sleep/proposals/{id}/review` accepts an explicit `approved` or `rejected`
-  decision. Rejection writes nothing. Approval atomically rechecks active consent, source
-  visibility, episodic type, shared consent, and contradictions, then stores an **inferred**
-  semantic memory with source-memory IDs and review provenance.
-- Proposals are process-local and disappear on restart. They are invalidated when a source
-  memory is corrected, superseded, deleted, or its consent is revoked.
-
-This is a manually triggered pattern detector and owner-review workflow, not a simulated
-sleep cycle, automatic learning, or proof of biological systems consolidation.
-
-## Owner-reviewed schema extraction
-
-Schema extraction generalizes only **explicitly annotated** episodic records. Each source
-memory must provide an owner-authored `metadata.event_type` slug and may provide an
-`metadata.attributes` object containing primitive values. The extractor does not use an
-LLM or guess event labels from free text.
-
-It searches bounded replay sequences for the same ordered event-type pattern (2–4 steps)
-appearing in at least two distinct owner/session contexts with distinct source-event records.
-It keeps maximal recurring patterns and ignores unannotated, non-episodic, mixed-consent,
-deleted, revoked, or explicitly contradicted source examples.
-
-For each step, attributes present in every example are compared: values that never vary
-remain constants; values that differ become typed slots such as `provider: string` or
-`amount: integer`. Observed values for slot attributes are not copied into the schema.
-Sensitive attribute keys (credentials, contact details, payment identifiers, and similar
-fields) are excluded. The generated schema is a candidate, not an assertion that every
-future workflow follows it.
-
-- `POST /knowledge/schemas/preview` generates owner-reviewable schema candidates without writing a memory.
-- `GET /knowledge/schemas/proposals` lists the current owner's bounded proposal queue.
-- `POST /knowledge/schemas/proposals/{id}/review` accepts an explicit approval or rejection.
-- Approval atomically rechecks source visibility, event types, episodic type, shared active consent,
-  and contradictions before creating a **procedural, inferred** memory containing source-example
-  provenance. Rejection writes nothing.
-- Proposals are process-local and disappear on restart. They are invalidated when a source is
-  corrected, superseded, deleted, contradicted, or its consent is revoked.
-
-This is symbolic schema induction over owner-supplied structured event metadata, not autonomous
-semantic understanding or proof of human-like abstraction. The offline evaluation uses synthetic
-events; real-world generalization and transfer remain open research questions.
-
-## Continuous in-memory runtime
-
-`ContinuousOrganismRuntime` is the single process-local scheduler owned by
-each `ArtificialOrganism` composition. The API lifespan starts/stops that
-instance; `simulate --ticks N` runs an instance deterministically without sleeping. Wall-clock scheduling,
-neural simulation steps and developmental model time are independent. The runtime
-supports bounded sensory intake, drop-newest backpressure, per-tick resource budgets,
-pause/resume, safe shutdown, reset and a bounded 128-tick trace.
-
-The high-level loop performs synthetic perception, episodic recall, world prediction,
-action selection, feedback from a bounded simulated environment and memory updates.
-The same event is passed to the developmental LIF substrate. No camera, microphone,
-physical actuator, database or LLM is used by this loop. See
-[Continuous runtime](docs/CONTINUOUS_RUNTIME.md).
-
-## Developmental neural simulation substrate
-
-The active developmental program uses a deterministic 12-neuron LIF network with
-source-defined excitatory/inhibitory synapses, delayed event delivery, membrane
-maturation, stage-dependent connectivity growth, STDP-inspired plasticity,
-homeostatic regulation, conduction-delay refinement and functional pruning. The
-prenatal scaffold is retained as a compatibility/reference model; the developmental
-program is the active neuron/synapse path. A paired-cue learning experiment compares
-experience-dependent prediction with frozen-weight and mature-from-start baselines.
-
-These are bounded computational hypotheses, not anatomical replicas or individual
-developmental predictions. They do not establish sentience, consciousness or
-biological equivalence. The older seven-population rate-based experiment remains
-available as a comparison baseline. See [Brain and intelligence](docs/BRAIN.md),
-[Postnatal development](docs/POSTNATAL_DEVELOPMENT.md), and the
-[neural simulation baseline](docs/benchmarks/neural-simulation-baseline.md).
-
-## Brain provider configuration
-
-The cognitive architecture uses a configurable OpenAI-compatible local or remote reasoning model. For local development with an Ollama-compatible endpoint:
-
-~~~powershell
-$env:ARTIFICIAL_HUMAN_LLM_BASE_URL = "http://127.0.0.1:11434/v1"
-$env:ARTIFICIAL_HUMAN_LLM_MODEL = "your-local-model-name"
-python -m artificial_human serve
+~~~bash
+python -m pip install -e ".[dev,semantic]"
 ~~~
 
-The deployed Control Room is prepared for Groq's free-tier GPT-OSS reasoning model:
+This installs the local embedding dependency. The first semantic run may download the configured model weights. Set ARTIFICIAL_HUMAN_EMBEDDING_BACKEND=fastembed to enable the local FastEmbed backend. No external embedding provider is contacted unless a separately configured and consented remote path is used.
 
-- Base URL: `https://api.groq.com/openai/v1`
-- Model: `openai/gpt-oss-120b`
-- Reasoning effort: `medium`
-- Secret: `ARTIFICIAL_HUMAN_LLM_API_KEY` (store only in Render's private environment settings)
+### Quality checks
 
-The provider API key must be created by the account owner in GroqCloud. Do not put it in the dashboard, source code, or chat messages. See [Control Room and monitoring deployment](docs/MONITORING.md) for the exact setup steps and free-tier limits. Remote providers must use HTTPS.
-
-## Cognitive API
-
-- `POST /brain/respond` — execute the cognitive cycle and generate a response.
-- `GET /brain/cognition/status` — inspect the implemented subsystems.
-- `GET /brain/status` — inspect model-provider configuration.
-- `DELETE /brain/sessions/{session_id}` — clear a volatile working-memory session.
-- `POST /sleep/preview`, `GET /sleep/proposals`, and `POST /sleep/proposals/{id}/review` — detect and review replay-derived consolidation candidates.
-- `POST /knowledge/schemas/preview`, `GET /knowledge/schemas/proposals`, and `POST /knowledge/schemas/proposals/{id}/review` — induce and review structured event schemas.
-
-Example:
-
-~~~json
-{
-  "message": "Explain how episodic memory works.",
-  "mode": "assistant",
-  "session_id": "optional-session-name"
-}
+~~~bash
+ruff check .
+mypy src
+pytest --cov=artificial_human --cov-report=term-missing
+artificial-human simulate
+artificial-human memory-eval --backend none
+artificial-human cognition-eval --suite all
 ~~~
 
-Without a session ID, working memory is request-scoped. With one, it is retained only in bounded process memory and remains separate from persistent memory. It is not written to SQLite and is lost on process restart.
+For the real semantic-memory benchmark, install the optional extra and run:
 
-## Memory API
+~~~bash
+artificial-human memory-eval --backend fastembed --output-dir docs/benchmarks
+~~~
 
-- `POST /memories/search` — hybrid search with type, time-range, `valid_at`, `known_at`, source and metadata filters; returns provenance and ranking explanations.
-- `GET /memories/timeline` — chronological recall.
-- `GET /memories/{id}` — inspect a memory, its version history, links and index state.
-- `PATCH /memories/{id}` — correct a record. `POST /memories/{id}/supersede` — record a changed fact as a new version.
-- `POST /memories/{id}/contradictions` — link conflicting memories.
-- `GET /memories/index/status`, `POST /memories/index/rebuild` — semantic index status and re-indexing.
+The standard CI workflow runs on Python 3.12 and 3.13. The separate semantic-memory benchmark installs the optional local model and runs its evaluation workflow.
 
-CLI equivalents: `artificial-human memory-search`, `memory-index status|rebuild`, `memory-eval`, and `cognition-eval` for the cognitive evaluation.
+## Repository map
 
-## Implemented organism foundation
+~~~text
+artificial-human/
+├── src/artificial_human/
+│   ├── neural/          # LIF simulation, circuits, organism loop, action and body
+│   ├── development/     # developmental program and safe self-development contracts
+│   ├── cognition/       # perception, attention, working memory, prediction, executive control
+│   ├── memory/          # consent-aware in-memory memory and retrieval
+│   ├── brain/           # optional language/provider orchestration
+│   ├── metabolism/      # bounded compute/resource governance
+│   ├── immune/          # anomaly detection and defence proposals
+│   ├── runtime.py       # continuous organism scheduler
+│   ├── organism.py      # composition root
+│   └── api.py           # FastAPI application and protected endpoints
+├── monitor/             # static Vercel Control Room frontend
+├── scripts/             # reproducible neural/organism evaluation runners
+├── tests/               # deterministic unit and integration tests
+└── docs/                # research charter, architecture, subsystem records, reports
+~~~
 
-- Modular Python runtime and explicit subsystem boundaries.
-- Owner-authored identity profile and explicit observation intake.
-- Bounded RAM-only active memory repository with purpose-specific consent, source provenance, typed memory kinds, reset and capacity limits. The legacy SQLite repository remains isolated for explicit compatibility/evaluation tools.
-- Purpose-specific consent for personal memory writes; source provenance retained.
-- Consent revocation, deletion, owner erasure, and export within the process lifetime. Restart clears the in-memory records.
-- Legacy SQLite schema migrations are retained outside the active organism runtime.
-- Semantic, hybrid and temporal long-term memory retrieval with a measured benchmark.
-- Reproducible, offline cognitive evaluation of attention, working memory, prediction/novelty, memory and multi-turn behaviour.
-- Internal event bus, priority queue, and declared resource budgets.
-- Health signal policies and anomaly-to-incident flow.
-- Reviewable repair proposals, owner-approved memory consolidation, and structured event-schema induction with provenance.
-- FastAPI endpoints, CLI simulation, tests, and GitHub Actions CI.
+## Deployment architecture
 
-## First-run personalisation
+~~~text
+Owner's browser
+     |
+     v
+Vercel Control Room (static frontend)
+     |
+     | same-origin /api proxy
+     v
+Render FastAPI service
+     |
+     v
+ArtificialOrganism + continuous in-memory runtime
+~~~
 
-Personal memory is **off until the owner explicitly grants consent**. Approved records remain process-local and are lost on restart.
+- **Vercel** hosts the static owner-facing Control Room from the monitor/ directory.
+- **Render** hosts the FastAPI monitor/API service. The Control Room uses its same-origin proxy; owner-only routes remain authenticated.
+- **GitHub Pages** hosts the public project overview page.
+- No external database is attached to the active continuous organism runtime. Render's current free service has an ephemeral process and may sleep; process-local runtime experience is not durable.
 
-1. Start the API.
-2. Create a personal-memory consent grant with `POST /consents`.
-3. Add memories with `POST /memories`, referencing the returned consent ID.
-4. Inspect, export, or delete saved memories through the API.
+See [Monitoring and deployment](docs/MONITORING.md), [Safety](docs/SAFETY.md), and [Safe self-development](docs/SAFE_SELF_DEVELOPMENT.md) before changing deployment or permission boundaries.
 
-Do not store passwords, API keys, authentication tokens, or other secrets in personal memory.
+## Current status and next work
 
-## Safety boundaries
+The latest merged foundation includes:
 
-- No ambient microphone, camera, browser, filesystem crawl, or account access is enabled.
-- The model provider is configurable; remote endpoints must use HTTPS.
-- No generated code or shell command is executed by the cognitive cycle.
-- Regeneration creates review proposals; it does not modify source code, merge, or deploy.
-- External actions require a separate approval mechanism.
-- Local API mode remains unauthenticated for development. Keep it bound to loopback.
-- Public monitoring deployments must set `ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT=true`, `ARTIFICIAL_HUMAN_MONITOR_ONLY=true`, and a high-entropy `ARTIFICIAL_HUMAN_API_TOKEN`; only `/health` and the protected `/monitor/overview` are exposed, and API docs are disabled.
-- Configure `ARTIFICIAL_HUMAN_CORS_ORIGINS` with the exact trusted dashboard origin. See [Control Room and monitoring deployment](docs/MONITORING.md).
+- **PR #61 / Issue #36:** continuous, bounded in-memory organism lifecycle.
+- **PR #62 / Issue #38:** integrated cognitive/neural organism loop and simulated-body feedback.
+- **PR #63 / Issue #39:** reproducible fixed-seed neural and organism evaluation suite.
+- **PR #64 / Issue #37:** safe self-development proposal, patch-validation, sandbox-evidence, and human-approval contracts.
 
-## Documentation
+The project is still in active research and implementation. The following remain open:
 
-- [Founder profile — Aakash Siwach](docs/FOUNDER.md)
-- [Prenatal developmental substrate](docs/PRENATAL_DEVELOPMENT.md)
-- [Control Room and monitoring deployment](docs/MONITORING.md)
+- **[Issue #37 — Safe self-development](https://github.com/aakashsiwach/artificial-human/issues/37):** PR #64 adds immutable proposal/evidence contracts and fails closed without a trusted executor. A real, separately reviewed OS-level sandbox executor is still required to prove filesystem/process isolation, network denial, credential removal, and hard resource enforcement. The current tests use a fake adapter; they do not prove real OS isolation.
+- **[Issue #40 — Living-organism completion gate](https://github.com/aakashsiwach/artificial-human/issues/40):** the complete end-to-end system, clean-checkout behaviour, long-running stability, and every acceptance criterion must be verified with reproducible evidence.
+- **[Issue #16 — Parent programme](https://github.com/aakashsiwach/artificial-human/issues/16):** remains open until the completion gate is satisfied.
 
-- [AI contributor instructions](AGENTS.md)
-- [Claude Code instructions](CLAUDE.md)
+See the [development roadmap](docs/ROADMAP.md) and [research charter](docs/RESEARCH_CHARTER.md) for the authoritative sequence and scientific direction.
+
+## Scientific, privacy, and safety boundaries
+
+- Brain-inspired components are computational hypotheses, not anatomical replicas.
+- The continuous organism loop currently uses synthetic sensory events and a simulated body; it does not ingest ambient camera/microphone data or control a physical actuator.
+- Core neural dynamics and continuous runtime operation do not require an LLM. The optional language provider is a replaceable request adapter.
+- Active personal memory is consent-aware, owner-scoped, bounded, and volatile. Restarting the process clears process-local experience and learned runtime state.
+- SQLite support is retained for explicit legacy compatibility/evaluation paths; it is not opened by default in the active organism runtime.
+- Retrieved content is untrusted data, not executable instruction. No code generated by the cognitive cycle is executed.
+- PR #64 provides safe proposal/evidence contracts, not a production sandbox or autonomous self-modification. No automatic commit, merge, or deployment is performed.
+- Human-participant, animal, biological tissue, neural-organoid, or biohybrid experiments require appropriate institutional, legal, ethical, and domain-expert governance.
+
+## Documentation index
+
 - [Research Charter and Project North Star](docs/RESEARCH_CHARTER.md)
-- [Long-term memory](docs/MEMORY.md)
-- [Memory retrieval benchmark report](docs/benchmarks/memory-retrieval-report.md)
-- [Cognitive evaluation research record](docs/COGNITIVE_EVALUATION.md) and [report](docs/benchmarks/cognitive-evaluation-report.md)
-- [ADR 0001: semantic, hybrid and temporal memory](docs/adr/0001-semantic-hybrid-temporal-memory.md)
-- [Biological blueprint](docs/BIOLOGICAL_BLUEPRINT.md)
-- [System architecture](docs/ARCHITECTURE.md)
-- [Safety and privacy](docs/SAFETY.md)
 - [Development roadmap](docs/ROADMAP.md)
+- [Brain and intelligence](docs/BRAIN.md)
+- [System architecture](docs/ARCHITECTURE.md)
+- [Integrated organism loop](docs/INTEGRATED_ORGANISM_LOOP.md)
+- [Continuous runtime](docs/CONTINUOUS_RUNTIME.md)
+- [Neural plasticity](docs/NEURAL_PLASTICITY.md)
+- [Neural homeostasis](docs/NEURAL_HOMEOSTASIS.md)
+- [Population coding](docs/POPULATION_CODING.md)
+- [Prenatal development](docs/PRENATAL_DEVELOPMENT.md)
+- [Postnatal development](docs/POSTNATAL_DEVELOPMENT.md)
+- [Sensory encoders](docs/SENSORY_ENCODERS.md)
+- [Multisensory integration](docs/MULTISENSORY_INTEGRATION.md)
+- [Cognitive memory](docs/COGNITIVE_MEMORY.md) and [long-term memory](docs/MEMORY.md)
+- [Episodic circuits](docs/EPISODIC_CIRCUITS.md)
+- [Action selection](docs/ACTION_SELECTION.md)
+- [Adaptive forward control](docs/ADAPTIVE_FORWARD_CONTROL.md)
+- [Predictive world model](docs/PREDICTIVE_WORLD_MODEL.md)
+- [Simulated body and environment](docs/SIMULATED_BODY_ENVIRONMENT.md)
+- [Cognitive evaluation](docs/COGNITIVE_EVALUATION.md) and [organism evaluation](docs/ORGANISM_EVALUATION.md)
+- [Safe self-development](docs/SAFE_SELF_DEVELOPMENT.md)
+- [Safety and privacy](docs/SAFETY.md)
+- [Control Room and deployment](docs/MONITORING.md)
+- [Founder profile](docs/FOUNDER.md)
 - [Contributing](CONTRIBUTING.md)
 
-## Project status
+## Founder and license
 
-The current branch implements the database-free active runtime and the first deterministic LIF neuron/synapse microcircuit, with disconnected, feed-forward, fixed-rate, recurrent, and inhibition-off controls, event cancellation, decay-to-rest tests, snapshots, and a measured throughput/RAM baseline. The full cognitive memory system described by #30 remains unfinished: typed records are RAM-only, but distinct working/episodic/semantic/procedural/spatial mechanisms, biological-style forgetting, interference and retrieval-dependent strengthening are not yet implemented. Plasticity, homeostasis, distributed coding, sensory grounding, world modelling, embodied action and supervised self-development remain future work. This is not a complete artificial human, a biologically faithful brain simulation, an autonomous self-modifying system, or evidence of consciousness. See the [Research Charter](docs/RESEARCH_CHARTER.md) and [Roadmap](docs/ROADMAP.md).
+**Aakash Siwach** is the human founder, creator, and project owner.  
+[GitHub](https://github.com/aakashsiwach) · [LinkedIn](https://www.linkedin.com/in/aakashsiwach/)
 
-## License
-
-Apache-2.0. See LICENSE.
-
-
-## Control Room access
-
-The Control Room uses a same-origin API proxy and owner sign-in; no API URL or bearer token is entered in the browser. Password sign-in uses a PBKDF2-SHA256 verifier in Render environment settings. After signing in, the owner can register a WebAuthn passkey for platform authentication (Face ID, Touch ID, Windows Hello, Android biometrics or device PIN). Passkey private keys and biometric matching remain on the device.
-
-The dashboard restores its HttpOnly session cookie on reload. Camera preview is separately opt-in and remains local to the current browser tab; captured frames are not uploaded or passed to the organism. See [Control Room deployment and security](docs/MONITORING.md) for required environment settings and hosting limits.
-
-
-## Safe self-development
-
-Candidate code changes are immutable, bounded proposals tied to evaluation
-evidence and a base commit. They are checked only through an explicitly
-injected isolated sandbox adapter; the active organism has no shell, host
-filesystem, network, credential, auto-merge or deployment capability. See
-[Safe self-development](docs/SAFE_SELF_DEVELOPMENT.md).
-
+Licensed under **Apache-2.0**. See [LICENSE](LICENSE).
 
 ## Brain-first Control Room
 
