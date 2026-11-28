@@ -46,8 +46,8 @@ from artificial_human.memory.repository import (
     ConsentRequiredError,
     MemoryNotFoundError,
     MemoryRecord,
-    MemoryRepository,
 )
+from artificial_human.memory.records import memory_record_to_dict
 from artificial_human.memory.search import SearchFilters
 from artificial_human.memory.temporal import TimeRange, parse_timestamp
 from artificial_human.organism import ArtificialOrganism
@@ -141,7 +141,7 @@ def _optional_time(value: str | None) -> datetime | None:
 
 
 def _memory_payload(record: MemoryRecord, *, include_content: bool = True) -> dict[str, Any]:
-    payload = MemoryRepository.record_to_dict(record)
+    payload = memory_record_to_dict(record)
     payload.pop("owner_id")
     if not include_content:
         payload.pop("content")
