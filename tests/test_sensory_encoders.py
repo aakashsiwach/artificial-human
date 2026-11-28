@@ -185,3 +185,21 @@ def test_modality_encoders_reject_cross_modality_events() -> None:
             SensoryEvent(SensoryModality.AUDITION, (0.1,), 1),
             SensoryEncoderSuite().population_encoder,
         )
+
+
+
+def test_event_rejects_mutable_or_untyped_sample_payloads_and_non_boolean_consent() -> None:
+    with pytest.raises(ValueError, match="must be a tuple"):
+        SensoryEvent(SensoryModality.VISION, [0.1, 0.2], 1)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="finite"):
+        SensoryEvent(SensoryModality.VISION, ("0.1",), 1)  # type: ignore[arg-type]
+
+    ledger = SensoryPermissionLedger()
+    with pytest.raises(PermissionDeniedError, match="explicit consent"):
+        ledger.grant(
+            SensoryModality.VISION,
+            purpose="test",
+            granted_at=0,
+            expires_at=10,
+            explicit_consent="yes",  # type: ignore[arg-type]
+        )
