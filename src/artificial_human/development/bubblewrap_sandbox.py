@@ -248,11 +248,11 @@ class BubblewrapSandboxExecutor:
         if not git:
             raise BubblewrapUnavailable("git is required to stage an immutable source archive")
         self.git_path = str(Path(git).resolve())
-        if not self._is_visible_system_path(self.git_path):
-            raise BubblewrapUnavailable("git is outside the mounted system/Python toolchain")
         self.python_path = str(Path(sys.executable).resolve())
         self.python_prefix = Path(sys.prefix).resolve()
         self.python_base_prefix = Path(sys.base_prefix).resolve()
+        if not self._is_visible_system_path(self.git_path):
+            raise BubblewrapUnavailable("git is outside the mounted system/Python toolchain")
         protected_roots = (
             Path("/usr"),
             Path("/bin"),
@@ -310,8 +310,7 @@ class BubblewrapSandboxExecutor:
             [self.git_path, *arguments],
             cwd=self.source_root,
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             timeout=timeout,
             check=False,
             env={
