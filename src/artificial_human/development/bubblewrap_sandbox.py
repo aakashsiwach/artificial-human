@@ -693,6 +693,8 @@ class BubblewrapSandboxExecutor:
             credentials_unavailable=probe_ok["credentials_unavailable"],
             stdout_digest=stdout_hash,
             stderr_digest=stderr_hash,
+            stdout_excerpt=bytes(stdout_data)[:2048].decode("utf-8", errors="replace"),
+            stderr_excerpt=bytes(stderr_data)[:2048].decode("utf-8", errors="replace"),
         )
 
     def finish(self, proposal: ImprovementProposal) -> None:
