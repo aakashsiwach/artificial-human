@@ -347,28 +347,47 @@ class DevelopmentalNeuralSubstrate:
         return result
 
     def advance(self, days: int = 1) -> None:
-        """Advance model time; every day updates the same LIF network in RAM."""
+        """Advance developmental model time without advancing the neural clock."""
         if isinstance(days, bool) or not isinstance(days, int) or not 0 <= days <= 10_000:
             raise ValueError("days must be an integer in [0, 10000]")
-        if self.developmental_day + days > MAX_MODEL_AGE_DAYS:
+        target_day = self.developmental_day + days
+        if target_day > MAX_MODEL_AGE_DAYS:
             raise ValueError("developmental age exceeds the configured model horizon")
-        for _ in range(days):
-            self.developmental_day += 1
-            self._refresh_maturity()
-            next_stage = stage_for_day(self.developmental_day)
-            if next_stage is not self.stage:
-                self.stage = next_stage
-                self._add_stage_connections(next_stage)
-                if next_stage is DevelopmentStage.MATURE:
+        boundaries = (
+            (PRENATAL_TERM_DAYS + 1, DevelopmentStage.EARLY_POSTNATAL),
+            (731, DevelopmentStage.CHILDHOOD),
+            (3_651, DevelopmentStage.ADOLESCENCE),
+            (6_571, DevelopmentStage.MATURE),
+        )
+        for boundary, stage in boundaries:
+            if self.developmental_day < boundary <= target_day:
+                self.stage = stage
+                self._add_stage_connections(stage)
+                if stage is DevelopmentStage.MATURE:
                     self._prune_unused_staged_connections()
+        self.developmental_day = target_day
+        self.stage = stage_for_day(target_day)
+        self._refresh_maturity()
+
+    def step(self, external_currents: dict[str, float] | None = None) -> SimulationStep:
+        """Advance the neural simulation clock by exactly one deterministic step."""
+        return self._step(external_currents, learn=True)
+
+    def run(self, steps: int) -> tuple[SimulationStep, ...]:
+        """Advance neural time independently of developmental and wall-clock time."""
+        if isinstance(steps, bool) or not isinstance(steps, int) or not 0 <= steps <= 100_000:
+            raise ValueError("steps must be an integer in [0, 100000]")
+        trace: list[SimulationStep] = []
+        for _ in range(steps):
             currents: dict[str, float] = {}
             if self.developmental_day >= 56:
                 for index, identifier in enumerate(sorted(self._maturity)):
                     maturity = self._maturity[identifier]
                     phase = (self.seed % 997) * 0.001 + index * 0.73
-                    wave = 0.5 + 0.5 * math.sin(self.developmental_day * 0.11 + phase)
-                    currents[identifier] = 180.0 * maturity * wave
-            self._step(currents, learn=True)
+                    wave = 0.5 + 0.5 * math.sin(self.simulation.step_index * 0.11 + phase)
+                    currents[identifier] = 25.0 * maturity * wave
+            trace.append(self._step(currents, learn=True))
+        return tuple(trace)
 
     def _prune_unused_staged_connections(self) -> None:
         """Silence never-used staged edges; base connectivity is never pruned."""
