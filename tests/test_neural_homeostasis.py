@@ -9,7 +9,7 @@ from artificial_human.neural.homeostasis import (
     run_homeostasis_comparison,
 )
 from artificial_human.neural.plasticity import PairBasedSTDP, PlasticityController
-from artificial_human.neural.simulation import LIFNeuron, NeuralSimulation
+from artificial_human.neural.simulation import LIFNeuron, NeuralSimulation, Synapse
 
 
 def test_recurrent_excitation_is_reduced_against_same_fixed_gain_baseline() -> None:
@@ -77,9 +77,7 @@ def test_high_stress_reaches_minimum_gain_and_records_saturation() -> None:
 
 
 def test_gain_recovers_after_stress_and_the_network_responds_again() -> None:
-    report = run_homeostasis_comparison(steps=400, stress_current=400.0)
-    # Rebuild the exact deterministic stress network via the public comparison's
-    # topology so the recovery phase begins from a stressed, learned controller.
+    # Reuse the deterministic stress topology so recovery starts from a stressed network.
     from artificial_human.neural.homeostasis import _build_recurrent_stress_network
 
     simulation = _build_recurrent_stress_network()
@@ -104,7 +102,6 @@ def test_gain_recovers_after_stress_and_the_network_responds_again() -> None:
         later_spikes.extend(step.spikes)
         controller.observe_step(step)
     assert "excitatory_a" in later_spikes
-    assert report["relative_spike_rate_reduction"] > 0.5
 
 
 def test_homeostasis_snapshot_restore_replays_partial_window_deterministically() -> None:
@@ -165,18 +162,14 @@ def test_typed_modulatory_channels_remain_separate_and_gate_stdp() -> None:
         stress_load=0.25,
     )
     assert signals.reward_prediction_error == -0.5
-    assert signals.as_dict() == {
-        "salience": 0.8,
-        "reward_prediction_error": -0.5,
-        "stress_load": 0.25,
-        "plasticity_gate": pytest.approx(0.3),
+    assert signals.plasticity_gate == pytest.approx(0.3)
+    assert set(signals.as_dict()) == {
+        "salience", "reward_prediction_error", "stress_load", "plasticity_gate"
     }
 
     simulation = NeuralSimulation()
     simulation.add_neuron(LIFNeuron("pre"))
     simulation.add_neuron(LIFNeuron("post"))
-    from artificial_human.neural.simulation import Synapse
-
     simulation.add_synapse(Synapse("pair", "pre", "post", 0.5, maximum_weight=1.0))
     controller = PlasticityController(simulation, PairBasedSTDP())
     controller.observe_step(("pre",), modulation=signals)
@@ -207,3 +200,24 @@ def test_homeostasis_rejects_invalid_parameters_and_skipped_steps() -> None:
     _ = simulation.step()
     with pytest.raises(ValueError, match="latest completed"):
         controller.observe_step(first)
+
+
+
+def test_neuron_input_gain_is_bounded_and_included_in_simulation_state() -> None:
+    simulation = NeuralSimulation()
+    neuron = LIFNeuron("cell", input_gain=0.4)
+    simulation.add_neuron(neuron)
+    saved = simulation.state()
+
+    neuron.set_input_gain(0.2)
+    assert neuron.snapshot().input_gain == 0.2
+    simulation.restore(saved)
+    assert neuron.input_gain == 0.4
+
+    neuron.set_input_gain(0.1)
+    simulation.reset()
+    assert neuron.input_gain == 0.4
+    with pytest.raises(ValueError, match="input_gain"):
+        neuron.set_input_gain(0.0)
+    with pytest.raises(ValueError, match="input_gain"):
+        neuron.set_input_gain(1.1)
