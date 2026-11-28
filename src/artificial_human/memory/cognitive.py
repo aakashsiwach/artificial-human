@@ -859,12 +859,17 @@ class InMemoryCognitiveMemory:
         )
 
     def forget_source(self, source_id: str) -> dict[str, int]:
-        return {
+        counts = {
             "episodic": int(self.episodic.forget_source(source_id)),
             "semantic": self.semantic.forget_source(source_id),
             "procedural": self.procedural.forget_source(source_id),
             "spatial": self.spatial.forget_source(source_id),
         }
+        # The association/replay indexes retain identifiers without consent data.
+        # Rebuild them from future co-activations rather than keep dangling links.
+        self.relational.reset()
+        self.episodic_replay.reset()
+        return counts
 
     def forget_consent(self, owner_id: str, consent_id: str) -> dict[str, int]:
         counts = {
