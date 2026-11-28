@@ -33,6 +33,7 @@ from typing import Any
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.index import SemanticIndex
 from artificial_human.memory.repository import MemoryLink, MemoryRecord
+from artificial_human.memory.contracts import MemoryStore
 from artificial_human.memory.temporal import (
     TemporalIntent,
     TemporalQuery,
