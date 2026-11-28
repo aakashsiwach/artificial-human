@@ -241,7 +241,7 @@ These are bounded computational hypotheses, not anatomical replicas or individua
 developmental predictions. They do not establish sentience, consciousness or
 biological equivalence. The older seven-population rate-based experiment remains
 available as a comparison baseline. See [Brain and intelligence](docs/BRAIN.md),
-[Developmental lifecycle](docs/DEVELOPMENTAL_LIFECYCLE.md), and the
+[Postnatal development](docs/POSTNATAL_DEVELOPMENT.md), and the
 [neural simulation baseline](docs/benchmarks/neural-simulation-baseline.md).
 
 ## Brain provider configuration
