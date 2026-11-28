@@ -10,7 +10,6 @@ import math
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from itertools import combinations
 from threading import RLock
 from uuid import uuid4
 
