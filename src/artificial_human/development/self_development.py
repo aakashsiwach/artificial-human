@@ -155,7 +155,10 @@ class SandboxCheckResult:
     timed_out: bool
     isolated_worktree: bool
     base_read_only: bool
+    filesystem_isolated: bool
+    process_isolated: bool
     network_disabled: bool
+    credentials_unavailable: bool
     stdout_digest: str
     stderr_digest: str
 
@@ -380,7 +383,10 @@ class SafeSelfDevelopment:
                     "timed_out": result.timed_out,
                     "isolated_worktree": result.isolated_worktree,
                     "base_read_only": result.base_read_only,
+                    "filesystem_isolated": result.filesystem_isolated,
+                    "process_isolated": result.process_isolated,
                     "network_disabled": result.network_disabled,
+                    "credentials_unavailable": result.credentials_unavailable,
                     "stdout_digest": result.stdout_digest,
                     "stderr_digest": result.stderr_digest,
                 }
@@ -432,7 +438,10 @@ class SafeSelfDevelopment:
                             for value in (
                                 result.isolated_worktree,
                                 result.base_read_only,
+                                result.filesystem_isolated,
+                                result.process_isolated,
                                 result.network_disabled,
+                                result.credentials_unavailable,
                             )
                         )
                     ):
