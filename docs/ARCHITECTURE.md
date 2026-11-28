@@ -278,3 +278,13 @@ is a separate opt-in browser feature and is not connected to a sensory encoder.
 A browser session can restore automatically while its cookie is valid, but
 this does not keep a free Render instance awake. Free-tier suspension pauses
 the process-local neural loop; always-on execution requires paid compute.
+
+
+## Safe self-development boundary
+
+`SafeSelfDevelopment` packages measured `EvaluationGap` records into
+immutable candidate diffs, allowlisted check plans, rollback instructions and
+reproducible evidence. The core fails closed without a trusted isolated
+sandbox adapter; see `docs/SAFE_SELF_DEVELOPMENT.md`. Human approval is
+required before any separate commit workflow, and deployment requires a
+second independent approval.
