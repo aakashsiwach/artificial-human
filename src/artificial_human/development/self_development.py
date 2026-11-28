@@ -161,6 +161,8 @@ class SandboxCheckResult:
     credentials_unavailable: bool
     stdout_digest: str
     stderr_digest: str
+    stdout_excerpt: str = ""
+    stderr_excerpt: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -429,6 +431,8 @@ class SafeSelfDevelopment:
                     "credentials_unavailable": result.credentials_unavailable,
                     "stdout_digest": result.stdout_digest,
                     "stderr_digest": result.stderr_digest,
+                    "stdout_excerpt": result.stdout_excerpt,
+                    "stderr_excerpt": result.stderr_excerpt,
                 }
                 for result in results
             ],
@@ -496,7 +500,15 @@ class SafeSelfDevelopment:
                         failure = "sandbox checked a different source revision"
                         break
                     if result.timed_out or result.exit_code != 0:
-                        failure = f"check failed or timed out: {expected}"
+                        detail = result.stderr_excerpt.strip()
+                        failure = (
+                            f"check failed or timed out: {expected} "
+                            f"(exit_code={result.exit_code}, timed_out={result.timed_out}, "
+                            f"peak_memory_mb={result.peak_memory_mb:.1f}, "
+                            f"output_bytes={result.output_bytes})"
+                        )
+                        if detail:
+                            failure += f"; stderr: {detail[:512]}"
                         break
                     if (
                         isinstance(result.elapsed_seconds, bool)
@@ -523,6 +535,14 @@ class SafeSelfDevelopment:
                         or result.output_bytes > self.limits.max_output_bytes
                     ):
                         failure = f"output budget exceeded or invalid: {expected}"
+                        break
+                    if (
+                        not isinstance(result.stdout_excerpt, str)
+                        or not isinstance(result.stderr_excerpt, str)
+                        or len(result.stdout_excerpt.encode("utf-8")) > 2048
+                        or len(result.stderr_excerpt.encode("utf-8")) > 2048
+                    ):
+                        failure = f"sandbox diagnostic excerpt is malformed or oversized: {expected}"
                         break
                     if (
                         not isinstance(result.stdout_digest, str)
@@ -554,6 +574,7 @@ class SafeSelfDevelopment:
         try:
             for check in proposal.checks:
                 results.append(self._executor.run_check(proposal, check, self.limits))
+            return self.verify(proposal, tuple(results))
         except Exception as exc:
             partial = tuple(results)
             reason = f"sandbox executor failed: {type(exc).__name__}"
@@ -567,7 +588,12 @@ class SafeSelfDevelopment:
                 failure_reason=reason,
                 evidence_digest=digest,
             )
-        return self.verify(proposal, tuple(results))
+        finally:
+            # Real sandbox adapters may own host-side staging directories. Fake
+            # contract adapters remain compatible and need not implement cleanup.
+            finish = getattr(self._executor, "finish", None)
+            if callable(finish):
+                finish(proposal)
 
     def record_human_approval(
         self,

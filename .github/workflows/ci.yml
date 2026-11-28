@@ -123,3 +123,27 @@ jobs:
               )
           print("Control Room UI structure is valid.")
           PY
+
+  sandbox-integration:
+    name: Linux isolated self-development sandbox
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y bubblewrap
+          bwrap --version
+      - name: Install project and allowlisted tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Verify real OS isolation and run candidate checks
+        env:
+          ARTIFICIAL_HUMAN_REQUIRE_BWRAP: "1"
+          ARTIFICIAL_HUMAN_SANDBOX_SECRET_SENTINEL: "host-secret-must-not-enter-bwrap"
+        run: pytest -q tests/test_bubblewrap_sandbox.py

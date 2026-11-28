@@ -194,7 +194,9 @@ def test_failed_or_unsafe_sandbox_results_are_retained_as_rejected_evidence() ->
 
     assert not failed.verified
     assert failed.status == "checks_failed"
-    assert failed.failure_reason == "check failed or timed out: pytest -q"
+    assert failed.failure_reason is not None
+    assert failed.failure_reason.startswith("check failed or timed out: pytest -q")
+    assert "exit_code=1" in failed.failure_reason
     assert failed.results[0].exit_code == 1
     assert not unsafe.verified
     assert "network denial" in (unsafe.failure_reason or "")
