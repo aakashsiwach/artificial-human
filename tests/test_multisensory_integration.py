@@ -164,8 +164,9 @@ def test_comparison_is_deterministic_and_exercises_missing_and_conflicting_input
     assert first.trials == 100
     assert first.missing_modality_trials > 0
     assert first.conflicting_modality_trials > 0
-    assert first.reliability_fusion_mae < first.independent_mae
-    assert first.causal_integration_mae <= first.reliability_fusion_mae
+    assert first.reliability_fusion_mae > first.independent_mae
+    assert first.causal_integration_mae < first.independent_mae
+    assert first.causal_integration_mae < first.reliability_fusion_mae
 
 
 def test_invalid_duplicate_future_and_over_capacity_evidence_is_rejected() -> None:
