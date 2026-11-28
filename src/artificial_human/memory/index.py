@@ -17,8 +17,8 @@ from artificial_human.memory.embeddings import (
     encode_vector,
 )
 from artificial_human.memory.repository import (
+from artificial_human.memory.contracts import MemoryStore
     MemoryRecord,
-    MemoryRepository,
     content_fingerprint,
 )
 
@@ -57,7 +57,7 @@ class SemanticIndex:
     modifies or removes the memory itself, so lexical retrieval keeps working.
     """
 
-    def __init__(self, repository: MemoryRepository, provider: EmbeddingProvider | None) -> None:
+    def __init__(self, repository: MemoryStore, provider: EmbeddingProvider | None) -> None:
         self.repository = repository
         self.provider = provider
         self._last_error: str | None = None
