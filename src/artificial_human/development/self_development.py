@@ -77,6 +77,49 @@ class SandboxLimits:
 
 
 @dataclass(frozen=True, slots=True)
+class EvaluationGap:
+    """Small, provenance-carrying summary of a measured evaluation failure."""
+
+    benchmark_id: str
+    metric: str
+    observed: float
+    target: float
+    higher_is_better: bool
+    evidence_digest: str
+    failing_case_ids: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not self.benchmark_id.strip() or len(self.benchmark_id) > 128:
+            raise ValueError("benchmark_id must contain 1..128 characters")
+        if not self.metric.strip() or len(self.metric) > 128:
+            raise ValueError("metric must contain 1..128 characters")
+        if (
+            isinstance(self.observed, bool)
+            or not isinstance(self.observed, (int, float))
+            or not math.isfinite(self.observed)
+            or isinstance(self.target, bool)
+            or not isinstance(self.target, (int, float))
+            or not math.isfinite(self.target)
+        ):
+            raise ValueError("observed and target metrics must be finite numbers")
+        if not isinstance(self.higher_is_better, bool):
+            raise ValueError("higher_is_better must be boolean")
+        if not _SHA256.fullmatch(self.evidence_digest):
+            raise ValueError("evaluation evidence_digest must be a SHA-256 hex digest")
+        if (
+            not isinstance(self.failing_case_ids, tuple)
+            or not self.failing_case_ids
+            or len(self.failing_case_ids) > 20
+            or any(not isinstance(item, str) or not item.strip() or len(item) > 256 for item in self.failing_case_ids)
+        ):
+            raise ValueError("failing_case_ids must contain 1..20 bounded identifiers")
+
+    @property
+    def is_gap(self) -> bool:
+        return self.observed < self.target if self.higher_is_better else self.observed > self.target
+
+
+@dataclass(frozen=True, slots=True)
 class RollbackPlan:
     base_revision: str
     proposal_digest: str
@@ -93,6 +136,8 @@ class ImprovementProposal:
     file_paths: tuple[str, ...]
     patch_digest: str
     rollback_plan: RollbackPlan
+    trigger_benchmark_id: str | None = None
+    trigger_evidence_digest: str | None = None
     status: str = "awaiting_human_review"
 
 
@@ -231,6 +276,8 @@ class SafeSelfDevelopment:
         checks: tuple[str, ...],
         *,
         base_revision: str,
+        trigger_benchmark_id: str | None = None,
+        trigger_evidence_digest: str | None = None,
     ) -> ImprovementProposal:
         if not isinstance(hypothesis, str) or not hypothesis.strip() or len(hypothesis) > 2_000:
             raise ValueError("hypothesis must contain 1..2000 characters")
@@ -245,10 +292,22 @@ class SafeSelfDevelopment:
         ):
             raise ValueError("checks must be unique, non-empty and allowlisted")
 
+        if (trigger_benchmark_id is None) != (trigger_evidence_digest is None):
+            raise ValueError("benchmark trigger ID and evidence digest must be supplied together")
+        if trigger_benchmark_id is not None and (
+            not trigger_benchmark_id.strip()
+            or len(trigger_benchmark_id) > 128
+            or not _SHA256.fullmatch(trigger_evidence_digest or "")
+        ):
+            raise ValueError("benchmark trigger provenance is invalid")
+
         paths = self._validate_diff(diff)
         patch_digest = hashlib.sha256(diff.encode("utf-8")).hexdigest()
         identifier = hashlib.sha256(
-            f"{base_revision}\0{hypothesis}\0{patch_digest}".encode("utf-8")
+            (
+                f"{base_revision}\0{hypothesis}\0{patch_digest}\0"
+                f"{trigger_benchmark_id or ''}\0{trigger_evidence_digest or ''}"
+            ).encode("utf-8")
         ).hexdigest()[:24]
         rollback = RollbackPlan(
             base_revision=base_revision,
@@ -268,6 +327,29 @@ class SafeSelfDevelopment:
             file_paths=paths,
             patch_digest=patch_digest,
             rollback_plan=rollback,
+            trigger_benchmark_id=trigger_benchmark_id,
+            trigger_evidence_digest=trigger_evidence_digest,
+        )
+
+    def propose_from_gap(
+        self,
+        gap: EvaluationGap,
+        hypothesis: str,
+        diff: str,
+        checks: tuple[str, ...],
+        *,
+        base_revision: str,
+    ) -> ImprovementProposal:
+        """Package a candidate patch against a measurable, provenance-bound gap."""
+        if not isinstance(gap, EvaluationGap) or not gap.is_gap:
+            raise ValueError("evaluation evidence does not demonstrate a capability gap")
+        return self.propose(
+            hypothesis,
+            diff,
+            checks,
+            base_revision=base_revision,
+            trigger_benchmark_id=gap.benchmark_id,
+            trigger_evidence_digest=gap.evidence_digest,
         )
 
     @staticmethod
@@ -280,6 +362,8 @@ class SafeSelfDevelopment:
         payload = {
             "proposal_id": proposal.identifier,
             "base_revision": proposal.base_revision,
+            "trigger_benchmark_id": proposal.trigger_benchmark_id,
+            "trigger_evidence_digest": proposal.trigger_evidence_digest,
             "status": status,
             "failure_reason": failure_reason,
             "results": [
