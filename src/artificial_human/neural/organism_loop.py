@@ -257,7 +257,7 @@ def _default_action_selection() -> ActionSelectionCircuit:
         discount_factor=0.1,
         exploration_rate=0.1,
         exploration_bonus=0.1,
-        max_state_action_pairs=256,
+        max_state_action_pairs=2048,
         seed=7,
     )
 
@@ -438,7 +438,7 @@ class OrganismLoop:
             body_state.position,
             body_state.goal_position,
             distance,
-            attended_weight,
+            body_state.velocity,
         )
         predicted = self.world.predict(state)
         state_id = self._state_id(distance, body_state.velocity)
@@ -468,12 +468,14 @@ class OrganismLoop:
             transition.current.velocity,
         )
         update = None
+        terminal = transition.current.tick >= self.environment.max_steps
         if self.config.learned_action_selection_enabled and choice is not None:
             update = self.action_selection.observe(
                 state_id,
                 choice.action_id,
                 reward_signal,
-                next_state_id=next_state_id,
+                next_state_id=None if terminal else next_state_id,
+                terminal=terminal,
             )
         error = self.world.observe(state, reward)
         self.controller.adapt(action, delta)
@@ -517,6 +519,7 @@ class OrganismLoop:
             "velocity": transition.current.velocity,
             "goal_position": transition.current.goal_position,
             "reached_goal": transition.reached_goal,
+            "terminal": terminal,
             "threshold": threshold,
             "stage": stage.value,
             "neural": neural_outcome,
