@@ -225,7 +225,7 @@ class DevelopmentalNeuralSubstrate:
             self._usage[identifier] = 0
 
         self._stdp = PairBasedSTDP(
-            STDPParameters(potentiation=0.025, depression=0.02, trace_decay=0.92)
+            STDPParameters(potentiation=1.5, depression=1.0, trace_decay=0.92)
         )
         self._refresh_maturity()
 
