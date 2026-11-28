@@ -141,7 +141,7 @@ class ArtificialOrganism:
                 "nervous_system": "in_process",
             },
             "reasoning_provider": reasoning,
-            "continuous_runtime": self.runtime.snapshot().as_dict(),
+            "continuous_runtime": self.runtime.snapshot().as_dict(include_trace=False),
             "runtime": {
                 "storage_mode": "in_memory_no_database",
                 "external_database_connected": False,
