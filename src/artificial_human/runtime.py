@@ -111,8 +111,8 @@ class RuntimeSnapshot:
     organism: dict[str, object]
     recent_trace: tuple[RuntimeTick, ...]
 
-    def as_dict(self) -> dict[str, object]:
-        return {
+    def as_dict(self, *, include_trace: bool = True) -> dict[str, object]:
+        result: dict[str, object] = {
             "state": self.state.value,
             "health": self.health.value,
             "tick_count": self.tick_count,
@@ -122,8 +122,10 @@ class RuntimeSnapshot:
             "pending_events": self.pending_events,
             "last_error": self.last_error,
             "organism": self.organism,
-            "recent_trace": [item.as_dict() for item in self.recent_trace],
         }
+        if include_trace:
+            result["recent_trace"] = [item.as_dict() for item in self.recent_trace]
+        return result
 
 
 class ContinuousOrganismRuntime:
