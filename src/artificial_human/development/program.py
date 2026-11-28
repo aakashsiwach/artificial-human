@@ -192,7 +192,7 @@ class DevelopmentalProgram:
                 adaptation_rate=0.05,
                 deadband=0.04,
                 minimum_input_gain=0.1,
-                maximum_input_gain=1.5,
+                maximum_input_gain=1.0,
             ),
         )
         if mature_from_start:
