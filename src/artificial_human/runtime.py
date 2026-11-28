@@ -222,6 +222,11 @@ class ContinuousOrganismRuntime:
             except BudgetExceeded:
                 self._overload_count += 1
                 self._health = RuntimeHealth.DEGRADED
+            except Exception as error:
+                self._state = RuntimeState.FAILED
+                self._health = RuntimeHealth.DEGRADED
+                self._last_error = f"{type(error).__name__}: {error}"
+                raise
 
             elapsed = monotonic() - started
             if elapsed > self.config.tick_budget_seconds:
