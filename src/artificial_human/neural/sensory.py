@@ -53,8 +53,12 @@ class SensoryEvent:
             raise ValueError("sensory event must contain 1..256 samples")
         if not any(value is not None for value in self.values):
             raise ValueError("sensory event must contain at least one observed sample")
-        if any(value is not None and (isinstance(value, bool) or not math.isfinite(value)) for value in self.values):
-            raise ValueError("sensory values must be finite numbers or None")
+        if any(
+            value is not None
+            and (isinstance(value, bool) or not math.isfinite(value) or abs(value) > 1_000_000.0)
+            for value in self.values
+        ):
+            raise ValueError("sensory values must be finite and within [-1000000, 1000000], or None")
         if isinstance(self.confidence, bool) or not math.isfinite(self.confidence) or not 0.0 <= self.confidence <= 1.0:
             raise ValueError("confidence must be finite and in [0, 1]")
 
@@ -321,6 +325,14 @@ class SensoryPipeline:
             ]
             aligned.append((modality, max(candidates, key=lambda item: item.timestamp) if candidates else None))
         return AlignedPercepts(timestamp, window, tuple(aligned))
+
+    def revoke(self, modality: SensoryModality) -> None:
+        """Revoke future ingestion and immediately purge retained percepts for that modality."""
+        self.ledger.revoke(modality)
+        self._session_percepts = deque(
+            (percept for percept in self._session_percepts if percept.modality is not modality),
+            maxlen=self.capacity,
+        )
 
     def clear_session(self) -> None:
         self._session_percepts.clear()
