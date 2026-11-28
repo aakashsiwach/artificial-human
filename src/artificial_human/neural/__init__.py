@@ -13,10 +13,19 @@ from artificial_human.neural.simulation import (
     SimulationStep,
     Synapse,
 )
+from artificial_human.neural.homeostasis import (
+    HomeostaticController,
+    HomeostasisParameters,
+    HomeostasisSnapshot,
+    InternalModulatorySignals,
+    run_homeostasis_comparison,
+)
 
 __all__ = [
     "LIFNeuron", "LIFParameters", "NeuronSnapshot", "NeuralSimulation",
     "NeuralSimulationState", "Polarity", "SimulationCapacityError",
     "SimulationSnapshot", "SimulationStep", "Synapse",
-    "build_recurrent_microcircuit",
+    "build_recurrent_microcircuit", "HomeostaticController",
+    "HomeostasisParameters", "HomeostasisSnapshot", "InternalModulatorySignals",
+    "run_homeostasis_comparison",
 ]
