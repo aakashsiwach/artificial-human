@@ -348,8 +348,9 @@ class HomeostaticController:
         ):
             raise ValueError("homeostasis snapshot window position is invalid")
         if (
-            snapshot.last_step_index is not None
-            and (
+            (snapshot.window_steps_elapsed > 0 and snapshot.last_step_index is None)
+            or (
+                snapshot.last_step_index is not None
                 isinstance(snapshot.last_step_index, bool)
                 or not isinstance(snapshot.last_step_index, int)
                 or snapshot.last_step_index < 0
@@ -363,9 +364,9 @@ class HomeostaticController:
             len(snapshot.window_spike_counts) != len(self._neuron_ids)
             or set(counts) != set(self._neuron_ids)
             or any(
-            isinstance(count, bool)
-            or not isinstance(count, int)
-            or not 0 <= count <= snapshot.window_steps_elapsed
+                isinstance(count, bool)
+                or not isinstance(count, int)
+                or not 0 <= count <= snapshot.window_steps_elapsed
                 for count in counts.values()
             )
         ):
