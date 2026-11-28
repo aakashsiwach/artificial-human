@@ -67,3 +67,21 @@ a later removal decision.
   prediction is made.
 - State, synapses, activity and learning remain in process memory and reset
   with the process. No database or external service is used.
+
+
+## Research anchors
+
+These sources motivate the *families of mechanisms* represented here. They do
+not validate this implementation's parameter values, milestones, or simplified
+one-dimensional task.
+
+- Bi, G.-Q. & Poo, M.-M. (1998). [Synaptic modifications in cultured hippocampal neurons: dependence on spike timing, synaptic strength, and postsynaptic cell type](https://doi.org/10.1523/JNEUROSCI.18-24-10464.1998). *Journal of Neuroscience*, 18(24), 10464–10472. Motivates the timing-dependent potentiation/depression hypothesis.
+- Turrigiano, G. et al. (1998). [Activity-dependent scaling of quantal amplitude in neocortical neurons](https://doi.org/10.1038/36103). *Nature*, 391, 892–896. Motivates a homeostatic activity-regulation mechanism.
+- Hensch, T. K. (2005). [Critical period plasticity in local cortical circuits](https://doi.org/10.1038/nrn1787). *Nature Reviews Neuroscience*, 6, 877–888. Motivates the hypothesis that inhibitory circuit maturation and experience can regulate periods of heightened plasticity.
+- Huttenlocher, P. R. & Dabholkar, A. S. (1997). [Regional differences in synaptogenesis in human cerebral cortex](https://doi.org/10.1002/%28SICI%291096-9861%2819971020%29387%3A2%3C167%3A%3AAID-CNE1%3E3.0.CO%3B2-Z). *Journal of Comparative Neurology*, 387, 167–178. Shows why cortical developmental timing should not be represented by one universal pruning schedule.
+- Fields, R. D. (2015). [A new mechanism of nervous system plasticity: activity-dependent myelination](https://doi.org/10.1038/nrn4023). *Nature Reviews Neuroscience*, 16, 756–767. Motivates treating conduction properties as potentially experience-sensitive.
+
+The implementation intentionally uses global, coarse engineering proxies. It
+does not model region-specific critical periods, glial cell biology, oligodendrocyte
+lineage, extracellular matrix, receptor trafficking, dendritic morphology, or
+the detailed cellular mechanisms described in these papers.
