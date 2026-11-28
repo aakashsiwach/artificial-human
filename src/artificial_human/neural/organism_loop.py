@@ -11,6 +11,10 @@ import re
 from collections import deque
 from dataclasses import dataclass, field
 from enum import StrEnum
+from artificial_human.neural.population import (
+    PopulationCode,
+    PopulationEncoder as DistributedPopulationEncoder,
+)
 
 
 class Modality(StrEnum):
@@ -76,25 +80,22 @@ class Homeostat:
         return self.threshold
 
 
-@dataclass(frozen=True, slots=True)
-class PopulationCode:
-    values: tuple[float, ...]
-    uncertainty: float
-
-
 class PopulationEncoder:
+    """OrganismLoop adapter around the explicit distributed numeric encoder."""
+
     def __init__(self, units: int = 16) -> None:
-        if not 2 <= units <= 128:
-            raise ValueError("units must be in [2, 128]")
+        if isinstance(units, bool) or not isinstance(units, int) or not 2 <= units <= 128:
+            raise ValueError("units must be an integer in [2, 128]")
         self.units = units
+        self._encoder = DistributedPopulationEncoder(units_per_feature=units)
 
     def encode(self, event: SensoryEvent) -> PopulationCode:
-        vector = [0.0] * self.units
-        for index, value in enumerate(event.values):
-            vector[index % self.units] += math.tanh(value) / (1 + index // self.units)
-        norm = math.sqrt(sum(v * v for v in vector)) or 1.0
-        return PopulationCode(tuple(round(v / norm * event.confidence, 8) for v in vector),
-                              round(1 - event.confidence, 8))
+        return self._encoder.encode(
+            event.values, timestamp=event.timestamp, confidence=event.confidence
+        )
+
+    def decode(self, code: PopulationCode) -> tuple[float | None, ...]:
+        return self._encoder.decode(code)
 
 
 @dataclass(slots=True)
@@ -255,7 +256,8 @@ class OrganismLoop:
                                       (self.environment.position, self.environment.target),
                                       self.tick_index)
         code = self.encoder.encode(event)
-        cue = code.values[:len(self.world.weights)]
+        decoded = self.encoder.decode(code)
+        cue = tuple(value for value in decoded if value is not None)
         recalled = self.memory.recall(cue)
         state = (self.environment.position, self.environment.target,
                  self.environment.target - self.environment.position, 1.0)
@@ -267,7 +269,7 @@ class OrganismLoop:
         error = self.world.observe(state, reward)
         self.controller.adapt(action, delta)
         self.actions.learn(action, reward)
-        self.memory.store(self.tick_index, code.values, f"action={action};reward={reward:.3f}")
+        self.memory.store(self.tick_index, cue, f"action={action};reward={reward:.3f}")
         threshold = self.homeostat.update(min(1.0, abs(delta) * 2))
         stage = self.development.advance()
         result: dict[str, object] = {"tick": self.tick_index, "modality": event.modality.value, "code": code.values,

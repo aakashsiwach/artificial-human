@@ -13,6 +13,15 @@ from artificial_human.neural.simulation import (
     SimulationStep,
     Synapse,
 )
+from artificial_human.neural.population import (
+    FeatureVectorBaselineEncoder,
+    OneHotBaselineEncoder,
+    PopulationAssociativeMemory,
+    PopulationCode,
+    PopulationEncoder,
+    PopulationProjector,
+    run_population_coding_comparison,
+)
 from artificial_human.neural.homeostasis import (
     HomeostaticController,
     HomeostasisParameters,
@@ -28,4 +37,7 @@ __all__ = [
     "build_recurrent_microcircuit", "HomeostaticController",
     "HomeostasisParameters", "HomeostasisSnapshot", "InternalModulatorySignals",
     "run_homeostasis_comparison",
+    "PopulationCode", "PopulationEncoder", "OneHotBaselineEncoder",
+    "FeatureVectorBaselineEncoder", "PopulationAssociativeMemory",
+    "PopulationProjector", "run_population_coding_comparison",
 ]
