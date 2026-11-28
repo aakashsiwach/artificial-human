@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import asyncio
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from dataclasses import asdict, replace
 from datetime import datetime
 import hashlib
@@ -51,6 +50,7 @@ from artificial_human.memory.records import memory_record_to_dict
 from artificial_human.memory.search import SearchFilters
 from artificial_human.memory.temporal import TimeRange, parse_timestamp
 from artificial_human.organism import ArtificialOrganism
+from artificial_human.neural.organism_loop import Modality, SensoryEvent
 
 
 class ConsentRequest(BaseModel):
@@ -181,6 +181,18 @@ class SignalRequest(BaseModel):
     source: str = "manual"
 
 
+class RuntimeEventRequest(BaseModel):
+    modality: Literal["vision", "audition", "touch", "proprioception", "interoception"]
+    values: list[float] = Field(min_length=1, max_length=64)
+    timestamp: int = Field(ge=0)
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+
+
+class DevelopmentalTimeRequest(BaseModel):
+    prenatal_days: int = Field(default=0, ge=0, le=280)
+    postnatal_units: int = Field(default=0, ge=0, le=10_000)
+
+
 class PlanRequest(BaseModel):
     goal: str = Field(min_length=1, max_length=4_000)
 
@@ -220,21 +232,11 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
-        async def idle_activity_loop() -> None:
-            while True:
-                await asyncio.sleep(1.0)
-                # Run the deterministic activity step off the event loop.
-                # The engine serialises access with its internal lock.
-                await asyncio.to_thread(runtime_organism.neural_dynamics.tick_idle)
-                await asyncio.to_thread(runtime_organism.neural_simulation.step)
-
-        task = asyncio.create_task(idle_activity_loop(), name="artificial-human-idle-activity")
+        await runtime_organism.runtime.start()
         try:
             yield
         finally:
-            task.cancel()
-            with suppress(asyncio.CancelledError):
-                await task
+            await runtime_organism.runtime.stop()
 
     public_deployment = os.getenv("ARTIFICIAL_HUMAN_PUBLIC_DEPLOYMENT", "").lower() in {
         "1", "true", "yes",
@@ -644,6 +646,45 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         payload = get_organism().status()
         payload.pop("owner_id", None)
         return payload
+
+    @app.get("/runtime/status")
+    def runtime_status() -> dict[str, object]:
+        return runtime_organism.runtime.snapshot().as_dict()
+
+    @app.post("/runtime/events", status_code=202)
+    def submit_runtime_event(request: RuntimeEventRequest) -> dict[str, object]:
+        event = SensoryEvent(
+            Modality(request.modality),
+            tuple(request.values),
+            request.timestamp,
+            request.confidence,
+        )
+        if not runtime_organism.runtime.submit_event(event):
+            raise HTTPException(status_code=429, detail="runtime event queue is full or unavailable")
+        return {
+            "accepted": True,
+            "pending_events": runtime_organism.runtime.snapshot().pending_events,
+        }
+
+    @app.post("/runtime/pause")
+    def pause_runtime() -> dict[str, object]:
+        runtime_organism.runtime.pause()
+        return runtime_organism.runtime.snapshot().as_dict()
+
+    @app.post("/runtime/resume")
+    def resume_runtime() -> dict[str, object]:
+        runtime_organism.runtime.resume()
+        return runtime_organism.runtime.snapshot().as_dict()
+
+    @app.post("/runtime/development")
+    def advance_runtime_development(request: DevelopmentalTimeRequest) -> dict[str, object]:
+        try:
+            return runtime_organism.runtime.advance_developmental_time(
+                prenatal_days=request.prenatal_days,
+                postnatal_units=request.postnatal_units,
+            )
+        except (ValueError, RuntimeError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
 
     @app.get("/monitor/overview")
     def monitor_overview(
