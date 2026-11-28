@@ -119,7 +119,7 @@ def test_developmental_comparison_is_reproducible_and_reports_frozen_baseline() 
     assert first == second
     assert first["training_exposures"] == 12
     assert first["path_efficacy_improvement"] is True
-    assert first["behavioural_improvement"] is True
+    assert first["behavioural_improvement"] is True, first
     assert isinstance(first["baseline_target_spikes"], int)
     assert isinstance(first["trained_target_spikes"], int)
 
