@@ -29,6 +29,7 @@ def test_stdp_direction_depends_on_spike_order_and_is_bounded() -> None:
     for _ in range(100):
         rule.observe(potentiated, ("pre",))
         rule.observe(potentiated, ("post",))
+    assert potentiated.synapses["connection"].weight == 1.0
     assert 0 <= potentiated.synapses["connection"].weight <= 1.0
 
 
