@@ -15,11 +15,10 @@ from uuid import uuid4
 from artificial_human.cognition.episodic_replay import EpisodicReplayMemory
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.repository import (
-from artificial_human.memory.contracts import MemoryStore
     MemoryNotFoundError,
     MemoryRecord,
-    MemoryStore,
 )
+from artificial_human.memory.contracts import MemoryStore
 
 
 _EVENT_TYPE = re.compile(r"^[a-z][a-z0-9_.-]{0,63}$")
