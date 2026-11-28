@@ -173,8 +173,7 @@ def test_active_organism_uses_same_working_memory_owner_and_resets_in_ram() -> N
     organism.cognitive_memory.ingest(record)
     assert organism.cognitive_memory.snapshot()["semantic"]["count"] == 1
 
-    organism.memory.reset()
-    organism.cognitive_memory.reset()
+    organism.reset_volatile_state()
     assert organism.memory.list(organism.owner_id) == []
     assert organism.cognitive_memory.snapshot()["semantic"]["count"] == 0
     assert organism.cognitive_memory.snapshot()["working"]["session_count"] == 0
