@@ -113,17 +113,13 @@ render.yaml declares:
 - Uvicorn startup on the platform-provided port;
 - health check /health.
 
-Important: the currently documented Render service was created manually, not from the Blueprint. A repository change to render.yaml does not necessarily change the settings of an existing manually-created service. Confirm its Build & Deploy branch is main and automatic deployment waits for successful checks.
+The Render service is manually managed rather than Blueprint-managed, but its live settings were inspected: branch main and autoDeployTrigger checksPass. The live service settings remain authoritative; changing render.yaml alone does not rewrite manually-managed provider settings.
 
 ### Vercel
 
-The static frontend lives in monitor/. The Vercel project should be configured with:
-- Root Directory: monitor;
-- Production Branch: main;
-- no frontend build command required for the current static HTML/CSS/JavaScript app;
-- the committed monitor/vercel.json rewrite so browser calls to /api/* reach Render on the same origin.
+The static frontend lives in monitor/. The Vercel production deployment metadata was inspected and identifies GitHub source repository aakashsiwach/artificial-human and production commit ref main. Its production alias is https://artificial-human-control-room.vercel.app. The project Root Directory is monitor; no frontend build command is required for the current static HTML/CSS/JavaScript app. The committed monitor/vercel.json rewrite keeps browser calls to /api/* on the Vercel origin and forwards them to Render.
 
-With the Git integration connected, a merge to main creates the production source commit for Vercel to deploy. Preview deployments may be created for feature branches/PRs depending on the project's Vercel settings.
+The Vercel Git integration deploys from main. Preview deployments may or may not be enabled for feature branches/PRs; a missing PR preview is not evidence that the production main integration is absent.
 
 ## Deployment links
 
