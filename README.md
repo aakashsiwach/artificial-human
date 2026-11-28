@@ -374,3 +374,37 @@ evidence and a base commit. They are checked only through an explicitly
 injected isolated sandbox adapter; the active organism has no shell, host
 filesystem, network, credential, auto-merge or deployment capability. See
 [Safe self-development](docs/SAFE_SELF_DEVELOPMENT.md).
+
+
+## Brain-first Control Room
+
+The Control Room opens on the neural core rather than a metrics dashboard:
+
+- **Brain** — the first public and authenticated view. It displays an abstract animated neural illustration, not a brain scan, connectome, or literal rendering of neural activity.
+- **Developing** — shows a read-only activity stream derived from runtime counters, source-verified active/partial/dormant module status, and the existing developmental simulator snapshot. The moving stream visualises observed state; it does not show code being rewritten.
+- **Other** — developer tools, repository and CI links, Render/Vercel targets, local commands, API references, and owner-only operator utilities.
+
+The status vocabulary is strict: **Active** means an implemented mechanism participates in the documented code path; **Partial** means a limited, disconnected, or owner-reviewed capability exists; **Dormant** means not implemented or not connected. Unbuilt capabilities stay visually inactive. See [Control Room UI contract](docs/CONTROL_ROOM_UI.md).
+
+### Production deployment links
+
+| Service | Link | Purpose |
+| --- | --- | --- |
+| Vercel Control Room | https://artificial-human-control-room.vercel.app | Static browser UI |
+| Render API | https://artificial-human-monitor-api.onrender.com | Protected FastAPI service |
+| Render health | https://artificial-human-monitor-api.onrender.com/health | Public health endpoint |
+| Render service settings | https://dashboard.render.com/web/srv-dc37evbrjlhs73f1sgv0 | Service configuration |
+| GitHub Actions | https://github.com/aakashsiwach/artificial-human/actions | CI runs and artifacts |
+
+### Main-branch CI/CD
+
+The intended release flow is:
+
+1. A pull request targets main; GitHub Actions runs the repository checks.
+2. The checks include Python 3.12/3.13, Ruff, mypy, pytest, CLI simulation, offline memory/cognitive evaluation, neural performance and organism evaluation, plus Control Room JavaScript and HTML-structure checks.
+3. After the pull request is merged, GitHub creates a commit on main.
+4. Render deploys the API from main according to its checks-pass auto-deploy policy; Vercel deploys the static monitor project from its production branch through its Git integration.
+
+The Render Blueprint declares branch main and autoDeployTrigger checksPass. The live Render service was created manually, outside the Blueprint, so verify the live service's Build & Deploy settings also point to main and wait for checks to pass. Vercel should use main as its Production Branch and monitor as its Root Directory. A repository declaration alone does not silently change provider-side settings.
+
+GitHub Actions is the CI gate. Render and Vercel perform their respective deployments through their connected hosting integrations; this workflow does not store or use provider credentials. Do not commit Render credentials, Vercel tokens, owner authentication material, or model-provider API keys. See [deployment details](docs/MONITORING.md).

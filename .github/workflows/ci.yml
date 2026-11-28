@@ -81,3 +81,45 @@ jobs:
         with:
           name: memory-retrieval-benchmark
           path: benchmark-output/
+
+  dashboard-quality:
+    name: Control Room frontend checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: JavaScript syntax
+        run: |
+          node --check monitor/app.js
+          node --check monitor/mind-ui.js
+      - name: Required UI structure
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class IDs(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.ids = []
+
+              def handle_starttag(self, tag, attrs):
+                  self.ids.extend(value for key, value in attrs if key == "id")
+
+          parser = IDs()
+          parser.feed(Path("monitor/index.html").read_text(encoding="utf-8"))
+          required = {
+              "public-home", "login-panel", "dashboard", "brain-view",
+              "developing-view", "other-view", "active-module-grid",
+              "partial-module-grid", "dormant-module-grid", "code-stream",
+          }
+          missing = sorted(required - set(parser.ids))
+          duplicates = sorted({item for item in parser.ids if parser.ids.count(item) > 1})
+          if missing or duplicates:
+              raise SystemExit(
+                  f"Control Room UI contract failed: missing={missing}, duplicate_ids={duplicates}"
+              )
+          print("Control Room UI structure is valid.")
+          PY
