@@ -77,6 +77,15 @@ from artificial_human.neural.world_model import (
     WorldState,
     run_world_model_comparison,
 )
+from artificial_human.neural.body_environment import (
+    BodyState,
+    BodyTransition,
+    BodyTrace,
+    ClosedLoopTaskResult,
+    SimulatedBodyEnvironment,
+    run_closed_loop_task,
+)
+
 from artificial_human.neural.homeostasis import (
     HomeostaticController,
     HomeostasisParameters,
@@ -97,6 +106,8 @@ __all__ = [
     "build_recurrent_microcircuit", "HomeostaticController",
     "HomeostasisParameters", "HomeostasisSnapshot", "InternalModulatorySignals",
     "run_homeostasis_comparison",
+    "BodyState", "BodyTransition", "BodyTrace", "ClosedLoopTaskResult",
+    "SimulatedBodyEnvironment", "run_closed_loop_task",
     "PopulationCode", "PopulationEncoder", "OneHotBaselineEncoder",
     "FeatureVectorBaselineEncoder", "PopulationAssociativeMemory",
     "PopulationProjector", "run_population_coding_comparison",
