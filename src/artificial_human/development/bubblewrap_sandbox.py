@@ -175,6 +175,7 @@ def main():
         "PIP_DISABLE_PIP_VERSION_CHECK": "1",
         "RUFF_CACHE_DIR": "/tmp/ruff-cache",
         "MYPY_CACHE_DIR": "/tmp/mypy-cache",
+        "RAYON_NUM_THREADS": "1",
     }
     os.execve(command[0], command, env)
 
