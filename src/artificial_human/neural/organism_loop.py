@@ -15,6 +15,20 @@ from artificial_human.neural.population import (
     PopulationCode,
     PopulationEncoder as DistributedPopulationEncoder,
 )
+from artificial_human.neural.action_selection import (
+    ActionSelectionCircuit,
+    ActionSpec,
+    SafeActionSpace,
+)
+from artificial_human.neural.body_environment import SimulatedBodyEnvironment
+from artificial_human.cognition.attention import (
+    AttentionCandidate,
+    AttentionSystem,
+)
+from artificial_human.cognition.working_memory import (
+    WorkingMemory,
+    WorkingMemoryEntry,
+)
 from artificial_human.development.program import (
     DevelopmentalModality as NeuralModality,
     DevelopmentalProgram as LIFDevelopmentalProgram,
@@ -45,10 +59,32 @@ class SensoryEvent:
     confidence: float = 1.0
 
     def __post_init__(self) -> None:
-        if self.timestamp < 0 or not self.values or len(self.values) > 64:
-            raise ValueError("invalid sensory event bounds")
-        if not 0 <= self.confidence <= 1 or not all(map(math.isfinite, self.values)):
-            raise ValueError("sensory values and confidence must be finite and bounded")
+        if not isinstance(self.modality, Modality):
+            raise ValueError("sensory modality must be a supported Modality")
+        if (
+            isinstance(self.timestamp, bool)
+            or not isinstance(self.timestamp, int)
+            or self.timestamp < 0
+        ):
+            raise ValueError("sensory timestamp must be a non-negative integer")
+        if (
+            not isinstance(self.values, tuple)
+            or not 1 <= len(self.values) <= 64
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                for value in self.values
+            )
+        ):
+            raise ValueError("sensory values must be a tuple of 1..64 finite numbers")
+        if (
+            isinstance(self.confidence, bool)
+            or not isinstance(self.confidence, (int, float))
+            or not math.isfinite(self.confidence)
+            or not 0.0 <= self.confidence <= 1.0
+        ):
+            raise ValueError("sensory confidence must be finite and in [0, 1]")
 
 
 @dataclass(slots=True)
@@ -180,6 +216,8 @@ class SimulatedEnvironment:
 
 @dataclass(slots=True)
 class ActionLearner:
+    """Legacy directional learner retained as a comparison baseline only."""
+
     values: dict[int, float] = field(default_factory=lambda: {-1: 0.0, 0: 0.0, 1: 0.0})
 
     def choose(self, direction: float) -> int:
@@ -202,6 +240,48 @@ class ForwardController:
         error = observed_delta - self.predict(action)
         self.gain = min(1.0, max(0.0, self.gain + 0.1 * error * action))
         return error
+
+
+@dataclass(frozen=True, slots=True)
+class OrganismIntegrationConfig:
+    """Explicit ablation switches for the deterministic integrated loop."""
+
+    attention_enabled: bool = True
+    working_memory_enabled: bool = True
+    episodic_memory_enabled: bool = True
+    neural_substrate_enabled: bool = True
+    learned_action_selection_enabled: bool = True
+
+    def __post_init__(self) -> None:
+        if any(
+            not isinstance(value, bool)
+            for value in (
+                self.attention_enabled,
+                self.working_memory_enabled,
+                self.episodic_memory_enabled,
+                self.neural_substrate_enabled,
+                self.learned_action_selection_enabled,
+            )
+        ):
+            raise ValueError("integration ablation switches must be booleans")
+
+
+def _default_action_selection() -> ActionSelectionCircuit:
+    """Build a fixed simulation-only action allowlist and seeded policy."""
+    space = SafeActionSpace((
+        ActionSpec("move_left", "Move the simulated body one step left"),
+        ActionSpec("hold", "Keep the simulated body stationary"),
+        ActionSpec("move_right", "Move the simulated body one step right"),
+    ))
+    return ActionSelectionCircuit(
+        space,
+        learning_rate=0.2,
+        discount_factor=0.1,
+        exploration_rate=0.1,
+        exploration_bonus=0.1,
+        max_state_action_pairs=4096,
+        seed=7,
+    )
 
 
 class DevelopmentStage(StrEnum):
@@ -254,53 +334,244 @@ class SafeSelfDevelopment:
 class OrganismLoop:
     encoder: PopulationEncoder = field(default_factory=PopulationEncoder)
     memory: EpisodicMemory = field(default_factory=EpisodicMemory)
-    world: WorldModel = field(default_factory=WorldModel.create)
-    environment: SimulatedEnvironment = field(default_factory=SimulatedEnvironment)
-    actions: ActionLearner = field(default_factory=ActionLearner)
+    world: WorldModel = field(default_factory=lambda: WorldModel.create(dimensions=5))
+    environment: SimulatedBodyEnvironment = field(
+        default_factory=lambda: SimulatedBodyEnvironment(max_steps=100)
+    )
     controller: ForwardController = field(default_factory=ForwardController)
     homeostat: Homeostat = field(default_factory=Homeostat)
     neural_development: LIFDevelopmentalProgram = field(default_factory=_default_neural_development)
+    attention: AttentionSystem = field(default_factory=AttentionSystem)
+    working_memory: WorkingMemory = field(default_factory=lambda: WorkingMemory(capacity=7))
+    action_selection: ActionSelectionCircuit = field(default_factory=_default_action_selection)
+    config: OrganismIntegrationConfig = field(default_factory=OrganismIntegrationConfig)
     tick_index: int = 0
     episode_count: int = 0
     paused: bool = False
 
+    @staticmethod
+    def _state_id(
+        distance: float,
+        velocity: float,
+        *,
+        neural_state: str,
+        working_memory_focus: float,
+    ) -> str:
+        """Build a small, explicit state space from body and cognitive signals.
+
+        The bins are intentionally coarse: 3 directions × 9 distance bins ×
+        5 velocity bins × 3 neural states × 2 focus states = 810 states.
+        With three approved actions, the tabular learner stays below 2,500
+        state-action pairs.
+        """
+        direction = "ahead" if distance > 0.05 else "behind" if distance < -0.05 else "aligned"
+        distance_bucket = min(8, int(abs(distance) * 6))
+        velocity_bucket = max(-2, min(2, int(round(velocity * 2))))
+        focus_state = "engaged" if working_memory_focus >= 0.35 else "low"
+        return (
+            f"goal:{direction}:{distance_bucket}:velocity:{velocity_bucket}"
+            f":neural={neural_state}:focus={focus_state}"
+        )
+
     def tick(self, event: SensoryEvent | None = None) -> dict[str, object]:
         if self.paused:
             return {"tick": self.tick_index, "paused": True}
-        if self.environment.steps >= self.environment.max_steps:
+        body_before = self.environment.state
+        if body_before.tick >= self.environment.max_steps:
             self.environment.reset()
             self.episode_count += 1
-        event = event or SensoryEvent(Modality.PROPRIOCEPTION,
-                                      (self.environment.position, self.environment.target),
-                                      self.tick_index)
-        modality_map = {
-            Modality.VISION: NeuralModality.VISION,
-            Modality.AUDITION: NeuralModality.AUDITORY,
-            Modality.TOUCH: NeuralModality.TACTILE,
-            Modality.PROPRIOCEPTION: NeuralModality.PROPRIOCEPTION,
-            Modality.INTEROCEPTION: NeuralModality.INTEROCEPTION,
-        }
-        neural_outcome = self.neural_development.experience(
-            modality_map[event.modality],
-            intensity=event.confidence,
-            duration_steps=1,
+        body_state = self.environment.state
+        event = event or SensoryEvent(
+            Modality.PROPRIOCEPTION,
+            (body_state.position, body_state.velocity, body_state.goal_position),
+            self.tick_index,
         )
-        self.neural_development.advance_simulation(1)
         code = self.encoder.encode(event)
         decoded = self.encoder.decode(code)
         cue = tuple(value for value in decoded if value is not None)
-        recalled = self.memory.recall(cue)
-        state = (self.environment.position, self.environment.target,
-                 self.environment.target - self.environment.position, 1.0)
+        recalled = (
+            self.memory.recall(cue)
+            if self.config.episodic_memory_enabled
+            else None
+        )
+
+        candidates = [
+            AttentionCandidate(
+                reference_id=f"sensory:{self.tick_index}",
+                kind="sensory",
+                relevance=event.confidence,
+                salience=1.0 - code.uncertainty,
+                channels=(event.modality.value,),
+            )
+        ]
+        if recalled is not None:
+            candidates.append(AttentionCandidate(
+                reference_id=f"episode:{self.tick_index}",
+                kind="episodic",
+                relevance=0.7,
+                salience=0.6,
+                channels=("episodic_memory",),
+            ))
+        attended = (
+            self.attention.select(candidates, limit=3)
+            if self.config.attention_enabled
+            else []
+        )
+        sensory_attention = next(
+            (
+                item
+                for item in attended
+                if item.reference_id == f"sensory:{self.tick_index}"
+            ),
+            None,
+        )
+        attended_weight = (
+            1.0
+            if not self.config.attention_enabled
+            else sensory_attention.weight if sensory_attention is not None else 0.0
+        )
+
+        if self.config.working_memory_enabled:
+            self.working_memory.remember(WorkingMemoryEntry(
+                id=f"sensory:{self.tick_index}",
+                content=",".join(f"{value:.6f}" for value in event.values),
+                kind="percept",
+                source="synthetic_sensory_event",
+                salience=min(1.0, max(0.0, event.confidence * attended_weight)),
+                created_at=f"simulation-tick:{self.tick_index:012d}",
+            ))
+            if recalled is not None:
+                self.working_memory.remember(WorkingMemoryEntry(
+                    id=f"recall:{self.tick_index}",
+                    content=recalled,
+                    kind="episodic_recall",
+                    source="volatile_episodic_memory",
+                    salience=0.6,
+                    created_at=f"simulation-tick:{self.tick_index:012d}",
+                ))
+
+        neural_outcome: dict[str, object] = {
+            "accepted": False,
+            "spikes": (),
+            "downstream_spikes": (),
+            "population_state": "disabled",
+            "simulation_steps_advanced": 0,
+            "input_intensity": 0.0,
+            "total_weight_change": 0.0,
+            "simulation_step": self.neural_development.simulation.step_index,
+        }
+        if self.config.neural_substrate_enabled:
+            modality_map = {
+                Modality.VISION: NeuralModality.VISION,
+                Modality.AUDITION: NeuralModality.AUDITORY,
+                Modality.TOUCH: NeuralModality.TACTILE,
+                Modality.PROPRIOCEPTION: NeuralModality.PROPRIOCEPTION,
+                Modality.INTEROCEPTION: NeuralModality.INTEROCEPTION,
+            }
+            neural_intensity = min(
+                1.0,
+                max(0.0, event.confidence * (0.5 + 0.5 * attended_weight)),
+            )
+            outcome = self.neural_development.experience(
+                modality_map[event.modality],
+                intensity=neural_intensity,
+                duration_steps=1,
+            )
+            # Advance the shared recurrent substrate beyond the sensory input
+            # step so delayed synaptic events can reach downstream populations.
+            # This is a fixed, bounded integration window rather than an
+            # adaptive or unbounded simulation loop.
+            propagation_steps = self.neural_development.advance_simulation(10)
+            spikes = outcome.spikes + tuple(
+                neuron
+                for step in propagation_steps
+                for neuron in step.spikes
+            )
+            sensory_spikes = tuple(
+                neuron for neuron in spikes if neuron.startswith("sensory_")
+            )
+            downstream_spikes = tuple(
+                neuron for neuron in spikes if not neuron.startswith("sensory_")
+            )
+            population_state = (
+                "distributed"
+                if downstream_spikes
+                else "sensory_only" if sensory_spikes else "silent"
+            )
+            neural_outcome = {
+                "accepted": outcome.accepted,
+                "spikes": spikes,
+                "downstream_spikes": downstream_spikes,
+                "population_state": population_state,
+                "simulation_steps_advanced": len(propagation_steps),
+                "input_intensity": round(neural_intensity, 6),
+                "total_weight_change": outcome.total_weight_change,
+                "simulation_step": self.neural_development.simulation.step_index,
+            }
+
+        body_state = self.environment.state
+        distance = body_state.goal_position - body_state.position
+        working_context = self.working_memory.context(limit=5)
+        working_memory_focus = max(
+            (item.salience for item in working_context),
+            default=0.0,
+        )
+        state = (
+            body_state.position,
+            body_state.goal_position,
+            distance,
+            body_state.velocity,
+            working_memory_focus,
+        )
         predicted = self.world.predict(state)
-        action = self.actions.choose(self.environment.target - self.environment.position)
-        before = self.environment.position
-        reward = self.environment.act(action)
-        delta = self.environment.position - before
+        neural_state = str(neural_outcome["population_state"])
+        state_id = self._state_id(
+            distance,
+            body_state.velocity,
+            neural_state=neural_state,
+            working_memory_focus=working_memory_focus,
+        )
+        if self.config.learned_action_selection_enabled:
+            choice = self.action_selection.select(state_id, explore=True)
+            action_map = {"move_left": -1, "hold": 0, "move_right": 1}
+            action = action_map[choice.action_id]
+        else:
+            choice = None
+            action = 1 if distance > 0.05 else -1 if distance < -0.05 else 0
+
+        transition = self.environment.step(float(action))
+        delta = transition.current.position - transition.previous.position
+        distance_before = abs(
+            transition.previous.goal_position - transition.previous.position
+        )
+        distance_after = abs(
+            transition.current.goal_position - transition.current.position
+        )
+        reward = -distance_after
+        reward_signal = max(
+            -1.0,
+            min(1.0, (distance_before - distance_after) / 0.28),
+        )
+        next_state_id = self._state_id(
+            transition.current.goal_position - transition.current.position,
+            transition.current.velocity,
+            neural_state=neural_state,
+            working_memory_focus=working_memory_focus,
+        )
+        update = None
+        terminal = transition.current.tick >= self.environment.max_steps
+        if self.config.learned_action_selection_enabled and choice is not None:
+            update = self.action_selection.observe(
+                state_id,
+                choice.action_id,
+                reward_signal,
+                next_state_id=None if terminal else next_state_id,
+                terminal=terminal,
+            )
         error = self.world.observe(state, reward)
         self.controller.adapt(action, delta)
-        self.actions.learn(action, reward)
-        self.memory.store(self.tick_index, cue, f"action={action};reward={reward:.3f}")
+        if self.config.episodic_memory_enabled:
+            self.memory.store(self.tick_index, cue, f"action={action};reward={reward:.3f}")
         threshold = self.homeostat.update(min(1.0, abs(delta) * 2))
         stage = self.neural_development.stage
         result: dict[str, object] = {
@@ -308,20 +579,43 @@ class OrganismLoop:
             "modality": event.modality.value,
             "code": code.values,
             "uncertainty": code.uncertainty,
+            "attended": tuple(
+                {
+                    "reference_id": item.reference_id,
+                    "kind": item.kind,
+                    "weight": item.weight,
+                    "channels": item.channels,
+                }
+                for item in attended
+            ),
+            "working_memory": self.working_memory.public_state(),
             "recalled": recalled,
+            "working_memory_focus": working_memory_focus,
+            "sensory_attention_weight": attended_weight,
             "prediction": predicted,
             "prediction_error": error,
             "action": action,
+            "action_selection": (
+                {
+                    "state_id": choice.state_id,
+                    "action_id": choice.action_id,
+                    "net_value": choice.net_value,
+                    "uncertainty": choice.uncertainty,
+                    "explored": choice.explored,
+                    "prediction_error": update.prediction_error if update else None,
+                }
+                if choice is not None else {"mode": "directional_ablation_baseline"}
+            ),
             "reward": reward,
-            "position": self.environment.position,
+            "reward_signal": reward_signal,
+            "position": transition.current.position,
+            "velocity": transition.current.velocity,
+            "goal_position": transition.current.goal_position,
+            "reached_goal": transition.reached_goal,
+            "terminal": terminal,
             "threshold": threshold,
             "stage": stage.value,
-            "neural": {
-                "accepted": neural_outcome.accepted,
-                "spikes": neural_outcome.spikes,
-                "total_weight_change": neural_outcome.total_weight_change,
-                "simulation_step": self.neural_development.simulation.step_index,
-            },
+            "neural": neural_outcome,
         }
         self.tick_index += 1
         return result
@@ -341,7 +635,8 @@ class OrganismLoop:
         self.memory.episodes.clear()
         self.world.weights[:] = [0.0] * len(self.world.weights)
         self.environment.reset()
-        self.actions.values = {-1: 0.0, 0: 0.0, 1: 0.0}
+        self.working_memory = WorkingMemory(capacity=7)
+        self.action_selection.reset()
         self.controller.gain = 0.1
         self.homeostat = Homeostat()
         self.neural_development = _default_neural_development()
@@ -352,10 +647,16 @@ class OrganismLoop:
         return {
             "tick": self.tick_index,
             "paused": self.paused,
-            "position": self.environment.position,
+            "position": self.environment.state.position,
             "episodes": len(self.memory.episodes),
             "episode_count": self.episode_count,
             "weights": tuple(self.world.weights),
+            "working_memory": self.working_memory.public_state(),
+            "working_memory_focus": max(
+                (item.salience for item in self.working_memory.context(limit=5)),
+                default=0.0,
+            ),
+            "action_selection": self.action_selection.snapshot(),
             "stage": development.stage.value,
             "developmental_time": {
                 "prenatal_days": development.prenatal_days,
@@ -370,3 +671,75 @@ class OrganismLoop:
                 "mean_conduction_delay_steps": development.mean_conduction_delay_steps,
             },
         }
+
+
+
+def run_integration_ablation_comparison(
+    *, ticks: int = 100
+) -> tuple[dict[str, object], ...]:
+    """Measure end-to-end subsystem ablations on identical deterministic tasks."""
+    if isinstance(ticks, bool) or not isinstance(ticks, int) or not 1 <= ticks <= 1_000:
+        raise ValueError("ticks must be an integer in [1, 1000]")
+
+    conditions = (
+        ("full", OrganismIntegrationConfig()),
+        ("attention_disabled", OrganismIntegrationConfig(attention_enabled=False)),
+        ("working_memory_disabled", OrganismIntegrationConfig(working_memory_enabled=False)),
+        ("episodic_memory_disabled", OrganismIntegrationConfig(episodic_memory_enabled=False)),
+        ("neural_substrate_disabled", OrganismIntegrationConfig(neural_substrate_enabled=False)),
+        (
+            "learned_action_selection_disabled",
+            OrganismIntegrationConfig(learned_action_selection_enabled=False),
+        ),
+    )
+    reports: list[dict[str, object]] = []
+    for name, config in conditions:
+        organism = OrganismLoop(config=config)
+        trace = organism.run(ticks)
+        snapshot = organism.snapshot()
+        neural_spikes = 0
+        attended_items = 0
+        attention_weight_total = 0.0
+        reward_total = 0.0
+        prediction_error_total = 0.0
+        for step in trace:
+            attended = step.get("attended")
+            if isinstance(attended, (tuple, list)):
+                attended_items += len(attended)
+            sensory_weight = step.get("sensory_attention_weight")
+            if attended and isinstance(sensory_weight, (int, float)):
+                attention_weight_total += float(sensory_weight)
+            neural = step.get("neural")
+            if isinstance(neural, dict):
+                spikes = neural.get("spikes")
+                if isinstance(spikes, (tuple, list)):
+                    neural_spikes += len(spikes)
+            reward_value = step.get("reward")
+            if isinstance(reward_value, (int, float)):
+                reward_total += float(reward_value)
+            error_value = step.get("prediction_error")
+            if isinstance(error_value, (int, float)):
+                prediction_error_total += abs(float(error_value))
+        working_memory_state = snapshot.get("working_memory")
+        working_memory_items = (
+            working_memory_state.get("item_count", 0)
+            if isinstance(working_memory_state, dict) else 0
+        )
+        action_state = snapshot.get("action_selection")
+        action_updates = (
+            action_state.get("updates", 0)
+            if isinstance(action_state, dict) else 0
+        )
+        reports.append({
+            "condition": name,
+            "ticks": ticks,
+            "cumulative_reward": round(reward_total, 8),
+            "mean_absolute_prediction_error": round(prediction_error_total / ticks, 8),
+            "neural_spikes": neural_spikes,
+            "attended_items": attended_items,
+            "mean_attention_weight": round(attention_weight_total / ticks, 8),
+            "working_memory_items": working_memory_items,
+            "episodic_memories": snapshot["episodes"],
+            "action_learning_updates": action_updates,
+        })
+    return tuple(reports)
