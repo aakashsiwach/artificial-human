@@ -10,6 +10,7 @@ from artificial_human.memory.cognitive import (
     SpatialMemoryStore,
 )
 from artificial_human.memory.volatile_repository import InMemoryMemoryRepository
+from artificial_human.memory.repository import MemoryRepository
 from artificial_human.organism import ArtificialOrganism
 
 
@@ -165,6 +166,7 @@ def test_cognitive_memory_routes_memory_kinds_to_distinct_stores_and_resets() ->
 
 def test_active_organism_uses_same_working_memory_owner_and_resets_in_ram() -> None:
     organism = ArtificialOrganism(embedding_provider=None)
+    assert not isinstance(organism.memory, MemoryRepository)
     assert organism.cognitive_brain.working_memory_sessions is organism.cognitive_memory.working
     grant = organism.memory.grant_consent(organism.owner_id)
     record = organism.memory.add(
