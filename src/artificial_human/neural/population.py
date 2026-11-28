@@ -388,6 +388,19 @@ class PopulationAssociativeMemory:
     def complete(self, cue: PopulationCode) -> PatternCompletion | None:
         if not any(cue.observed_features):
             return None
+        observed_norm = math.sqrt(
+            sum(
+                value * value
+                for feature_index, observed in enumerate(cue.observed_features)
+                if observed
+                for value in cue.activations[
+                    feature_index * cue.units_per_feature :
+                    (feature_index + 1) * cue.units_per_feature
+                ]
+            )
+        )
+        if observed_norm <= 1e-15:
+            return None
         if not self._patterns:
             return None
         cue_geometry = (
