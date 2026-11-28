@@ -28,7 +28,9 @@ _PROHIBITED_ADDED_CODE = re.compile(
     r"(?:\beval\s*\(|\bexec\s*\(|\bos\.system\s*\(|"
     r"\bsubprocess\.|\bPopen\s*\(|\bsocket\.|"
     r"\brequests\.|\bhttpx\.|\burllib\.request\b|"
-    r"\b__import__\s*\(|\bctypes\.)"
+    r"\b__import__\s*\(|\bctypes\.|"
+    r"(?m)^\s*(?:from\s+(?:subprocess|socket|requests|httpx|ctypes)\s+import|"
+    r"import\s+(?:subprocess|socket|requests|httpx|ctypes)\b)"
 )
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _REVISION = re.compile(r"^[0-9a-f]{40}$")
@@ -51,20 +53,27 @@ class SandboxLimits:
             isinstance(self.max_wall_seconds, bool)
             or not isinstance(self.max_wall_seconds, (int, float))
             or not math.isfinite(self.max_wall_seconds)
-            or self.max_wall_seconds <= 0
+            or not 0 < self.max_wall_seconds <= 600
         ):
             raise ValueError("max_wall_seconds must be finite and positive")
         if (
             isinstance(self.max_memory_mb, bool)
             or not isinstance(self.max_memory_mb, (int, float))
             or not math.isfinite(self.max_memory_mb)
-            or self.max_memory_mb <= 0
+            or not 0 < self.max_memory_mb <= 4096
         ):
             raise ValueError("max_memory_mb must be finite and positive")
         for name in ("max_output_bytes", "max_patch_bytes", "max_files", "max_changed_lines", "max_checks"):
             value = getattr(self, name)
-            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-                raise ValueError(f"{name} must be a positive integer")
+            maximum = {
+                "max_output_bytes": 1_000_000,
+                "max_patch_bytes": 200_000,
+                "max_files": 50,
+                "max_changed_lines": 5_000,
+                "max_checks": 3,
+            }[name]
+            if isinstance(value, bool) or not isinstance(value, int) or not 0 < value <= maximum:
+                raise ValueError(f"{name} must be a positive integer no greater than {maximum}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,7 +171,7 @@ class SafeSelfDevelopment:
         parsed = PurePosixPath(path)
         if parsed.is_absolute() or any(part in {"", ".", "..", ".git"} for part in parsed.parts):
             return False
-        if parsed.parts[0] in _ALLOWED_ROOTS:
+        if len(parsed.parts) >= 2 and parsed.parts[0] in _ALLOWED_ROOTS:
             return True
         return len(parsed.parts) == 1 and path in _ALLOWED_ROOT_FILES
 
@@ -180,16 +189,25 @@ class SafeSelfDevelopment:
         if re.search(r"(?m)^(?:new file mode 120000|old mode |new mode |rename from |rename to )", diff):
             raise ValueError("symlink, mode-change and rename patches are not accepted")
 
+        matches = list(re.finditer(r"(?m)^diff --git a/(.+) b/(.+)$", diff))
         paths: list[str] = []
-        for match in re.finditer(r"(?m)^diff --git a/(.+) b/(.+)$", diff):
+        for index, match in enumerate(matches):
             old_path, new_path = match.groups()
             if old_path != new_path or not self._safe_path(old_path):
                 raise ValueError("patch contains a path outside the approved source roots")
+            block_end = matches[index + 1].start() if index + 1 < len(matches) else len(diff)
+            block = diff[match.start():block_end]
+            old_headers = re.findall(r"(?m)^--- (.+)$", block)
+            new_headers = re.findall(r"(?m)^\+\+\+ (.+)$", block)
+            if len(old_headers) != 1 or len(new_headers) != 1:
+                raise ValueError("patch must contain one old/new text-file header per file")
+            if old_headers[0] not in {f"a/{old_path}", "/dev/null"}:
+                raise ValueError("patch old-file header does not match its diff path")
+            if new_headers[0] != f"b/{new_path}":
+                raise ValueError("file deletion or mismatched new-file header is not accepted")
             paths.append(old_path)
         if not paths or len(paths) > self.limits.max_files or len(set(paths)) != len(paths):
             raise ValueError("patch file count is empty, duplicated or exceeds the limit")
-        if len(re.findall(r"(?m)^--- a/", diff)) != len(paths) or len(re.findall(r"(?m)^\+\+\+ b/", diff)) != len(paths):
-            raise ValueError("patch must contain paired text-file headers for every file")
 
         changed_lines = 0
         for line in diff.splitlines():
@@ -310,6 +328,23 @@ class SafeSelfDevelopment:
                     if result.check != expected:
                         failure = "sandbox evidence does not match the requested check order"
                         break
+                    if (
+                        not isinstance(result.sandbox_id, str)
+                        or not result.sandbox_id.strip()
+                        or isinstance(result.exit_code, bool)
+                        or not isinstance(result.exit_code, int)
+                        or not isinstance(result.timed_out, bool)
+                        or any(
+                            value is not True
+                            for value in (
+                                result.isolated_worktree,
+                                result.base_read_only,
+                                result.network_disabled,
+                            )
+                        )
+                    ):
+                        failure = "sandbox result contains invalid identity or isolation attestations"
+                        break
                     if result.base_revision != proposal.base_revision:
                         failure = "sandbox checked a different source revision"
                         break
@@ -390,7 +425,13 @@ class SafeSelfDevelopment:
         evidence: SandboxEvidence,
         approval_reference: str,
     ) -> HumanApprovalRecord:
-        if not evidence.verified or evidence.proposal_id != proposal.identifier:
+        if (
+            not evidence.verified
+            or evidence.status != "verified_for_human_review"
+            or evidence.proposal_id != proposal.identifier
+            or evidence.base_revision != proposal.base_revision
+            or not _SHA256.fullmatch(evidence.evidence_digest)
+        ):
             raise ValueError("only verified evidence for this proposal can be approved")
         if not isinstance(approval_reference, str) or not approval_reference.strip():
             raise ValueError("a human approval reference is required")
