@@ -47,7 +47,7 @@ green post-merge CI.
   bounded episodic memory, world-state prediction, a simple action learner,
   homeostatic state and a deterministic simulated environment. The same event
   is delivered to the developmental LIF program. Action choice is not yet
-  decoded from LIF population activity; issues #32–#34 and #38 remain open.
+  decoded from LIF population activity; issues #32–#34 are implemented as separate bounded slices, while #38 remains open for integrated circuit-to-organism coupling.
 - Issue #36's `ContinuousOrganismRuntime` implementation gives
   `ArtificialOrganism` one composition-owned runtime. The API lifespan starts
   and stops it; the CLI supports deterministic accelerated ticks. It adds a
@@ -110,11 +110,11 @@ consciousness. See [Brain](BRAIN.md), [Architecture](ARCHITECTURE.md),
 ### Phase 4 — connected brain circuits, body, and action
 
 - [x] [#31 — Episodic binding, replay, and consolidation circuits](https://github.com/aakashsiwach/artificial-human/issues/31). Merged and closed after PR #55.
-- [ ] [#32 — Action selection and reward learning](https://github.com/aakashsiwach/artificial-human/issues/32).
-- [ ] [#33 — Forward prediction and adaptive control](https://github.com/aakashsiwach/artificial-human/issues/33).
-- [ ] [#34 — Simulated body and environment](https://github.com/aakashsiwach/artificial-human/issues/34).
+- [x] [#32 — Action selection and reward learning](https://github.com/aakashsiwach/artificial-human/issues/32). Merged and closed after PR #56; this is a bounded tabular computational model, not a basal-ganglia replica.
+- [x] [#33 — Forward prediction and adaptive control](https://github.com/aakashsiwach/artificial-human/issues/33). Merged and closed after PR #57; this is a bounded adaptive controller, not a cerebellar anatomical model.
+- [x] [#34 — Simulated body and environment](https://github.com/aakashsiwach/artificial-human/issues/34). Merged and closed after PR #58; this is a deterministic scalar simulation, not a physical body.
 
-**Exit gate:** complete at least one reproducible perception → internal state → prediction → action → outcome → learning task in a deterministic simulated environment.
+**Exit gate:** met by PR #58's reproducible closed-loop simulated task. Integrated decoding of LIF population activity into action selection remains open under #38.
 
 ### Phase 5 — development and continuous organism runtime
 
