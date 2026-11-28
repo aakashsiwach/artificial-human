@@ -68,8 +68,10 @@ Limitations: the controller is a discrete engineering feedback law; its window s
 
 ## Reproduction
 
-The focused tests will be:
+The focused tests are:
 
 `pytest -q tests/test_neural_homeostasis.py tests/test_neural_simulation.py tests/test_neural_plasticity.py`
 
-The experiment will also have a deterministic CLI/library entry point or test report that can be rerun without model downloads or external services.
+Run the matched fixed-gain versus regulated recurrent stress experiment directly, without model downloads or external services:
+
+`python -c "from artificial_human.neural.homeostasis import run_homeostasis_comparison; print(run_homeostasis_comparison())"`
