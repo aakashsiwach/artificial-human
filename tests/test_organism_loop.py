@@ -171,6 +171,8 @@ def test_integration_ablation_report_measures_major_subsystem_contributions() ->
     full = reports["full"]
 
     assert len(reports) == 6
+    assert full["attended_items"] > reports["attention_disabled"]["attended_items"]
+    assert full["mean_attention_weight"] > reports["attention_disabled"]["mean_attention_weight"]
     assert full["working_memory_items"] > reports["working_memory_disabled"]["working_memory_items"]
     assert full["episodic_memories"] > reports["episodic_memory_disabled"]["episodic_memories"]
     assert full["action_learning_updates"] > reports["learned_action_selection_disabled"]["action_learning_updates"]
