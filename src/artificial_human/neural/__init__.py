@@ -22,6 +22,26 @@ from artificial_human.neural.population import (
     PopulationProjector,
     run_population_coding_comparison,
 )
+from artificial_human.neural.sensory import (
+    AlignedPercepts,
+    AuditionEncoder,
+    EncodedPercept,
+    InteroceptionEncoder,
+    PermissionDeniedError,
+    ProprioceptionEncoder,
+    RetentionPolicy,
+    SensoryEncoderSuite,
+    SensoryEvent,
+    SensoryModality,
+    SensoryPermission,
+    SensoryPermissionLedger,
+    SensoryPipeline,
+    SensoryProvenance,
+    TouchEncoder,
+    VestibularEncoder,
+    VisionEncoder,
+    project_percept,
+)
 from artificial_human.neural.homeostasis import (
     HomeostaticController,
     HomeostasisParameters,
@@ -40,4 +60,9 @@ __all__ = [
     "PopulationCode", "PopulationEncoder", "OneHotBaselineEncoder",
     "FeatureVectorBaselineEncoder", "PopulationAssociativeMemory",
     "PopulationProjector", "run_population_coding_comparison",
+    "SensoryModality", "SensoryProvenance", "RetentionPolicy", "SensoryEvent",
+    "SensoryPermission", "SensoryPermissionLedger", "PermissionDeniedError",
+    "EncodedPercept", "AlignedPercepts", "SensoryEncoderSuite", "SensoryPipeline",
+    "VisionEncoder", "AuditionEncoder", "TouchEncoder", "VestibularEncoder",
+    "ProprioceptionEncoder", "InteroceptionEncoder", "project_percept",
 ]
