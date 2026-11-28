@@ -17,9 +17,9 @@ The north star is one executable computational organism grounded in human neuros
 
 ## Verified current baseline
 
-The merged main branch and the current issue #36 implementation contain the
-following foundation. Issue #36 is complete only when its PR is merged with
-green post-merge CI.
+The merged main branch contains the following verified foundation. Issues
+#36 and #38 are complete after PRs #61 and #62 respectively merged with green
+CI. Issue #37 remains open for isolated, owner-reviewed code proposals.
 
 - The active `ArtificialOrganism` uses source-defined identity and bounded
   process-local memory in local and public modes. Default construction does not
@@ -43,11 +43,13 @@ green post-merge CI.
   interference/pattern-separation measures and retrieval-dependent
   strengthening. Owner-scoped memory records remain the source of event
   content; raw text is not retained in the neural engram index.
-- The high-level `OrganismLoop` processes explicit synthetic sensory events,
-  bounded episodic memory, world-state prediction, a simple action learner,
-  homeostatic state and a deterministic simulated environment. The same event
-  is delivered to the developmental LIF program. Action choice is not yet
-  decoded from LIF population activity; issues #32–#34 are implemented as separate bounded slices, while #38 remains open for integrated circuit-to-organism coupling.
+- PR #62 connects the continuous `OrganismLoop` to bounded attention,
+  seven-item working memory, episodic recall, a learned three-action selector,
+  the developmental LIF substrate and a deterministic simulated body. A fixed
+  ten-step propagation window exposes delayed downstream activity; a bounded
+  neural population-state summary and working-memory focus condition the
+  learned action state. Individual LIF spikes are not directly decoded into
+  motor commands, and this remains a synthetic computational task.
 - Issue #36's `ContinuousOrganismRuntime` implementation gives
   `ArtificialOrganism` one composition-owned runtime. The API lifespan starts
   and stops it; the CLI supports deterministic accelerated ticks. It adds a
@@ -119,20 +121,20 @@ consciousness. See [Brain](BRAIN.md), [Architecture](ARCHITECTURE.md),
 ### Phase 5 — development and continuous organism runtime
 
 - [x] [#35 — Unify prenatal and runtime substrate; extend postnatal development](https://github.com/aakashsiwach/artificial-human/issues/35). Merged and closed after PR #60.
-- [x] [#36 — Run the organism as a continuous in-memory process](https://github.com/aakashsiwach/artificial-human/issues/36). Implemented in PR #61; closes on merge and green CI.
+- [x] [#36 — Run the organism as a continuous in-memory process](https://github.com/aakashsiwach/artificial-human/issues/36). Merged in PR #61; CI passed on Python 3.12/3.13 and the semantic-memory benchmark.
 
 **Exit gate:** one coherent substrate follows a developmental clock and continues bounded internal neural, regulatory, memory, and predictive processes without incoming requests or LLM calls.
 
 ### Phase 6 — safe self-development and integration
 
 - [ ] [#37 — Safe self-development through isolated code proposals, tests, and verified diffs](https://github.com/aakashsiwach/artificial-human/issues/37).
-- [ ] [#38 — Integrate brain circuits into one executable artificial organism](https://github.com/aakashsiwach/artificial-human/issues/38).
+- [x] [#38 — Integrate brain circuits into one executable artificial organism](https://github.com/aakashsiwach/artificial-human/issues/38). Merged in PR #62; Python 3.12/3.13, CLI, offline cognitive evaluation, neural performance and semantic-memory CI jobs passed.
 
-**Exit gate:** the organism can identify a measured failure, propose a candidate code/test change in isolation, and provide reproducible evidence; human approval remains required before source changes are adopted.
+**Exit gate:** partially met. The integrated organism loop exists; safe isolated self-development remains open under #37 and still requires owner approval before source adoption.
 
 ### Phase 7 — evaluation and completion
 
-- [ ] [#39 — Behavioural, neural, and organism-level evaluation gates](https://github.com/aakashsiwach/artificial-human/issues/39).
+- [x] [#39 — Behavioural, neural, and organism-level evaluation gates](https://github.com/aakashsiwach/artificial-human/issues/39). Consolidated fixed-seed baselines, ablations, sensitivity and resource evidence in PR #63; no performance thresholds or biological claims are inferred.
 - [ ] [#40 — Verify the living-organism completion gate](https://github.com/aakashsiwach/artificial-human/issues/40).
 
 **Exit gate:** each mechanism has fixed-seed tests, baselines, ablations, failure cases, resource bounds, limitations, and green CI. Issue #40 validates the complete system; merged PRs alone do not constitute completion.
