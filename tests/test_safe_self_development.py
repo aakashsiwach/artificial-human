@@ -5,11 +5,11 @@ from dataclasses import FrozenInstanceError, replace
 import pytest
 
 from artificial_human.development.self_development import (
+    EvaluationGap,
     HumanApprovalRecord,
     ImprovementProposal,
     SafeSelfDevelopment,
     SandboxCheckResult,
-    SandboxEvidence,
     SandboxLimits,
 )
 
@@ -339,3 +339,78 @@ def test_sandbox_result_rejects_boolean_exit_code_and_non_boolean_isolation_flag
     assert "invalid identity or isolation" in (boolean_exit.failure_reason or "")
     assert not string_flag.verified
     assert "isolation" in (string_flag.failure_reason or "")
+
+
+
+def test_measured_benchmark_gap_can_produce_source_patch_and_regression_test_proposal() -> None:
+    gap = EvaluationGap(
+        benchmark_id="episodic-recall-v2",
+        metric="recall_at_5",
+        observed=0.62,
+        target=0.80,
+        higher_is_better=True,
+        evidence_digest="d" * 64,
+        failing_case_ids=("partial-cue-014", "interference-008"),
+    )
+    diff = valid_diff("src/artificial_human/memory/retrieval.py") + valid_diff(
+        "tests/test_retrieval_regression.py",
+        "def test_partial_cue_regression(): assert True",
+    )
+    proposal = SafeSelfDevelopment().propose_from_gap(
+        gap,
+        "Improve partial-cue retrieval without changing memory ownership rules",
+        diff,
+        ("ruff check .", "pytest -q"),
+        base_revision=BASE,
+    )
+
+    assert proposal.trigger_benchmark_id == "episodic-recall-v2"
+    assert proposal.trigger_evidence_digest == "d" * 64
+    assert proposal.file_paths == (
+        "src/artificial_human/memory/retrieval.py",
+        "tests/test_retrieval_regression.py",
+    )
+
+
+def test_propose_from_gap_rejects_metrics_that_do_not_demonstrate_a_gap() -> None:
+    gap = EvaluationGap(
+        benchmark_id="latency-v1",
+        metric="p95_ms",
+        observed=40.0,
+        target=50.0,
+        higher_is_better=False,
+        evidence_digest="e" * 64,
+        failing_case_ids=("case-01",),
+    )
+
+    with pytest.raises(ValueError, match="does not demonstrate"):
+        SafeSelfDevelopment().propose_from_gap(
+            gap,
+            "Improve latency",
+            valid_diff(),
+            ("pytest -q",),
+            base_revision=BASE,
+        )
+
+
+def test_evaluation_gap_rejects_unverifiable_or_unbounded_evidence() -> None:
+    with pytest.raises(ValueError, match="SHA-256"):
+        EvaluationGap(
+            benchmark_id="benchmark",
+            metric="accuracy",
+            observed=0.5,
+            target=0.8,
+            higher_is_better=True,
+            evidence_digest="not-a-digest",
+            failing_case_ids=("case-1",),
+        )
+    with pytest.raises(ValueError, match="failing_case_ids"):
+        EvaluationGap(
+            benchmark_id="benchmark",
+            metric="accuracy",
+            observed=0.5,
+            target=0.8,
+            higher_is_better=True,
+            evidence_digest="e" * 64,
+            failing_case_ids=(),
+        )
