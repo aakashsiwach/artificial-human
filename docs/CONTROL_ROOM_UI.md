@@ -47,7 +47,7 @@ Active means the code exists and participates in the documented runtime path. It
 - Structured schema induction works from owner-annotated event metadata and creates reviewable proposals; it is not autonomous semantic understanding.
 - The optional text-language adapter is a separate request interface and is not required by the continuous neural loop.
 - Camera preview is local to the browser and is not fed into the organism.
-- Safe self-development currently packages bounded, evidence-linked proposals and check contracts; the repository does not supply a real, independently audited OS-level sandbox executor.
+- Safe self-development includes bounded proposal/evidence contracts and an optional Linux Bubblewrap executor for allowlisted checks. It remains disabled by default and requires independent security review before unattended production use.
 
 #### Dormant
 

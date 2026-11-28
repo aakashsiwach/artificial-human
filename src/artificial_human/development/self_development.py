@@ -554,6 +554,7 @@ class SafeSelfDevelopment:
         try:
             for check in proposal.checks:
                 results.append(self._executor.run_check(proposal, check, self.limits))
+            return self.verify(proposal, tuple(results))
         except Exception as exc:
             partial = tuple(results)
             reason = f"sandbox executor failed: {type(exc).__name__}"
@@ -567,7 +568,12 @@ class SafeSelfDevelopment:
                 failure_reason=reason,
                 evidence_digest=digest,
             )
-        return self.verify(proposal, tuple(results))
+        finally:
+            # Real sandbox adapters may own host-side staging directories. Fake
+            # contract adapters remain compatible and need not implement cleanup.
+            finish = getattr(self._executor, "finish", None)
+            if callable(finish):
+                finish(proposal)
 
     def record_human_approval(
         self,

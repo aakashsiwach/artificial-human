@@ -33,7 +33,7 @@
       ["Structured schema induction","Repeated owner-annotated event patterns can produce reviewable schema proposals.","OWNER REVIEW"],
       ["Text language interface","An optional replaceable model adapter handles request text; it is not the mind's foundation.","OPTIONAL PROVIDER"],
       ["Camera preview","The browser can preview locally, but frames do not enter the organism's neural processing.","LOCAL PREVIEW ONLY"],
-      ["Safe self-development","Immutable proposal and evidence contracts exist, but no real audited OS-level sandbox executor is supplied.","PROPOSAL ONLY"]
+      ["Safe self-development","Operator-injected Linux Bubblewrap runs allowlisted checks in a networkless namespace; independent security review remains outstanding.","OPT-IN · REVIEW REQUIRED"]
     ],
     dormant: [
       ["Live visual perception","No camera frames are encoded into the organism's neural state.","NOT CONNECTED"],

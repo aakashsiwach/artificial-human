@@ -65,8 +65,12 @@ CI. Issue #37 remains open for isolated, owner-reviewed code proposals.
 - The optional LLM is a language/request adapter. The continuous neural,
   memory, prediction, regulation and simulated-action loop does not require
   it.
-- Code repair currently creates proposals only; there is no autonomous
-  self-authored code/test lifecycle or automatic merge/deployment.
+- Safe self-development now has immutable proposals/evidence contracts and an
+  optional operator-injected Linux Bubblewrap executor. It runs allowlisted
+  checks in a networkless namespace over a read-only base archive and tmpfs
+  candidate workspace; it never writes into the live checkout, merges or
+  deploys. It remains disabled by default and needs independent security
+  review before unattended production use.
 
 These are engineering mechanisms, not biological equivalence or claims of
 consciousness. See [Brain](BRAIN.md), [Architecture](ARCHITECTURE.md),
