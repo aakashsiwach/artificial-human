@@ -215,8 +215,8 @@ events; real-world generalization and transfer remain open research questions.
 ## Continuous in-memory runtime
 
 `ContinuousOrganismRuntime` is the single process-local scheduler owned by
-`ArtificialOrganism`. The API lifespan starts/stops it; `simulate --ticks N` runs
-the same runtime deterministically without sleeping. Wall-clock scheduling,
+each `ArtificialOrganism` composition. The API lifespan starts/stops that
+instance; `simulate --ticks N` runs an instance deterministically without sleeping. Wall-clock scheduling,
 neural simulation steps and developmental model time are independent. The runtime
 supports bounded sensory intake, drop-newest backpressure, per-tick resource budgets,
 pause/resume, safe shutdown, reset and a bounded 128-tick trace.
