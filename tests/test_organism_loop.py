@@ -70,10 +70,26 @@ def test_development_progresses_on_simulation_ticks():
 
 def test_self_development_is_review_only_and_rejects_execution():
     guard = SafeSelfDevelopment()
-    proposal = guard.propose("fix test", "+ safe change", ("pytest -q",))
+    safe_diff = """diff --git a/src/example.py b/src/example.py
+index 1111111..2222222 100644
+--- a/src/example.py
++++ b/src/example.py
+@@ -1 +1 @@
+-old_value = 1
++new_value = 2
+"""
+    proposal = guard.propose(
+        "fix test", safe_diff, ("pytest -q",), base_revision="a" * 40
+    )
     assert proposal.status == "awaiting_human_review"
+    assert proposal.rollback_plan.base_revision == "a" * 40
     with pytest.raises(ValueError, match="prohibited execution primitive"):
-        guard.propose("bad", "+ eval('x')", ("pytest -q",))
+        guard.propose(
+            "bad",
+            safe_diff.replace("+new_value = 2", "+eval('x')"),
+            ("pytest -q",),
+            base_revision="a" * 40,
+        )
 
 
 def test_integrated_loop_is_reproducible_without_llm():
