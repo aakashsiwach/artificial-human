@@ -224,6 +224,13 @@ class EpisodicMemoryStore:
                 del self._items[key]
             return len(selected)
 
+    def forget_owner(self, owner_id: str) -> int:
+        with self._lock:
+            selected = [key for key, item in self._items.items() if item.owner_id == owner_id]
+            for key in selected:
+                del self._items[key]
+            return len(selected)
+
     def reset(self) -> None:
         with self._lock:
             self._items.clear()
@@ -407,6 +414,17 @@ class SemanticMemoryStore:
             }
             return len(selected)
 
+    def forget_owner(self, owner_id: str) -> int:
+        with self._lock:
+            selected = [key for key, item in self._facts.items() if item.owner_id == owner_id]
+            for key in selected:
+                del self._facts[key]
+            self._associations = {
+                key: edge for key, edge in self._associations.items()
+                if edge.owner_id != owner_id
+            }
+            return len(selected)
+
     def reset(self) -> None:
         with self._lock:
             self._facts.clear()
@@ -538,6 +556,13 @@ class ProceduralMemoryStore:
                 key for key, item in self._items.items()
                 if item.owner_id == owner_id and item.consent_id == consent_id
             ]
+            for key in selected:
+                del self._items[key]
+            return len(selected)
+
+    def forget_owner(self, owner_id: str) -> int:
+        with self._lock:
+            selected = [key for key, item in self._items.items() if item.owner_id == owner_id]
             for key in selected:
                 del self._items[key]
             return len(selected)
@@ -713,6 +738,17 @@ class SpatialMemoryStore:
             }
             return len(selected)
 
+    def forget_owner(self, owner_id: str) -> int:
+        with self._lock:
+            selected = [key for key, item in self._places.items() if item.owner_id == owner_id]
+            for key in selected:
+                del self._places[key]
+            self._relations = {
+                key: edge for key, edge in self._relations.items()
+                if edge.owner_id != owner_id
+            }
+            return len(selected)
+
     def reset(self) -> None:
         with self._lock:
             self._places.clear()
@@ -823,12 +859,31 @@ class InMemoryCognitiveMemory:
         }
 
     def forget_consent(self, owner_id: str, consent_id: str) -> dict[str, int]:
-        return {
+        counts = {
             "episodic": self.episodic.forget_consent(owner_id, consent_id),
             "semantic": self.semantic.forget_consent(owner_id, consent_id),
             "procedural": self.procedural.forget_consent(owner_id, consent_id),
             "spatial": self.spatial.forget_consent(owner_id, consent_id),
         }
+        self.working.clear_owner(owner_id)
+        # Link stores intentionally lack consent metadata; reset them on revocation.
+        self.relational.reset()
+        self.episodic_replay.reset()
+        return counts
+
+    def forget_owner(self, owner_id: str) -> dict[str, int]:
+        counts = {
+            "episodic": self.episodic.forget_owner(owner_id),
+            "semantic": self.semantic.forget_owner(owner_id),
+            "procedural": self.procedural.forget_owner(owner_id),
+            "spatial": self.spatial.forget_owner(owner_id),
+        }
+        self.working.clear_owner(owner_id)
+        # These associative structures retain source IDs but not consent metadata;
+        # clear them on owner erasure rather than risk retaining an orphaned link.
+        self.relational.reset()
+        self.episodic_replay.reset()
+        return counts
 
     def reset(self) -> None:
         self.working.reset()
