@@ -312,7 +312,7 @@ class SafeSelfDevelopment:
 class OrganismLoop:
     encoder: PopulationEncoder = field(default_factory=PopulationEncoder)
     memory: EpisodicMemory = field(default_factory=EpisodicMemory)
-    world: WorldModel = field(default_factory=WorldModel.create)
+    world: WorldModel = field(default_factory=lambda: WorldModel.create(dimensions=5))
     environment: SimulatedBodyEnvironment = field(
         default_factory=lambda: SimulatedBodyEnvironment(max_steps=100)
     )
@@ -434,11 +434,17 @@ class OrganismLoop:
 
         body_state = self.environment.state
         distance = body_state.goal_position - body_state.position
+        working_context = self.working_memory.context(limit=5)
+        working_memory_focus = max(
+            (item.salience for item in working_context),
+            default=0.0,
+        )
         state = (
             body_state.position,
             body_state.goal_position,
             distance,
             body_state.velocity,
+            working_memory_focus,
         )
         predicted = self.world.predict(state)
         state_id = self._state_id(distance, body_state.velocity)
@@ -499,6 +505,7 @@ class OrganismLoop:
             ),
             "working_memory": self.working_memory.public_state(),
             "recalled": recalled,
+            "working_memory_focus": working_memory_focus,
             "prediction": predicted,
             "prediction_error": error,
             "action": action,
@@ -559,6 +566,10 @@ class OrganismLoop:
             "episode_count": self.episode_count,
             "weights": tuple(self.world.weights),
             "working_memory": self.working_memory.public_state(),
+            "working_memory_focus": max(
+                (item.salience for item in self.working_memory.context(limit=5)),
+                default=0.0,
+            ),
             "action_selection": self.action_selection.snapshot(),
             "stage": development.stage.value,
             "developmental_time": {
