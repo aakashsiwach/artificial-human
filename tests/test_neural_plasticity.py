@@ -40,12 +40,9 @@ def test_stdp_direction_depends_on_spike_order_and_is_bounded() -> None:
 
 def test_stdp_weight_updates_saturate_at_both_configured_bounds() -> None:
     potentiated = network()
-    PairBasedSTDP(STDPParameters(potentiation=5.0, depression=0.0)).observe(
-        potentiated, ("pre",)
-    )
-    PairBasedSTDP(STDPParameters(potentiation=5.0, depression=0.0)).observe(
-        potentiated, ("post",)
-    )
+    rule = PairBasedSTDP(STDPParameters(potentiation=5.0, depression=0.0))
+    rule.observe(potentiated, ("pre",))
+    rule.observe(potentiated, ("post",))
     assert potentiated.synapses["connection"].weight == 1.0
 
     depressed = network()
