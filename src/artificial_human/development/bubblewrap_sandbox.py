@@ -42,6 +42,7 @@ _MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 _MAX_ARCHIVE_FILES = 20_000
 _MAX_ARCHIVE_FILE_BYTES = 32 * 1024 * 1024
 _RSS_SCAN_INTERVAL = 0.05
+_MAX_SANDBOX_PROCESSES = 4
 
 _RUNNER = r'''
 from __future__ import annotations
@@ -123,12 +124,16 @@ def main():
     os.umask(0o077)
     cpu_seconds = max(1, int(LIMITS["wall_seconds"]))
     memory_bytes = int(LIMITS["memory_mb"] * 1024 * 1024)
+    # Bound both process count and each process address space. Their product
+    # cannot exceed the proposal memory budget, even if children are spawned.
+    max_processes = int(LIMITS["max_processes"])
+    per_process_memory = max(64 * 1024 * 1024, memory_bytes // max_processes)
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds + 1))
-    resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
+    resource.setrlimit(resource.RLIMIT_AS, (per_process_memory, per_process_memory))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
     try:
-        resource.setrlimit(resource.RLIMIT_NPROC, (32, 32))
+        resource.setrlimit(resource.RLIMIT_NPROC, (max_processes, max_processes))
     except (AttributeError, OSError, ValueError):
         pass
 
@@ -136,7 +141,7 @@ def main():
     shutil.copytree("/staging", project, symlinks=False)
     patch = Path("/input.patch").read_bytes()
     applied = subprocess.run(
-        [CONFIG["git"], "apply", "--no-ext-diff", "--whitespace=nowarn", "-"],
+        [CONFIG["git"], "apply", "--whitespace=nowarn", "-"],
         cwd=project,
         input=patch,
         stdout=subprocess.PIPE,
@@ -589,6 +594,7 @@ class BubblewrapSandboxExecutor:
                 "wall_seconds": limits.max_wall_seconds,
                 "memory_mb": limits.max_memory_mb,
                 "output_bytes": limits.max_output_bytes,
+                "max_processes": _MAX_SANDBOX_PROCESSES,
             },
             "host_netns_inode": host_net_inode,
             "host_pidns_inode": host_pid_inode,
