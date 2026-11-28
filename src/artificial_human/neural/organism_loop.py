@@ -15,6 +15,18 @@ from artificial_human.neural.population import (
     PopulationCode,
     PopulationEncoder as DistributedPopulationEncoder,
 )
+from artificial_human.development.program import (
+    DevelopmentalModality as NeuralModality,
+    DevelopmentalProgram as LIFDevelopmentalProgram,
+)
+
+
+def _default_neural_development() -> LIFDevelopmentalProgram:
+    """Start the synthetic runtime from a documented postnatal test fixture."""
+    program = LIFDevelopmentalProgram()
+    program.advance_prenatal(280)
+    program.advance_postnatal(500)
+    return program
 
 
 class Modality(StrEnum):
@@ -200,6 +212,8 @@ class DevelopmentStage(StrEnum):
 
 @dataclass(slots=True)
 class DevelopmentProgram:
+    """Legacy stage-only baseline retained for compatibility tests."""
+
     tick: int = 0
     stage: DevelopmentStage = DevelopmentStage.EARLY
 
@@ -245,16 +259,33 @@ class OrganismLoop:
     actions: ActionLearner = field(default_factory=ActionLearner)
     controller: ForwardController = field(default_factory=ForwardController)
     homeostat: Homeostat = field(default_factory=Homeostat)
-    development: DevelopmentProgram = field(default_factory=DevelopmentProgram)
+    neural_development: LIFDevelopmentalProgram = field(default_factory=_default_neural_development)
     tick_index: int = 0
+    episode_count: int = 0
     paused: bool = False
 
     def tick(self, event: SensoryEvent | None = None) -> dict[str, object]:
         if self.paused:
             return {"tick": self.tick_index, "paused": True}
+        if self.environment.steps >= self.environment.max_steps:
+            self.environment.reset()
+            self.episode_count += 1
         event = event or SensoryEvent(Modality.PROPRIOCEPTION,
                                       (self.environment.position, self.environment.target),
                                       self.tick_index)
+        modality_map = {
+            Modality.VISION: NeuralModality.VISION,
+            Modality.AUDITION: NeuralModality.AUDITORY,
+            Modality.TOUCH: NeuralModality.TACTILE,
+            Modality.PROPRIOCEPTION: NeuralModality.PROPRIOCEPTION,
+            Modality.INTEROCEPTION: NeuralModality.INTEROCEPTION,
+        }
+        neural_outcome = self.neural_development.experience(
+            modality_map[event.modality],
+            intensity=event.confidence,
+            duration_steps=1,
+        )
+        self.neural_development.advance_simulation(1)
         code = self.encoder.encode(event)
         decoded = self.encoder.decode(code)
         cue = tuple(value for value in decoded if value is not None)
@@ -271,11 +302,27 @@ class OrganismLoop:
         self.actions.learn(action, reward)
         self.memory.store(self.tick_index, cue, f"action={action};reward={reward:.3f}")
         threshold = self.homeostat.update(min(1.0, abs(delta) * 2))
-        stage = self.development.advance()
-        result: dict[str, object] = {"tick": self.tick_index, "modality": event.modality.value, "code": code.values,
-                  "uncertainty": code.uncertainty, "recalled": recalled, "prediction": predicted,
-                  "prediction_error": error, "action": action, "reward": reward,
-                  "position": self.environment.position, "threshold": threshold, "stage": stage.value}
+        stage = self.neural_development.stage
+        result: dict[str, object] = {
+            "tick": self.tick_index,
+            "modality": event.modality.value,
+            "code": code.values,
+            "uncertainty": code.uncertainty,
+            "recalled": recalled,
+            "prediction": predicted,
+            "prediction_error": error,
+            "action": action,
+            "reward": reward,
+            "position": self.environment.position,
+            "threshold": threshold,
+            "stage": stage.value,
+            "neural": {
+                "accepted": neural_outcome.accepted,
+                "spikes": neural_outcome.spikes,
+                "total_weight_change": neural_outcome.total_weight_change,
+                "simulation_step": self.neural_development.simulation.step_index,
+            },
+        }
         self.tick_index += 1
         return result
 
@@ -297,10 +344,29 @@ class OrganismLoop:
         self.actions.values = {-1: 0.0, 0: 0.0, 1: 0.0}
         self.controller.gain = 0.1
         self.homeostat = Homeostat()
-        self.development = DevelopmentProgram()
-        self.tick_index, self.paused = 0, False
+        self.neural_development = _default_neural_development()
+        self.tick_index, self.episode_count, self.paused = 0, 0, False
 
     def snapshot(self) -> dict[str, object]:
-        return {"tick": self.tick_index, "paused": self.paused,
-                "position": self.environment.position, "episodes": len(self.memory.episodes),
-                "weights": tuple(self.world.weights), "stage": self.development.stage.value}
+        development = self.neural_development.snapshot()
+        return {
+            "tick": self.tick_index,
+            "paused": self.paused,
+            "position": self.environment.position,
+            "episodes": len(self.memory.episodes),
+            "episode_count": self.episode_count,
+            "weights": tuple(self.world.weights),
+            "stage": development.stage.value,
+            "developmental_time": {
+                "prenatal_days": development.prenatal_days,
+                "postnatal_units": development.postnatal_units,
+            },
+            "neural": {
+                "simulation_step": development.simulation_step,
+                "neuron_count": development.neuron_count,
+                "synapse_count": development.synapse_count,
+                "total_spikes": development.total_spikes,
+                "experience_count": development.experience_count,
+                "mean_conduction_delay_steps": development.mean_conduction_delay_steps,
+            },
+        }

@@ -28,8 +28,14 @@ from artificial_human.memory.search import SearchFilters
 from artificial_human.organism import ArtificialOrganism
 
 
-def _simulate() -> None:
+def _simulate(ticks: int = 10) -> None:
     organism = ArtificialOrganism(database_path=":memory:", embedding_provider=None)
+    trace = organism.runtime.run_ticks(ticks)
+    print(json.dumps({
+        "runtime": organism.runtime.snapshot().as_dict(),
+        "ticks_executed": len(trace),
+        "last_tick": trace[-1].as_dict() if trace else None,
+    }, indent=2))
     print(json.dumps({"status": organism.status()}, indent=2))
     print(json.dumps({
         "immune_demo": organism.evaluate_health("api_error_rate", 0.12, source="simulation")
@@ -173,7 +179,8 @@ def _positive_int(text: str) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="artificial-human")
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("simulate", help="Run an offline in-memory simulation")
+    simulate = commands.add_parser("simulate", help="Run a deterministic in-memory organism simulation")
+    simulate.add_argument("--ticks", type=_positive_int, default=10, help="Number of accelerated simulation ticks")
     commands.add_parser("serve", help="Serve the loopback API on 127.0.0.1:8000")
     commands.add_parser("status", help="Print organism status")
 
@@ -380,7 +387,7 @@ def _prenatal(args: argparse.Namespace) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "simulate":
-        _simulate()
+        _simulate(args.ticks)
     elif args.command == "status":
         print(json.dumps(ArtificialOrganism().status(), indent=2))
     elif args.command == "prenatal":

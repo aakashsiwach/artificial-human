@@ -37,7 +37,7 @@ These are functional research mappings, not one-to-one anatomical equivalents. B
 
 The target is an executable organism: a deterministic simulation clock continuously advances neural and cognitive state; neurons communicate through synapses; bounded plasticity changes live parameters; perception, memory, prediction, regulation and action form a feedback loop. All live state belongs in RAM, while source code defines the organism and its initial mechanisms. The LLM is optional and replaceable. The active runtime must not depend on SQL/SQLite, a vector database or an external persistence service.
 
-A first executable neural substrate and the RAM-only runtime foundation are now implemented on this branch. The active `ArtificialOrganism` uses bounded in-process memory and source-defined identity; a deterministic LIF network advances on the API idle loop. This is a foundation, not the finished organism: weights are fixed, sensory input is still explicit text, and the neural microcircuit is not yet connected to the full cognitive pipeline.
+The active `ArtificialOrganism` now owns one continuous in-memory runtime. Its API lifespan and offline CLI share the same organism loop and developmental LIF substrate. The loop advances without HTTP requests or LLM calls, processes explicit synthetic sensory events, updates bounded episodic memory, predicts simulated outcomes, selects safe simulated actions, and records an inspectable trace. This remains a computational research prototype, not a complete artificial human or biological brain.
 
 ## Current human-brain-inspired implementation
 
@@ -123,7 +123,8 @@ python -m venv .venv
 # Windows PowerShell: .venv\Scripts\Activate.ps1
 # macOS/Linux: source .venv/bin/activate
 python -m pip install -e ".[dev]"
-python -m artificial_human simulate
+python -m artificial_human simulate --ticks 100
+python -m artificial_human status
 python -m artificial_human serve
 ~~~
 
@@ -211,29 +212,37 @@ This is symbolic schema induction over owner-supplied structured event metadata,
 semantic understanding or proof of human-like abstraction. The offline evaluation uses synthetic
 events; real-world generalization and transfer remain open research questions.
 
-## Runtime population dynamics
+## Continuous in-memory runtime
 
-Each explicit message now runs a bounded recurrent activity update across seven abstract
-population nodes and ten directed projections. The current model retains only aggregate
-activity in process memory, uses fixed weights, and resets on restart. A one-second,
-low-amplitude resting-state approximation runs only while the API process is awake. It does
-not retain raw input text, train weights, or claim to simulate biological neurons. A suspended
-free-tier instance does not execute the loop. See [Brain and intelligence](docs/BRAIN.md).
+`ContinuousOrganismRuntime` is the single process-local scheduler owned by
+each `ArtificialOrganism` composition. The API lifespan starts/stops that
+instance; `simulate --ticks N` runs an instance deterministically without sleeping. Wall-clock scheduling,
+neural simulation steps and developmental model time are independent. The runtime
+supports bounded sensory intake, drop-newest backpressure, per-tick resource budgets,
+pause/resume, safe shutdown, reset and a bounded 128-tick trace.
 
-## Neural simulation substrate (first executable prototype)
+The high-level loop performs synthetic perception, episodic recall, world prediction,
+action selection, feedback from a bounded simulated environment and memory updates.
+The same event is passed to the developmental LIF substrate. No camera, microphone,
+physical actuator, database or LLM is used by this loop. See
+[Continuous runtime](docs/CONTINUOUS_RUNTIME.md).
 
-The separate `neural/` package contains a deterministic leaky-integrate-and-fire (LIF)
-simulation with individual membrane potentials, threshold/reset/refractory behaviour, last
-spike timestamps, directed excitatory and inhibitory synapses, decaying postsynaptic currents,
-delayed event delivery, stable same-time ordering, queue limits, cancellation, pause/resume,
-single-step, reset, and in-memory snapshots. The API idle loop advances a four-neuron,
-five-synapse recurrent microcircuit without an LLM request.
+## Developmental neural simulation substrate
 
-This is a reduced engineering model, not a biologically faithful neuron or anatomical brain.
-Synaptic weights are fixed, plasticity and homeostasis are not implemented, and the circuit
-is not yet integrated with the complete cognitive pipeline. The older seven-population
-rate-based experiment remains a separate comparison baseline. See [Brain and intelligence](docs/BRAIN.md)
-and the [neural simulation baseline](docs/benchmarks/neural-simulation-baseline.md).
+The active developmental program uses a deterministic 12-neuron LIF network with
+source-defined excitatory/inhibitory synapses, delayed event delivery, membrane
+maturation, stage-dependent connectivity growth, STDP-inspired plasticity,
+homeostatic regulation, conduction-delay refinement and functional pruning. The
+prenatal scaffold is retained as a compatibility/reference model; the developmental
+program is the active neuron/synapse path. A paired-cue learning experiment compares
+experience-dependent prediction with frozen-weight and mature-from-start baselines.
+
+These are bounded computational hypotheses, not anatomical replicas or individual
+developmental predictions. They do not establish sentience, consciousness or
+biological equivalence. The older seven-population rate-based experiment remains
+available as a comparison baseline. See [Brain and intelligence](docs/BRAIN.md),
+[Postnatal development](docs/POSTNATAL_DEVELOPMENT.md), and the
+[neural simulation baseline](docs/benchmarks/neural-simulation-baseline.md).
 
 ## Brain provider configuration
 

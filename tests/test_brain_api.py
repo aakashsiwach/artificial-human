@@ -324,14 +324,16 @@ def test_api_lifespan_advances_idle_population_activity(tmp_path) -> None:
     with TestClient(app) as client:
         assert client.get("/health").status_code == 200
         time.sleep(1.15)
-        state = organism.status()["neural_dynamics"]
-        assert state["idle_ticks"] >= 1
-        assert state["inputs_processed"] == 0
-        assert state["integration_steps"] >= 1
+        runtime = organism.runtime.snapshot()
+        assert runtime.tick_count >= 1
+        assert runtime.organism["episodes"] >= 1
+        assert runtime.organism["neural"]["simulation_step"] >= 2
+        # The legacy population dynamics engine is not advanced in parallel.
+        assert organism.neural_dynamics.snapshot().idle_ticks == 0
         neural = organism.status()["neural_simulation"]
-        assert neural["step_index"] >= 1
-        assert neural["neuron_count"] == 4
-        assert neural["synapse_count"] == 5
+        assert neural["step_index"] >= 2
+        assert neural["neuron_count"] == 12
+        assert neural["synapse_count"] == 14
 
 
 def test_father_linkedin_question_returns_founder_supplied_profile(tmp_path) -> None:

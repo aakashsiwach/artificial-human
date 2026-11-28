@@ -28,7 +28,8 @@ from artificial_human.metabolism.governor import ResourceGovernor
 from artificial_human.regeneration.engine import RepairEngine
 from artificial_human.sensory.manual import ManualSensor
 from artificial_human.sleep.consolidation import SleepSystem
-from artificial_human.neural.circuits import build_recurrent_microcircuit
+from artificial_human.neural.organism_loop import OrganismLoop
+from artificial_human.runtime import ContinuousOrganismRuntime
 
 
 class ArtificialOrganism:
@@ -65,9 +66,11 @@ class ArtificialOrganism:
         self.brain = Planner()
         self.chat_provider = brain_provider or OpenAICompatibleProvider()
         self.neural_dynamics = RecurrentDynamicsEngine()
-        # Individual-neuron/synapse circuit. The older population engine is
-        # retained temporarily as a behavioural baseline during migration.
-        self.neural_simulation = build_recurrent_microcircuit()
+        # One composition-owned organism loop and its developmental LIF network.
+        # API, CLI and deterministic tests use this composition-owned runtime.
+        self.organism_loop = OrganismLoop()
+        self.neural_simulation = self.organism_loop.neural_development.simulation
+        self.runtime = ContinuousOrganismRuntime(self.organism_loop)
         retriever = MemoryRetriever()
         self.cognitive_brain = BrainService(
             self.chat_provider,
@@ -138,6 +141,7 @@ class ArtificialOrganism:
                 "nervous_system": "in_process",
             },
             "reasoning_provider": reasoning,
+            "continuous_runtime": self.runtime.snapshot().as_dict(include_trace=False),
             "runtime": {
                 "storage_mode": "in_memory_no_database",
                 "external_database_connected": False,
