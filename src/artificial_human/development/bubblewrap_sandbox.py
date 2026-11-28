@@ -636,7 +636,7 @@ class BubblewrapSandboxExecutor:
                 for key, _ in selector.select(timeout=_RSS_SCAN_INTERVAL):
                     stream_name = key.data
                     try:
-                        chunk = os.read(key.fileobj.fileno(), 65536)
+                        chunk = os.read(key.fd, 65536)
                     except OSError:
                         chunk = b""
                     if not chunk:
