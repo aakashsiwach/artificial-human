@@ -351,10 +351,12 @@ class HomeostaticController:
             (snapshot.window_steps_elapsed > 0 and snapshot.last_step_index is None)
             or (
                 snapshot.last_step_index is not None
-                isinstance(snapshot.last_step_index, bool)
-                or not isinstance(snapshot.last_step_index, int)
-                or snapshot.last_step_index < 0
-                or snapshot.last_step_index != self.simulation.step_index - 1
+                and (
+                    isinstance(snapshot.last_step_index, bool)
+                    or not isinstance(snapshot.last_step_index, int)
+                    or snapshot.last_step_index < 0
+                    or snapshot.last_step_index != self.simulation.step_index - 1
+                )
             )
         ):
             raise ValueError("homeostasis snapshot clock does not match simulation state")
