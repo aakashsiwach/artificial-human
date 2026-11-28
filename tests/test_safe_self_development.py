@@ -319,15 +319,12 @@ def test_sandbox_limits_have_absolute_upper_bounds() -> None:
 
 def test_approval_rejects_evidence_for_another_base_revision() -> None:
     proposal = make_proposal(checks=("pytest -q",))
-    evidence = SafeSelfDevelopment().verify(
-        proposal, (make_result("pytest -q"),)
-    )
+    guard = SafeSelfDevelopment()
+    evidence = guard.verify(proposal, (make_result("pytest -q"),))
     forged = replace(evidence, base_revision="b" * 40)
 
     with pytest.raises(ValueError, match="verified evidence"):
-        SafeSelfDevelopment.record_human_approval(
-            proposal, forged, "human-approval"
-        )
+        guard.record_human_approval(proposal, forged, "human-approval")
 
 
 def test_sandbox_result_rejects_boolean_exit_code_and_non_boolean_isolation_flags() -> None:
