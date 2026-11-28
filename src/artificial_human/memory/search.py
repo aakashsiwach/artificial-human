@@ -32,8 +32,9 @@ from typing import Any
 
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.index import SemanticIndex
-from artificial_human.memory.repository import MemoryLink, MemoryRecord, MemoryRepository
+from artificial_human.memory.repository import MemoryLink, MemoryRecord
 from artificial_human.memory.temporal import (
+from artificial_human.memory.contracts import MemoryStore
     TemporalIntent,
     TemporalQuery,
     TemporalStatus,
@@ -326,7 +327,7 @@ class HybridMemorySearch:
 
     def __init__(
         self,
-        repository: MemoryRepository,
+        repository: MemoryStore,
         index: SemanticIndex | None = None,
         config: SearchConfig | None = None,
     ) -> None:
