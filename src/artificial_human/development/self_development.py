@@ -89,9 +89,9 @@ class EvaluationGap:
     failing_case_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if not self.benchmark_id.strip() or len(self.benchmark_id) > 128:
+        if not isinstance(self.benchmark_id, str) or not self.benchmark_id.strip() or len(self.benchmark_id) > 128:
             raise ValueError("benchmark_id must contain 1..128 characters")
-        if not self.metric.strip() or len(self.metric) > 128:
+        if not isinstance(self.metric, str) or not self.metric.strip() or len(self.metric) > 128:
             raise ValueError("metric must contain 1..128 characters")
         if (
             isinstance(self.observed, bool)
@@ -104,7 +104,7 @@ class EvaluationGap:
             raise ValueError("observed and target metrics must be finite numbers")
         if not isinstance(self.higher_is_better, bool):
             raise ValueError("higher_is_better must be boolean")
-        if not _SHA256.fullmatch(self.evidence_digest):
+        if not isinstance(self.evidence_digest, str) or not _SHA256.fullmatch(self.evidence_digest):
             raise ValueError("evaluation evidence_digest must be a SHA-256 hex digest")
         if (
             not isinstance(self.failing_case_ids, tuple)
@@ -295,9 +295,11 @@ class SafeSelfDevelopment:
         if (trigger_benchmark_id is None) != (trigger_evidence_digest is None):
             raise ValueError("benchmark trigger ID and evidence digest must be supplied together")
         if trigger_benchmark_id is not None and (
-            not trigger_benchmark_id.strip()
+            not isinstance(trigger_benchmark_id, str)
+            or not trigger_benchmark_id.strip()
             or len(trigger_benchmark_id) > 128
-            or not _SHA256.fullmatch(trigger_evidence_digest or "")
+            or not isinstance(trigger_evidence_digest, str)
+            or not _SHA256.fullmatch(trigger_evidence_digest)
         ):
             raise ValueError("benchmark trigger provenance is invalid")
 
@@ -408,9 +410,11 @@ class SafeSelfDevelopment:
             failure = "sandbox evidence is incomplete or has unexpected check count"
         elif len(safe_results) != len(results):
             failure = "sandbox evidence contains an invalid result type"
+        elif any(not isinstance(item.sandbox_id, str) for item in safe_results):
+            failure = "sandbox evidence contains an invalid workspace identity"
         else:
             sandbox_ids = {item.sandbox_id for item in safe_results}
-            if len(sandbox_ids) != 1 or not next(iter(sandbox_ids), ""):
+            if len(sandbox_ids) != 1 or not next(iter(sandbox_ids), "").strip():
                 failure = "checks must run in one identified isolated workspace"
             else:
                 for expected, result in zip(proposal.checks, safe_results, strict=True):
