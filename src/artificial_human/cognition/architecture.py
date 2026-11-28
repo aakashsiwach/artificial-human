@@ -250,9 +250,7 @@ class CognitiveArchitecture:
         association_context_id: str = "global",
     ) -> CognitiveCycle:
         percept = self.perception.perceive(query)
-        specialized_recall = self.cognitive_memory.recall(
-            owner_id, query, context_id=association_context_id
-        )
+        specialized_recall = self.cognitive_memory.recall(owner_id, query)
         prior_context = workspace.context(limit=workspace.capacity)
         prediction = self.prediction.assess(
             percept, [entry.content for entry in prior_context]
