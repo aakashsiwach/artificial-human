@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import heapq
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from collections.abc import Mapping
 
@@ -188,6 +188,7 @@ class NeuralSimulationState:
     paused: bool
     neuron_states: tuple[NeuronSnapshot, ...]
     synaptic_currents: tuple[tuple[str, float], ...]
+    synaptic_weights: tuple[tuple[str, float], ...]
     pending_events: tuple[tuple[int, int, str, str], ...]
     sequence: int
     events_scheduled: int
@@ -272,6 +273,7 @@ class NeuralSimulation:
         self._queue: list[tuple[int, int, str, str]] = []
         self._sequence = 0
         self._synaptic_current: dict[str, float] = {}
+        self._initial_weights: dict[str, float] = {}
         self.step_index = 0
         self.events_scheduled = 0
         self.events_delivered = 0
@@ -301,6 +303,18 @@ class NeuralSimulation:
         self._outgoing[synapse.source].append(synapse.identifier)
         self._outgoing[synapse.source].sort()
         self._synaptic_current[synapse.identifier] = 0.0
+        self._initial_weights[synapse.identifier] = synapse.weight
+
+    def update_synapse_weight(self, synapse_id: str, weight: float) -> None:
+        """Set a synaptic magnitude while preserving its polarity and bounds."""
+        synapse = self.synapses.get(synapse_id)
+        if synapse is None:
+            raise ValueError(f"unknown synapse: {synapse_id}")
+        if isinstance(weight, bool) or not math.isfinite(weight):
+            raise ValueError("synaptic weight must be finite")
+        if not 0 <= weight <= synapse.maximum_weight:
+            raise ValueError("synaptic weight is outside configured bounds")
+        self.synapses[synapse_id] = replace(synapse, weight=weight)
 
     def pause(self) -> None:
         self.paused = True
@@ -472,6 +486,9 @@ class NeuralSimulation:
             synaptic_currents=tuple(sorted(
                 (key, round(value, 12)) for key, value in self._synaptic_current.items()
             )),
+            synaptic_weights=tuple(sorted(
+                (key, self.synapses[key].weight) for key in self.synapses
+            )),
             pending_events=tuple(sorted(self._queue)),
             sequence=self._sequence,
             events_scheduled=self.events_scheduled,
@@ -511,6 +528,12 @@ class NeuralSimulation:
                 or snapshot.spike_count < 0
             ):
                 raise ValueError("snapshot contains invalid neuron state")
+        weights = dict(state.synaptic_weights)
+        if set(weights) != set(self.synapses) or any(
+            not math.isfinite(value) or not 0 <= value <= self.synapses[key].maximum_weight
+            for key, value in weights.items()
+        ):
+            raise ValueError("snapshot contains invalid synaptic weights")
         currents = dict(state.synaptic_currents)
         if set(currents) != set(self.synapses) or any(
             not math.isfinite(value) or abs(value) > self.max_abs_synaptic_current
@@ -538,6 +561,8 @@ class NeuralSimulation:
             neuron.refractory_until_ms = snapshot.refractory_until_ms
             neuron.last_spike_time_ms = snapshot.last_spike_time_ms
         self._synaptic_current = currents
+        for synapse_id, weight in weights.items():
+            self.update_synapse_weight(synapse_id, weight)
         self._queue = list(state.pending_events)
         heapq.heapify(self._queue)
 
@@ -546,6 +571,8 @@ class NeuralSimulation:
         for neuron in self.neurons.values():
             neuron.reset()
         self._queue.clear()
+        for synapse_id, weight in self._initial_weights.items():
+            self.update_synapse_weight(synapse_id, weight)
         for synapse_id in self._synaptic_current:
             self._synaptic_current[synapse_id] = 0.0
         self._sequence = 0
