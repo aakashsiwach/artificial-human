@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="Artificial Human — an open-source computational artificial-mind research project grounded in neuroscience and cognitive science.">
+  <link rel="canonical" href="https://aakashsiwach.github.io/artificial-human/">
+  <title>Artificial Human — Project Overview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: rgba(20, 29, 51, .84);
+      --line: rgba(167, 185, 222, .16);
+      --text: #eef3ff;
+      --muted: #a8b5d0;
+      --accent: #87a8ff;
+      --accent-2: #8ee3cf;
+      --gold: #f0ca82;
+      --radius: 20px;
+      --width: 1160px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(900px 520px at 80% -10%, rgba(86, 119, 211, .23), transparent 65%),
+        radial-gradient(740px 480px at -10% 20%, rgba(70, 177, 160, .11), transparent 64%),
+        var(--bg);
+      color: var(--text);
+      font: 16px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: #c0d0ff; text-decoration: underline; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .wrap { width: min(var(--width), calc(100% - 40px)); margin: 0 auto; }
+    .top {
+      position: sticky; top: 0; z-index: 10;
+      border-bottom: 1px solid var(--line);
+      background: rgba(9, 14, 28, .86);
+      backdrop-filter: blur(18px);
+    }
+    .nav { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 12px; color: var(--text); font-weight: 800; letter-spacing: .08em; font-size: .82rem; }
+    .mark {
+      width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px;
+      background: linear-gradient(145deg, #8daaff, #78d8c2); color: #081224; font-weight: 900;
+    }
+    .navlinks { display: flex; gap: 18px; flex-wrap: wrap; font-size: .88rem; color: var(--muted); }
+    .navlinks a { color: inherit; }
+    .hero { padding: 78px 0 54px; display: grid; grid-template-columns: 1.45fr .8fr; align-items: center; gap: 48px; }
+    .eyebrow { margin: 0 0 15px; color: var(--accent-2); text-transform: uppercase; letter-spacing: .18em; font-size: .72rem; font-weight: 800; }
+    h1 { max-width: 780px; margin: 0; font-size: clamp(2.7rem, 6vw, 5.2rem); line-height: 1.02; letter-spacing: -.055em; }
+    h1 span { color: var(--accent); }
+    .lead { max-width: 760px; margin: 24px 0 0; color: #c2cde1; font-size: 1.13rem; }
+    .hero-note { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: 0 24px 80px rgba(0,0,0,.18); }
+    .hero-note strong { display: block; font-size: .93rem; margin-bottom: 8px; }
+    .hero-note p { color: var(--muted); margin: 0; font-size: .9rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: 1px solid var(--line); border-radius: 999px; padding: 11px 17px;
+      color: var(--text); font-weight: 750; font-size: .9rem; background: rgba(255,255,255,.04);
+    }
+    .button.primary { background: linear-gradient(110deg, #9db6ff, #8ee3cf); color: #081224; border: 0; }
+    .section { padding: 28px 0; }
+    .section-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 18px; }
+    h2 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.25rem); letter-spacing: -.035em; }
+    h3 { margin: 0 0 8px; font-size: 1.12rem; }
+    .section-head p { margin: 5px 0 0; color: var(--muted); max-width: 650px; }
+    .grid { display: grid; gap: 16px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      padding: 22px; border-radius: var(--radius); border: 1px solid var(--line);
+      background: linear-gradient(150deg, rgba(25, 37, 64, .9), rgba(16, 24, 43, .86));
+    }
+    .card p { margin: 7px 0 0; color: var(--muted); font-size: .94rem; }
+    .tag { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; color: var(--accent-2); font-size: .71rem; letter-spacing: .07em; text-transform: uppercase; }
+    .metric { font-size: 1.85rem; line-height: 1.2; font-weight: 850; letter-spacing: -.05em; color: var(--accent); }
+    .deploy-card { min-height: 190px; display: flex; flex-direction: column; align-items: flex-start; }
+    .deploy-card .button { margin-top: auto; }
+    .deploy-card .url { color: var(--accent-2); font-size: .83rem; overflow-wrap: anywhere; margin: 12px 0; }
+    .status-list { display: grid; gap: 11px; }
+    .status-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .status-row:last-child { border-bottom: 0; }
+    .state { white-space: nowrap; border-radius: 999px; padding: 4px 10px; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+    .done { color: #9ff0d5; background: rgba(65, 188, 149, .12); }
+    .open { color: var(--gold); background: rgba(217, 164, 73, .12); }
+    .flow { overflow-x: auto; padding: 20px; border-radius: var(--radius); background: rgba(7, 12, 24, .7); border: 1px solid var(--line); }
+    .flow pre { margin: 0; min-width: 590px; color: #c5d4fa; font-size: .9rem; line-height: 1.4; }
+    .list { padding-left: 20px; color: var(--muted); }
+    .list li { margin: 7px 0; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(17, 25, 44, .82); }
+    table { width: 100%; border-collapse: collapse; min-width: 620px; }
+    th, td { padding: 13px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--accent-2); font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; }
+    td { color: var(--muted); font-size: .91rem; }
+    tr:last-child td { border-bottom: 0; }
+    .code {
+      white-space: pre-wrap; overflow-wrap: anywhere; background: #070c18; color: #d7e3ff;
+      border: 1px solid var(--line); border-radius: 14px; padding: 18px; font-size: .87rem; overflow-x: auto;
+    }
+    .warning { border-left: 3px solid var(--gold); padding: 15px 18px; background: rgba(217,164,73,.08); color: #d5dcef; border-radius: 0 12px 12px 0; }
+    .warning strong { color: var(--gold); }
+    footer { margin-top: 58px; padding: 30px 0 44px; border-top: 1px solid var(--line); color: var(--muted); font-size: .86rem; }
+    .footer-line { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    @media (max-width: 850px) {
+      .hero { grid-template-columns: 1fr; padding-top: 54px; gap: 25px; }
+      .grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .nav { padding: 10px 0; align-items: flex-start; flex-direction: column; gap: 8px; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(var(--width), calc(100% - 28px)); }
+      .grid.two, .grid.three, .grid.four { grid-template-columns: 1fr; }
+      .section-head { align-items: flex-start; flex-direction: column; }
+      .navlinks { gap: 12px; font-size: .82rem; }
+      .card { padding: 19px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap nav">
+      <a class="brand" href="#top"><span class="mark">AH</span><span>ARTIFICIAL HUMAN</span></a>
+      <nav class="navlinks" aria-label="Main navigation">
+        <a href="#overview">Overview</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#deployments">Deployments</a>
+        <a href="#evaluation">Evaluation</a>
+        <a href="#roadmap">Roadmap</a>
+        <a href="#docs">Docs</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top" class="wrap">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Open-source computational mind research</p>
+        <h1>Building a mind as <span>living code.</span></h1>
+        <p class="lead">Artificial Human is an experimental computational artificial-mind project grounded in human neuroscience and cognitive science. It connects a continuously advancing in-memory neural substrate with perception, attention, memory, prediction, regulation, learning, and simulated action.</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/aakashsiwach/artificial-human">Explore source ↗</a>
+          <a class="button" href="https://github.com/aakashsiwach/artificial-human/blob/main/README.md">Read README ↗</a>
+          <a class="button" href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/RESEARCH_CHARTER.md">Research charter ↗</a>
+        </div>
+      </div>
+      <aside class="hero-note">
+        <span class="tag">Project boundary</span>
+        <strong>Computational research prototype — not a biological human brain.</strong>
+        <p>Neuroscience provides the research foundation. Software modules are testable abstractions and engineering hypotheses, not anatomical replicas. This project makes no claim of consciousness, sentience, subjective experience, or human-level intelligence.</p>
+      </aside>
+    </section>
+
+    <section id="overview" class="section">
+      <div class="section-head">
+        <div><p class="eyebrow">Current implementation</p><h2>One connected software organism</h2><p>The continuous runtime, developmental LIF substrate, cognitive systems, action loop, and bounded simulated environment now share one composition-owned organism loop.</p></div>
+      </div>
+      <div class="grid four">
+        <article class="card"><div class="metric">12</div><h3>LIF neurons</h3><p>Developmental substrate with excitatory/inhibitory synapses, delayed events, bounded plasticity, homeostasis, and maturation.</p></article>
+        <article class="card"><div class="metric">1</div><h3>Continuous runtime</h3><p>One process-local scheduler with independent neural, developmental, and wall-clock time.</p></article>
+        <article class="card"><div class="metric">6</div><h3>Integration conditions</h3><p>Full organism loop plus five single-subsystem ablations to inspect contributions and trade-offs.</p></article>
+        <article class="card"><div class="metric">2</div><h3>Python CI versions</h3><p>Standard quality workflow runs on Python 3.12 and 3.13, with a separate semantic-memory benchmark.</p></article>
+      </div>
+    </section>
+
+    <section id="deployments" class="section">
+      <div class="section-head">
+        <div><p class="eyebrow">Live environments</p><h2>Project deployments</h2><p>Three separate surfaces serve the public project overview, the private owner-facing dashboard, and the backend API.</p></div>
+      </div>
+      <div class="grid three">
+        <article class="card deploy-card">
+          <span class="tag">GitHub Pages</span><h3>Project website</h3>
+          <p>Public overview, architecture, repository status, deployment entry points, and documentation links.</p>
+          <div class="url">aakashsiwach.github.io/artificial-human</div>
+          <a class="button primary" href="https://aakashsiwach.github.io/artificial-human/">Open website ↗</a>
+        </article>
+        <article class="card deploy-card">
+          <span class="tag">Vercel · production ready</span><h3>Control Room</h3>
+          <p>Owner-authenticated dashboard for developmental snapshots, system status, and the optional cognitive conversation panel.</p>
+          <div class="url">artificial-human-control-room.vercel.app</div>
+          <a class="button primary" href="https://artificial-human-control-room.vercel.app">Open Control Room ↗</a>
+        </article>
+        <article class="card deploy-card">
+          <span class="tag">Render · backend API</span><h3>Monitor API</h3>
+          <p>FastAPI backend used by the Control Room. Protected owner routes are accessed through the Vercel same-origin API proxy.</p>
+          <div class="url">artificial-human-monitor-api.onrender.com</div>
+          <a class="button primary" href="https://artificial-human-monitor-api.onrender.com/health">Check API health ↗</a>
+        </article>
+      </div>
+      <p class="warning" style="margin-top:16px"><strong>Deployment note:</strong> the current Render service uses a free plan and can spin down after inactivity. Its process-local neural and cognitive state is volatile and is not durable storage. Owner-only Control Room features require sign-in. Never expose passwords, API tokens, session secrets, or model-provider keys in a public page.</p>
+    </section>
+
+    <section id="architecture" class="section">
+      <div class="section-head">
+        <div><p class="eyebrow">Architecture</p><h2>How the loop is connected</h2><p>The runtime advances without incoming HTTP requests or LLM calls. Inputs and actions in this loop are synthetic and simulated.</p></div>
+      </div>
+      <div class="flow"><pre>synthetic sensory event
+        |
+        v
+sensory encoding + bounded attention
+        |
+        v
+working memory  <---->  episodic recall
+        |
+        v
+developmental LIF neural substrate
+        |
+        v
+coarse neural state + simulated body state
+        |
+        v
+world prediction + learned action selection
+        |
+        v
+bounded simulated body / environment
+        |
+        v
+outcome, prediction error, reward, memory update
+        |
+        +----> bounded runtime trace / next tick</pre></div>
+      <div class="grid three" style="margin-top:16px">
+        <article class="card"><h3>Neural simulation</h3><p>Individual LIF membrane state, signed synapses, conduction delay, event scheduling, deterministic stepping, bounded queues, and inspectable spike traces.</p><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/NEURAL_PLASTICITY.md">Plasticity details →</a></article>
+        <article class="card"><h3>Development and regulation</h3><p>Stage-dependent connectivity, membrane maturation, STDP-inspired weight updates, homeostatic regulation, conduction-delay refinement, and functional pruning.</p><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/POSTNATAL_DEVELOPMENT.md">Development model →</a></article>
+        <article class="card"><h3>Action and feedback</h3><p>A bounded tabular action selector uses body state, working-memory focus, and a coarse neural activity summary. Individual spikes are not directly decoded as motor commands.</p><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/INTEGRATED_ORGANISM_LOOP.md">Integrated loop →</a></article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><p class="eyebrow">Core subsystems</p><h2>What is in the repository</h2><p>Each mechanism has explicit code, tests, documentation, and a scoped evaluation or known limitation.</p></div>
+      </div>
+      <div class="grid two">
+        <article class="card"><h3>Perception and attention</h3><p>Explicit input normalization, synthetic modality encoders, bounded relevance/salience ranking, and limited active processing.</p></article>
+        <article class="card"><h3>Memory and learning</h3><p>Consent-aware in-memory records, hybrid and temporal retrieval, working memory, episodic recall, relational links, and owner-reviewed consolidation/schema proposals.</p></article>
+        <article class="card"><h3>Prediction and executive control</h3><p>World-state prediction, prediction-error reporting, deterministic planning, and explicit approval boundaries.</p></article>
+        <article class="card"><h3>Language adapter</h3><p>An optional OpenAI-compatible provider can generate language responses. It is not required for the continuous neural loop or its local evaluation suite.</p></article>
+        <article class="card"><h3>Metabolism, immune and support systems</h3><p>Bounded compute/resource budgets, anomaly signals, event scheduling, and reviewable regeneration proposals.</p></article>
+        <article class="card"><h3>Safe self-development foundation</h3><p>PR #64 adds immutable evaluation-gap/proposal/evidence contracts, strict patch checks, and fail-closed sandbox integration. No production OS sandbox ships yet.</p></article>
+      </div>
+    </section>
+
+    <section id="evaluation" class="section">
+      <div class="section-head">
+        <div><p class="eyebrow">Verification</p><h2>Evaluation, baselines, and quality checks</h2><p>Results are kept task-specific. The project does not collapse synthetic scores into a measure of intelligence or biological similarity.</p></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Suite</th><th>What it measures</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr><td>Cognitive evaluation</td><td>Attention, working memory, memory retrieval, prediction/novelty, episodic replay, schema proposals, and integrated request scenarios.</td><td><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/COGNITIVE_EVALUATION.md">Research record</a></td></tr>
+            <tr><td>Neural simulation</td><td>Spike propagation, recurrent activity, event delivery, stability, and host-specific throughput/RAM observations.</td><td><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/benchmarks/neural-simulation-baseline.md">Baseline report</a></td></tr>
+            <tr><td>Developmental learning</td><td>Experience-dependent cue prediction versus frozen-plasticity and mature-from-start controls.</td><td><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/POSTNATAL_DEVELOPMENT.md">Development record</a></td></tr>
+            <tr><td>Organism integration</td><td>Fixed-seed task outcomes, full-loop versus subsystem ablations, sensitivity, failures, and resource observations.</td><td><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/ORGANISM_EVALUATION.md">Evaluation specification</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="code" style="margin-top:16px">ruff check .
+mypy src
+pytest --cov=artificial_human --cov-report=term-missing
+artificial-human cognition-eval --suite all --output-dir benchmark-output
+python scripts/evaluate_organism.py
+python scripts/benchmark_neural_simulation.py --steps 20000</div>
+      <p style="color:var(--muted);font-size:.9rem">CI covers Python 3.12 and 3.13 plus a separate semantic-memory benchmark that installs the optional local embedding model. Timing and traced memory are descriptive host measurements, not correctness gates.</p>
+    </section>
+
+    <section id="roadmap" class="section">
+      <div class="section-head">
+        <div><p class="eyebrow">Milestone status</p><h2>What is complete — and what is not</h2><p>PRs #61–#64 are merged. The parent project and final completion gate remain open until the outstanding safety and evidence criteria are satisfied.</p></div>
+      </div>
+      <div class="card status-list">
+        <div class="status-row"><div><strong>PR #61 · Issue #36</strong><p>Continuous bounded in-memory organism lifecycle.</p></div><span class="state done">Merged</span></div>
+        <div class="status-row"><div><strong>PR #62 · Issue #38</strong><p>Integrated organism loop connecting cognitive and neural components with a simulated body.</p></div><span class="state done">Merged</span></div>
+        <div class="status-row"><div><strong>PR #63 · Issue #39</strong><p>Fixed-seed baselines, ablations, sensitivity runs, and organism-level evaluation entry point.</p></div><span class="state done">Merged</span></div>
+        <div class="status-row"><div><strong>PR #64 · Issue #37</strong><p>Safe proposal/evidence contracts merged; actual OS-level sandbox executor still outstanding.</p></div><span class="state open">Foundation</span></div>
+        <div class="status-row"><div><strong>Issue #40 · Completion gate</strong><p>Verify the complete system, clean-checkout operation, long-running stability, and all acceptance criteria.</p></div><span class="state open">Open</span></div>
+        <div class="status-row"><div><strong>Issue #16 · Parent programme</strong><p>Remains open until the project completion gate is supported by implementation and evidence.</p></div><span class="state open">Open</span></div>
+      </div>
+      <p style="margin-top:14px"><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/ROADMAP.md">Read the detailed roadmap ↗</a> · <a href="https://github.com/aakashsiwach/artificial-human/issues">Browse project issues ↗</a></p>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><p class="eyebrow">Developer entry point</p><h2>Run it locally</h2><p>Python 3.12+ is required for the supported development setup.</p></div>
+      </div>
+      <div class="code">git clone https://github.com/aakashsiwach/artificial-human.git
+cd artificial-human
+python -m venv .venv
+
+# Activate the virtual environment for your OS, then:
+python -m pip install -e ".[dev]"
+python -m artificial_human simulate --ticks 100
+python -m artificial_human status
+python -m artificial_human serve</div>
+      <div class="actions">
+        <a class="button" href="https://github.com/aakashsiwach/artificial-human/blob/main/CONTRIBUTING.md">Contributing guide ↗</a>
+        <a class="button" href="https://github.com/aakashsiwach/artificial-human/actions">CI workflows ↗</a>
+        <a class="button" href="https://github.com/aakashsiwach/artificial-human/blob/main/LICENSE">Apache-2.0 license ↗</a>
+      </div>
+    </section>
+
+    <section id="docs" class="section">
+      <div class="section-head">
+        <div><p class="eyebrow">Repository documentation</p><h2>Explore the project</h2><p>For complete source-level details, scientific assumptions, tests, endpoints, and limitations, continue into the repository documentation.</p></div>
+      </div>
+      <div class="grid two">
+        <article class="card">
+          <h3>Project direction</h3>
+          <ul class="list">
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/RESEARCH_CHARTER.md">Research charter and project north star</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/ROADMAP.md">Development roadmap</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/ARCHITECTURE.md">System architecture</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/BIOLOGICAL_BLUEPRINT.md">Biological blueprint and evidence map</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/FOUNDER.md">Founder profile</a></li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Runtime and brain</h3>
+          <ul class="list">
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/BRAIN.md">Brain and intelligence</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/CONTINUOUS_RUNTIME.md">Continuous runtime</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/INTEGRATED_ORGANISM_LOOP.md">Integrated organism loop</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/NEURAL_PLASTICITY.md">Neural plasticity</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/NEURAL_HOMEOSTASIS.md">Neural homeostasis</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/POSTNATAL_DEVELOPMENT.md">Postnatal development</a></li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Cognition, memory, and action</h3>
+          <ul class="list">
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/COGNITIVE_MEMORY.md">Cognitive memory</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/MEMORY.md">Long-term memory</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/EPISODIC_CIRCUITS.md">Episodic circuits</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/ACTION_SELECTION.md">Action selection</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/ADAPTIVE_FORWARD_CONTROL.md">Adaptive forward control</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/PREDICTIVE_WORLD_MODEL.md">Predictive world model</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/SIMULATED_BODY_ENVIRONMENT.md">Simulated body and environment</a></li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Evaluation, safety, and operations</h3>
+          <ul class="list">
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/COGNITIVE_EVALUATION.md">Cognitive evaluation</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/ORGANISM_EVALUATION.md">Organism evaluation</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/SAFE_SELF_DEVELOPMENT.md">Safe self-development</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/SAFETY.md">Safety and privacy</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/docs/MONITORING.md">Control Room and deployment</a></li>
+            <li><a href="https://github.com/aakashsiwach/artificial-human/blob/main/CONTRIBUTING.md">Contributing</a></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-line">
+      <span>Artificial Human · Founded by Aakash Siwach</span>
+      <span><a href="https://github.com/aakashsiwach/artificial-human">GitHub</a> · <a href="https://www.linkedin.com/in/aakashsiwach/">Founder LinkedIn</a> · Apache-2.0</span>
+    </div>
+  </footer>
+</body>
+</html>
