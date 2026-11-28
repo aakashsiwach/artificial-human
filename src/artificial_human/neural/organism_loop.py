@@ -267,6 +267,9 @@ class OrganismLoop:
     def tick(self, event: SensoryEvent | None = None) -> dict[str, object]:
         if self.paused:
             return {"tick": self.tick_index, "paused": True}
+        if self.environment.steps >= self.environment.max_steps:
+            self.environment.reset()
+            self.episode_count += 1
         event = event or SensoryEvent(Modality.PROPRIOCEPTION,
                                       (self.environment.position, self.environment.target),
                                       self.tick_index)
@@ -291,9 +294,6 @@ class OrganismLoop:
                  self.environment.target - self.environment.position, 1.0)
         predicted = self.world.predict(state)
         action = self.actions.choose(self.environment.target - self.environment.position)
-        if self.environment.steps >= self.environment.max_steps:
-            self.environment.reset()
-            self.episode_count += 1
         before = self.environment.position
         reward = self.environment.act(action)
         delta = self.environment.position - before
