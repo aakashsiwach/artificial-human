@@ -184,6 +184,7 @@
     dashboard.hidden = false;
     setConnection("connected", " CONNECTED");
     refreshButton.disabled = false;
+    window.dispatchEvent(new CustomEvent("organism:snapshot", {detail: payload}));
   };
 
   const setProviderState = (status) => {
@@ -240,7 +241,7 @@
   const showSignedOut = (message = "") => {
     activeSession = false;
     dashboard.hidden = true;
-    loginPanel.hidden = false;
+    loginPanel.hidden = true;
     logoutButton.hidden = true;
     providerReady = false;
     chatInput.disabled = true;

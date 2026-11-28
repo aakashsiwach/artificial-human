@@ -122,3 +122,54 @@ The Control Room shows Aakash Siwach as the human founder, creator and project o
 with his founder-supplied LinkedIn profile, verified GitHub profile, and selected public
 repositories. Use the exact LinkedIn URL supplied by the founder:
 `https://www.linkedin.com/in/aakashsiwach/`.
+
+
+## Brain-first Control Room UI
+
+The static frontend in monitor/ is organised into three views:
+
+- **Brain** is the first public and authenticated view. It presents an abstract, animated neural-core illustration, not an anatomical scan or measured connectome.
+- **Developing** displays the read-only runtime activity stream derived from the authenticated /monitor/overview snapshot, source-verified active/partial/dormant subsystem cards, and the existing developmental model slider, population/projection metrics, cognitive status and scientific limitation note.
+- **Other** contains developer tools, repository and Actions links, deployment URLs, local commands, read-only endpoint references, and existing owner-only chat, camera-preview and passkey controls.
+
+The activity stream cycles through runtime counters returned by the API. Its motion is a visual presentation of observed state. It does not execute source, generate code, modify files, or establish autonomous code evolution.
+
+### Module status semantics
+
+**Active** means the mechanism is implemented and participates in the documented code path: the composition-owned continuous runtime, 12-neuron developmental LIF substrate, excitatory/inhibitory synapse propagation, bounded STDP-inspired plasticity, homeostasis, developmental connectivity/pruning, synthetic input path, bounded attention/working memory, episodic engram circuit, prediction/feedback, fixed-action simulated control, and resource scheduling.
+
+**Partial** identifies limited or gated systems: consent-aware volatile long-term memory, owner-reviewed replay-derived consolidation, owner-annotated schema proposals, optional text language adapter, local-only browser camera preview, and safe self-development proposal contracts. In particular, the current proposal contract does not itself provide a real, independently audited OS-level sandbox executor.
+
+**Dormant** means the current source does not implement or connect the capability: camera-to-neural visual perception, microphone/audio perception, real physical touch/vestibular sensors, integrated affect/emotion, intrinsic motivational drives, complete autobiographical memory, physical motor control/actuators, speech/voice generation, unrestricted self-rewriting, or whole-human-brain emulation/consciousness.
+
+These are engineering status labels, not claims of biological equivalence, human-level intelligence, feelings, sentience, or consciousness.
+
+### Privacy and operational boundaries
+
+- The public first page exposes only the abstract brain illustration and owner sign-in action.
+- The authenticated dashboard uses the same-origin Vercel /api/* proxy to access the Render service.
+- /monitor/overview returns operational snapshots and subsystem state, not prompts or personal memory content.
+- Camera access remains explicit opt-in and local to the browser; captured frames are not uploaded or passed into the organism.
+- Provider credentials and owner authentication secrets remain in private host environment settings.
+- No fake keep-alive traffic is generated to keep a free Render service awake.
+- UI commands are copied to the local clipboard only; the browser page never runs shell commands.
+
+## Production deployment and CI/CD
+
+| Target | URL | Configuration |
+| --- | --- | --- |
+| Vercel Control Room | https://artificial-human-control-room.vercel.app | Root Directory monitor; Production Branch should be main |
+| Render API | https://artificial-human-monitor-api.onrender.com | FastAPI web service |
+| Render health | https://artificial-human-monitor-api.onrender.com/health | Public health check |
+| Render service settings | https://dashboard.render.com/web/srv-dc37evbrjlhs73f1sgv0 | Live service configuration |
+| GitHub Actions | https://github.com/aakashsiwach/artificial-human/actions | Pull-request and main-branch CI |
+
+The GitHub Actions workflow runs when a pull request targets main and when code is pushed to main (it also keeps the existing feat/** push checks). It runs Python 3.12 and 3.13 quality checks, Ruff, mypy, pytest, the CLI simulation, offline memory/cognitive evaluations, neural performance and organism evaluation, as well as Control Room JavaScript syntax and UI structure checks.
+
+The Render Blueprint declares branch main and autoDeployTrigger checksPass. The live Render service was inspected and also reports branch main with checks-pass auto-deploy enabled. It was created manually rather than being managed by the Blueprint, so the live service settings remain the operational source of truth if the Blueprint is later changed.
+
+The Vercel production deployment metadata was inspected and identifies GitHub source repository aakashsiwach/artificial-human with commit ref main. Its production aliases include https://artificial-human-control-room.vercel.app. The static frontend source lives under monitor/ and the project Root Directory is monitor. The committed monitor/vercel.json keeps browser API requests on the Vercel origin and rewrites /api/* to the Render backend. With these Git integrations, a merge to main triggers the production build/deployment for the frontend and API; GitHub Actions supplies the repository CI checks before the main commit is considered ready.
+
+The CI workflow does not contain deployment secrets. Provider integrations handle the actual deployment. A free Render instance may sleep after inactivity; in-memory organism state resets when its process restarts, sleeps, or redeploys. This hosting tier is not an always-on or durable-memory environment.
+
+For more UI structure, module definitions, safety boundaries and local verification commands, see [Control Room UI contract](CONTROL_ROOM_UI.md).

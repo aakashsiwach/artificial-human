@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090d18">
   <meta name="referrer" content="no-referrer">
-  <meta name="description" content="Private operational and developmental observability for Artificial Human.">
-  <title>Artificial Human · Control Room</title>
+  <meta name="description" content="A brain-first view of Artificial Human, an experimental computational organism.">
+  <title>Artificial Human · Neural Core</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="./app.js" defer></script>
+ <script src="./mind-ui.js" defer></script>
 </head>
 <body>
   <div class="shell">
@@ -18,38 +19,65 @@
         <span><strong>ARTIFICIAL HUMAN</strong><small>CONTROL ROOM</small></span>
       </a>
       <div class="top-actions">
-        <span id="connection-state" class="state-pill idle"><i></i> SIGN IN</span>
-        <button id="refresh-button" class="icon-button" type="button" disabled>↻ <span>Refresh</span></button>
-        <button id="logout-button" class="secondary-button" type="button" hidden>Sign out</button>
-      </div>
+ <span id="connection-state" class="state-pill idle"><i></i><span>PREVIEW</span></span>
+ <button id="refresh-button" class="icon-button" type="button" disabled hidden>↻ <span>Refresh</span></button>
+ <button id="owner-login-toggle" class="secondary-button" type="button">Owner sign in</button>
+ <button id="logout-button" class="secondary-button" type="button" hidden>Sign out</button>
+</div>
     </header>
 
-    <main>
-      <section class="hero">
-        <div>
-          <p class="eyebrow">DEVELOPMENTAL OBSERVABILITY <span>·</span> PRIVATE INSTANCE</p>
-          <h1>Watching the mind <em>take shape.</em></h1>
-          <p class="intro">A read-only window into developmental progress, cognitive systems, and operational health. No prompts or private memories are displayed here.</p>
-        </div>
-        <div class="hero-orbit" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="core">AH</div><span class="orbit-dot dot-a"></span><span class="orbit-dot dot-b"></span></div>
-      </section>
-
-      <section class="founder-panel panel" aria-labelledby="founder-title">
-        <div class="panel-heading">
-          <div><p class="eyebrow">PROJECT FOUNDER · IDENTITY CONSTITUTION</p><h2 id="founder-title">Father &amp; creator</h2></div>
-          <span class="subtle-tag">SOURCE-DEFINED</span>
-        </div>
-        <p class="founder-name">Aakash Siwach</p>
-        <p class="founder-role">Human founder · Creator · Project owner</p>
-        <p class="founder-bio">Software engineer and open-source developer working across Java/Spring Boot, Python/FastAPI, React/full-stack systems, banking and payment integrations, healthcare applications, QA automation, and AI developer tools.</p>
-        <div class="founder-links">
-          <a href="https://www.linkedin.com/in/aakashsiwach/" target="_blank" rel="noopener noreferrer">LinkedIn · Aakash Siwach ↗</a>
-          <a href="https://github.com/aakashsiwach" target="_blank" rel="noopener noreferrer">GitHub · @aakashsiwach ↗</a>
-        </div>
-        <p class="founder-projects">Public projects: <a href="https://github.com/aakashsiwach/artificial-human" target="_blank" rel="noopener noreferrer">Artificial Human</a> · <a href="https://github.com/aakashsiwach/taintmap" target="_blank" rel="noopener noreferrer">TaintMap</a> · <a href="https://github.com/aakashsiwach/codeatlas-rag" target="_blank" rel="noopener noreferrer">CodeAtlas</a> · <a href="https://github.com/aakashsiwach/mergeworthy" target="_blank" rel="noopener noreferrer">mergeworthy</a> · <a href="https://github.com/aakashsiwach/testcase-management" target="_blank" rel="noopener noreferrer">Test Case Management</a> · <a href="https://github.com/aakashsiwach/ai-document-analyzer" target="_blank" rel="noopener noreferrer">AI Document Analyzer</a></p>
-      </section>
-
-      <section id="login-panel" class="connect-panel panel" aria-labelledby="login-title">
+    
+<main id="public-home" class="public-home">
+ <section class="brain-home" aria-label="Artificial Human neural core">
+  <div class="brain-home-label"><span class="eyebrow">ARTIFICIAL HUMAN · NEURAL CORE</span><span class="home-state"><i></i> RESEARCH PREVIEW</span></div>
+  <div id="public-brain-host" class="brain-visual-host"><svg id="brain-visual" class="neural-brain" viewBox="0 0 900 600" role="img" aria-label="Abstract neural network illustration">
+<defs>
+ <linearGradient id="brain-fill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1c4149"/><stop offset=".55" stop-color="#132d3a"/><stop offset="1" stop-color="#121d34"/></linearGradient>
+ <linearGradient id="brain-stroke" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#baf5d8"/><stop offset="1" stop-color="#7898d7"/></linearGradient>
+ <radialGradient id="brain-aura"><stop stop-color="#6bd6b1" stop-opacity=".22"/><stop offset="1" stop-color="#6bd6b1" stop-opacity="0"/></radialGradient>
+ <filter id="neuron-glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="450" cy="300" rx="385" ry="260" fill="url(#brain-aura)"/>
+<g class="brain-orbits" fill="none" stroke="#5b9990" stroke-opacity=".28" stroke-dasharray="3 12">
+ <ellipse cx="450" cy="300" rx="390" ry="178" transform="rotate(-18 450 300)"/>
+ <ellipse cx="450" cy="300" rx="350" ry="235" transform="rotate(24 450 300)"/>
+ <ellipse cx="450" cy="300" rx="300" ry="258" transform="rotate(76 450 300)"/>
+</g>
+<path class="brain-shape" d="M450 115 C421 79 376 77 343 95 C309 77 268 91 251 121 C204 121 174 157 178 203 C141 226 132 272 153 309 C131 349 147 394 185 418 C188 460 226 491 270 486 C300 517 345 524 380 502 C411 523 440 505 450 483 C460 505 489 523 520 502 C555 524 600 517 630 486 C674 491 712 460 715 418 C753 394 769 349 747 309 C768 272 759 226 722 203 C726 157 696 121 649 121 C632 91 591 77 557 95 C524 77 479 79 450 115Z"/>
+<g class="brain-folds">
+ <path d="M445 116 C418 144 430 176 448 194 C464 213 453 239 432 255 C411 273 420 300 440 315 C460 331 452 354 434 372 C415 392 429 420 448 432"/>
+ <path d="M455 116 C482 142 481 166 464 187 C447 209 463 235 485 249 C508 263 504 291 484 307 C465 325 471 350 492 367 C511 384 501 411 474 434"/>
+ <path d="M193 214 C228 188 261 198 271 228 C281 256 258 276 231 274 C202 271 192 298 211 319 C225 336 250 335 267 316"/>
+ <path d="M214 376 C243 347 277 356 286 384 C294 410 273 429 249 430 C228 431 220 450 231 466"/>
+ <path d="M254 137 C280 149 296 171 289 193 C283 213 260 218 244 205"/>
+ <path d="M315 107 C338 133 332 161 309 176 C286 192 294 218 318 229 C341 239 347 262 330 281"/>
+ <path d="M359 109 C384 131 381 157 360 175 C341 191 350 214 373 225"/>
+ <path d="M180 324 C205 306 231 310 242 332 C252 353 238 374 217 380"/>
+ <path d="M707 214 C672 188 639 198 629 228 C619 256 642 276 669 274 C698 271 708 298 689 319 C675 336 650 335 633 316"/>
+ <path d="M686 376 C657 347 623 356 614 384 C606 410 627 429 651 430 C672 431 680 450 669 466"/>
+ <path d="M646 137 C620 149 604 171 611 193 C617 213 640 218 656 205"/>
+ <path d="M585 107 C562 133 568 161 591 176 C614 192 606 218 582 229 C559 239 553 262 570 281"/>
+ <path d="M541 109 C516 131 519 157 540 175 C559 191 551 214 528 225"/>
+ <path d="M720 324 C695 306 669 310 658 332 C647 354 662 375 683 380"/>
+</g>
+<g class="neural-lines">
+ <path d="M258 224 L329 171 L389 224 L450 190 L517 223 L583 167 L650 224"/>
+ <path d="M207 323 L292 301 L362 336 L450 292 L539 337 L610 301 L692 326"/>
+ <path d="M260 422 L332 382 L405 427 L450 390 L500 427 L574 383 L646 421"/>
+ <path d="M329 171 L292 301 L332 382 M389 224 L362 336 L405 427 M517 223 L539 337 L500 427 M583 167 L610 301 L574 383 M450 190 L450 292 L450 390"/>
+ <path d="M258 224 L207 323 L260 422 M650 224 L692 326 L646 421 M389 224 L517 223 M362 336 L539 337 M405 427 L500 427"/>
+</g>
+<g class="brain-neurons" filter="url(#neuron-glow)">
+ <circle cx="258" cy="224" r="6"/><circle cx="329" cy="171" r="5"/><circle cx="389" cy="224" r="6"/><circle cx="450" cy="190" r="7"/><circle cx="517" cy="223" r="6"/><circle cx="583" cy="167" r="5"/><circle cx="650" cy="224" r="6"/>
+ <circle cx="207" cy="323" r="5"/><circle cx="292" cy="301" r="6"/><circle cx="362" cy="336" r="5"/><circle cx="450" cy="292" r="8"/><circle cx="539" cy="337" r="5"/><circle cx="610" cy="301" r="6"/><circle cx="692" cy="326" r="5"/>
+ <circle cx="260" cy="422" r="5"/><circle cx="332" cy="382" r="6"/><circle cx="405" cy="427" r="5"/><circle cx="500" cy="427" r="5"/><circle cx="574" cy="383" r="6"/><circle cx="646" cy="421" r="5"/>
+</g>
+</svg></div>
+  <div class="brain-home-footer"><span>EXPERIMENTAL COMPUTATIONAL ORGANISM</span><span>NEURAL FOUNDATION FIRST</span></div>
+ </section>
+</main>
+<div id="login-scrim" class="login-scrim" hidden></div>
+<section id="login-panel" class="connect-panel panel login-overlay" aria-labelledby="login-title" role="dialog" aria-modal="true" hidden>
         <div class="panel-heading">
           <div><p class="eyebrow">PRIVATE OWNER ACCESS</p><h2 id="login-title">Welcome back, Father</h2></div>
           <span class="lock-symbol" aria-hidden="true">⌑</span>
@@ -72,14 +100,33 @@
         </form>
         <p id="connection-error" class="error-message" role="alert" hidden></p>
       </section>
-
-      <section id="dashboard" class="dashboard" hidden>
-        <div class="section-heading">
-          <div><p class="eyebrow">MODEL SNAPSHOT</p><h2>Development overview</h2></div>
-          <p id="last-updated" class="muted">Waiting for first snapshot</p>
-        </div>
-
-        <section class="timeline-panel panel">
+<main id="dashboard" class="dashboard" hidden>
+ <nav class="view-tabs" role="tablist" aria-label="Artificial Human workspace">
+  <button class="view-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="brain-view" data-view="brain">BRAIN</button>
+  <button class="view-tab" type="button" role="tab" aria-selected="false" aria-controls="developing-view" data-view="developing">DEVELOPING</button>
+  <button class="view-tab" type="button" role="tab" aria-selected="false" aria-controls="other-view" data-view="other">OTHER</button>
+ </nav>
+ <section id="brain-view" class="view-panel brain-view" role="tabpanel" aria-label="Brain">
+  <div id="brain-view-host" class="brain-visual-host"></div>
+  <div class="brain-view-footer"><span>LIVE MODEL VIEW · NOT A BRAIN SCAN</span><span id="brain-runtime-state">AWAITING OWNER SESSION</span><span id="brain-tick">TICK —</span></div>
+ </section>
+ <section id="developing-view" class="view-panel developing-view" role="tabpanel" aria-label="Developing systems" hidden>
+  <div class="page-heading">
+   <div><p class="eyebrow">INTERNAL DEVELOPMENT · SOURCE-VERIFIED STATUS</p><h1>What is <em>alive in code.</em></h1><p class="page-intro">Implemented mechanisms show active signals from observed runtime state. Limited capabilities are marked partial. Unbuilt systems stay muted and inactive.</p></div>
+   <div class="status-counts"><span><i class="live-dot"></i><b id="active-count">0</b> ACTIVE</span><span><i class="partial-dot"></i><b id="partial-count">0</b> PARTIAL</span><span><i class="dead-dot"></i><b id="dormant-count">0</b> DORMANT</span></div>
+  </div>
+  <section class="activity-panel panel" aria-labelledby="activity-title">
+   <div class="activity-heading"><div><p class="eyebrow">CONTINUOUS ORGANISM · READ-ONLY TRACE</p><h2 id="activity-title">Runtime activity</h2></div><span class="trace-state"><i></i> OBSERVED STATE</span></div>
+   <div id="code-stream" class="code-stream" aria-live="off"><div class="trace-empty">Waiting for an authenticated runtime snapshot…</div></div>
+   <p class="activity-footnote">Animated lines reflect measured runtime counters and module state. They do not show source files changing or generated code executing.</p>
+  </section>
+  <div class="module-board">
+   <section class="module-group"><div class="module-group-heading"><div><p class="eyebrow">IMPLEMENTED IN THE ACTIVE LOOP</p><h2>Active systems</h2></div><span class="module-state-label active-label">RUNNING CODE PATHS</span></div><div id="active-module-grid" class="module-grid"></div></section>
+   <section class="module-group"><div class="module-group-heading"><div><p class="eyebrow">LIMITED OR OWNER-REVIEWED</p><h2>Partial systems</h2></div><span class="module-state-label partial-label">INCOMPLETE</span></div><div id="partial-module-grid" class="module-grid"></div></section>
+   <section class="module-group dormant-group"><div class="module-group-heading"><div><p class="eyebrow">NOT IMPLEMENTED OR NOT CONNECTED</p><h2>Dormant systems</h2></div><span class="module-state-label dormant-label">INACTIVE · NOT BUILT</span></div><div id="dormant-module-grid" class="module-grid"></div></section>
+  </div>
+  <div class="section-heading"><div><p class="eyebrow">DEVELOPMENT MODEL</p><h2>Developmental substrate snapshot</h2></div><p id="last-updated" class="muted">Waiting for first snapshot</p></div>
+  <section class="timeline-panel panel">
           <div class="timeline-copy">
             <p class="eyebrow">DEVELOPMENT SIMULATOR</p>
             <label for="simulation-day">Choose gestational day <output id="simulation-day-value" for="simulation-day">280 / 280</output></label>
@@ -87,8 +134,69 @@
           </div>
           <input id="simulation-day" type="range" min="0" max="280" step="1" value="280" aria-label="Developmental day from 0 to 280">
         </section>
-
-        <section class="panel chat-panel" aria-labelledby="chat-title">
+  <div class="metrics-grid">
+          <article class="metric-card panel"><span class="metric-label">DEVELOPMENT PHASE</span><strong id="phase-value" class="metric-value">—</strong><span id="day-value" class="metric-caption">—</span></article>
+          <article class="metric-card panel"><span class="metric-label">POPULATIONS</span><strong id="population-value" class="metric-value">—</strong><span class="metric-caption">Abstract neural populations</span></article>
+          <article class="metric-card panel"><span class="metric-label">CONNECTIONS</span><strong id="projection-value" class="metric-value">—</strong><span class="metric-caption">Stable directed projections</span></article>
+          <article class="metric-card panel"><span class="metric-label">PLASTICITY UPDATES</span><strong id="updates-value" class="metric-value">—</strong><span id="exposures-value" class="metric-caption">—</span></article>
+        </div>
+  <div class="content-grid">
+          <section class="panel data-panel">
+            <div class="panel-heading"><div><p class="eyebrow">NEURAL SUBSTRATE</p><h3>Population maturity</h3></div><span class="subtle-tag">7 ABSTRACT POPULATIONS</span></div>
+            <div id="population-list" class="population-list"><p class="empty-state">Waiting for the authenticated session.</p></div>
+          </section>
+          <section class="panel data-panel">
+            <div class="panel-heading"><div><p class="eyebrow">CIRCUIT PLASTICITY</p><h3>Projection strengths</h3></div><span id="mean-strength" class="subtle-tag">MEAN —</span></div>
+            <div id="projection-list" class="projection-list"></div>
+          </section>
+        </div>
+  <section class="panel data-panel systems-panel">
+          <div class="panel-heading"><div><p class="eyebrow">COGNITIVE ARCHITECTURE</p><h3>Subsystem readiness</h3></div><span class="subtle-tag">READ-ONLY STATUS</span></div>
+          <div id="systems-grid" class="systems-grid"></div>
+        </section>
+  <p class="model-note"><strong>Scientific boundary:</strong> The prenatal view is a deterministic engineering abstraction, not a biological fetal-brain simulator. Maturity and connection values are model parameters, not clinical or biological measurements.</p>
+ </section>
+ <section id="other-view" class="view-panel other-view" role="tabpanel" aria-label="Developer tools" hidden>
+  <div class="page-heading"><div><p class="eyebrow">OTHER · ENGINEERING WORKSPACE</p><h1>Developer <em>tools.</em></h1><p class="page-intro">Repository, CI, deployment destinations, local commands and owner-only utilities. The organism runtime remains independent of these tools.</p></div></div>
+  <section class="tool-section panel">
+   <div class="panel-heading"><div><p class="eyebrow">SOURCE AND OPERATIONS</p><h2>Project links</h2></div><span class="subtle-tag">EXTERNAL TO THE ORGANISM</span></div>
+   <div class="developer-link-grid">
+    <a class="developer-link-card" href="https://github.com/aakashsiwach/artificial-human" target="_blank" rel="noopener noreferrer"><span class="tool-icon">GH</span><span><b>GitHub repository</b><small>Source, issues and pull requests</small></span><i>↗</i></a>
+    <a class="developer-link-card" href="https://github.com/aakashsiwach/artificial-human/actions" target="_blank" rel="noopener noreferrer"><span class="tool-icon">CI</span><span><b>GitHub Actions</b><small>Quality, tests and evaluation artifacts</small></span><i>↗</i></a>
+    <a class="developer-link-card" href="https://artificial-human-control-room.vercel.app" target="_blank" rel="noopener noreferrer"><span class="tool-icon">V</span><span><b>Vercel Control Room</b><small>Static frontend · production URL</small></span><i>↗</i></a>
+    <a class="developer-link-card" href="https://artificial-human-monitor-api.onrender.com" target="_blank" rel="noopener noreferrer"><span class="tool-icon">R</span><span><b>Render API</b><small>Protected backend service</small></span><i>↗</i></a>
+    <a class="developer-link-card" href="https://artificial-human-monitor-api.onrender.com/health" target="_blank" rel="noopener noreferrer"><span class="tool-icon">♥</span><span><b>API health check</b><small>Public service health</small></span><i>↗</i></a>
+    <a class="developer-link-card" href="https://dashboard.render.com/web/srv-dc37evbrjlhs73f1sgv0" target="_blank" rel="noopener noreferrer"><span class="tool-icon">⚙</span><span><b>Render service settings</b><small>Build, deploy and environment settings</small></span><i>↗</i></a>
+   </div>
+  </section>
+  <section class="tool-section panel">
+   <div class="panel-heading"><div><p class="eyebrow">PRODUCTION DELIVERY</p><h2>Main-branch CI / CD</h2></div><span class="subtle-tag">TARGET BRANCH · MAIN</span></div>
+   <div class="delivery-flow">
+    <div class="delivery-step"><span>01</span><b>Pull request</b><small>Checks run against main</small></div><div class="delivery-arrow">→</div>
+    <div class="delivery-step"><span>02</span><b>GitHub Actions</b><small>Lint · type check · tests · evals</small></div><div class="delivery-arrow">→</div>
+    <div class="delivery-step"><span>03</span><b>Merge to main</b><small>Production source branch</small></div><div class="delivery-arrow">→</div>
+    <div class="delivery-step"><span>04</span><b>Host deployments</b><small>Render checksPass · Vercel Git integration</small></div>
+   </div>
+   <p class="tool-note">The Render Blueprint declares branch <code>main</code> and <code>autoDeployTrigger: checksPass</code>. The live Render service was created manually, so verify its live branch and auto-deploy policy in Render. Vercel should use <code>main</code> as Production Branch and <code>monitor</code> as Root Directory. Hosting providers perform deployment after the main-branch commit; GitHub Actions is the CI gate.</p>
+   <div class="delivery-links"><a href="https://github.com/aakashsiwach/artificial-human/actions" target="_blank" rel="noopener noreferrer">GitHub Actions ↗</a><a href="https://vercel.com" target="_blank" rel="noopener noreferrer">Vercel dashboard ↗</a><a href="https://dashboard.render.com" target="_blank" rel="noopener noreferrer">Render dashboard ↗</a></div>
+  </section>
+  <section class="tool-section panel">
+   <div class="panel-heading"><div><p class="eyebrow">LOCAL DEVELOPMENT</p><h2>Useful commands</h2></div><span class="subtle-tag">RUN FROM REPOSITORY ROOT</span></div>
+   <div class="command-list">
+    <div class="command-row"><code>python -m pip install -e ".[dev]"</code><button class="copy-command" type="button" data-copy='python -m pip install -e ".[dev]"'>COPY</button></div>
+    <div class="command-row"><code>pytest</code><button class="copy-command" type="button" data-copy="pytest">COPY</button></div>
+    <div class="command-row"><code>ruff check .</code><button class="copy-command" type="button" data-copy="ruff check .">COPY</button></div>
+    <div class="command-row"><code>mypy src</code><button class="copy-command" type="button" data-copy="mypy src">COPY</button></div>
+    <div class="command-row"><code>artificial-human simulate --ticks 100</code><button class="copy-command" type="button" data-copy="artificial-human simulate --ticks 100">COPY</button></div>
+    <div class="command-row"><code>artificial-human serve</code><button class="copy-command" type="button" data-copy="artificial-human serve">COPY</button></div>
+   </div>
+   <p id="copy-feedback" class="tool-note" aria-live="polite">Commands are copied locally; this page never executes them.</p>
+  </section>
+  <section class="tool-section panel">
+   <div class="panel-heading"><div><p class="eyebrow">API SURFACE</p><h2>Runtime endpoints</h2></div><span class="subtle-tag">SERVER AUTHORIZATION APPLIES</span></div>
+   <div class="endpoint-list"><div><code>GET /health</code><span>Public service health</span></div><div><code>GET /monitor/overview</code><span>Owner-authenticated monitoring snapshot</span></div><div><code>GET /runtime/status</code><span>Runtime state, counters and trace</span></div><div><code>POST /runtime/events</code><span>Submit explicit synthetic sensory events</span></div><div><code>POST /runtime/pause</code><span>Pause the continuous runtime</span></div><div><code>POST /runtime/resume</code><span>Resume the continuous runtime</span></div></div>
+  </section>
+  <section class="panel chat-panel" aria-labelledby="chat-title">
           <div class="panel-heading">
             <div><p class="eyebrow">INTERACTIVE COGNITIVE INTERFACE</p><h3 id="chat-title">Start a conversation</h3></div>
             <span id="provider-state" class="subtle-tag">CHECKING MODEL</span>
@@ -107,7 +215,7 @@
           </form>
           <p id="chat-error" class="error-message" role="alert" hidden></p>
         </section>
-        <section class="panel camera-panel" aria-labelledby="camera-title">
+  <section class="panel camera-panel" aria-labelledby="camera-title">
           <div class="panel-heading">
             <div><p class="eyebrow">OPTIONAL LOCAL SENSOR</p><h3 id="camera-title">Camera access</h3></div>
             <span id="camera-state" class="subtle-tag">CAMERA OFF</span>
@@ -125,8 +233,7 @@
           </div>
           <p id="camera-error" class="error-message" role="alert" hidden></p>
         </section>
-
-        <section class="panel passkey-panel" aria-labelledby="passkey-title">
+  <section class="panel passkey-panel" aria-labelledby="passkey-title">
           <div class="panel-heading">
             <div><p class="eyebrow">DEVICE SECURITY</p><h3 id="passkey-title">Passkey on this device</h3></div>
             <span id="passkey-state" class="subtle-tag">NOT REGISTERED</span>
@@ -135,32 +242,22 @@
           <button id="passkey-register" class="secondary-button" type="button">Add this device's passkey</button>
           <p id="passkey-error" class="error-message" role="alert" hidden></p>
         </section>
-
-        <div class="metrics-grid">
-          <article class="metric-card panel"><span class="metric-label">DEVELOPMENT PHASE</span><strong id="phase-value" class="metric-value">—</strong><span id="day-value" class="metric-caption">—</span></article>
-          <article class="metric-card panel"><span class="metric-label">POPULATIONS</span><strong id="population-value" class="metric-value">—</strong><span class="metric-caption">Abstract neural populations</span></article>
-          <article class="metric-card panel"><span class="metric-label">CONNECTIONS</span><strong id="projection-value" class="metric-value">—</strong><span class="metric-caption">Stable directed projections</span></article>
-          <article class="metric-card panel"><span class="metric-label">PLASTICITY UPDATES</span><strong id="updates-value" class="metric-value">—</strong><span id="exposures-value" class="metric-caption">—</span></article>
+  <section class="founder-panel panel" aria-labelledby="founder-title">
+        <div class="panel-heading">
+          <div><p class="eyebrow">PROJECT FOUNDER · IDENTITY CONSTITUTION</p><h2 id="founder-title">Father &amp; creator</h2></div>
+          <span class="subtle-tag">SOURCE-DEFINED</span>
         </div>
-
-        <div class="content-grid">
-          <section class="panel data-panel">
-            <div class="panel-heading"><div><p class="eyebrow">NEURAL SUBSTRATE</p><h3>Population maturity</h3></div><span class="subtle-tag">7 ABSTRACT POPULATIONS</span></div>
-            <div id="population-list" class="population-list"><p class="empty-state">Waiting for the authenticated session.</p></div>
-          </section>
-          <section class="panel data-panel">
-            <div class="panel-heading"><div><p class="eyebrow">CIRCUIT PLASTICITY</p><h3>Projection strengths</h3></div><span id="mean-strength" class="subtle-tag">MEAN —</span></div>
-            <div id="projection-list" class="projection-list"></div>
-          </section>
+        <p class="founder-name">Aakash Siwach</p>
+        <p class="founder-role">Human founder · Creator · Project owner</p>
+        <p class="founder-bio">Software engineer and open-source developer working across Java/Spring Boot, Python/FastAPI, React/full-stack systems, banking and payment integrations, healthcare applications, QA automation, and AI developer tools.</p>
+        <div class="founder-links">
+          <a href="https://www.linkedin.com/in/aakashsiwach/" target="_blank" rel="noopener noreferrer">LinkedIn · Aakash Siwach ↗</a>
+          <a href="https://github.com/aakashsiwach" target="_blank" rel="noopener noreferrer">GitHub · @aakashsiwach ↗</a>
         </div>
-
-        <section class="panel data-panel systems-panel">
-          <div class="panel-heading"><div><p class="eyebrow">COGNITIVE ARCHITECTURE</p><h3>Subsystem readiness</h3></div><span class="subtle-tag">READ-ONLY STATUS</span></div>
-          <div id="systems-grid" class="systems-grid"></div>
-        </section>
-        <p class="model-note"><strong>Scientific boundary:</strong> The prenatal view is a deterministic engineering abstraction, not a biological fetal-brain simulator. Maturity and connection values are model parameters, not clinical or biological measurements.</p>
+        <p class="founder-projects">Public projects: <a href="https://github.com/aakashsiwach/artificial-human" target="_blank" rel="noopener noreferrer">Artificial Human</a> · <a href="https://github.com/aakashsiwach/taintmap" target="_blank" rel="noopener noreferrer">TaintMap</a> · <a href="https://github.com/aakashsiwach/codeatlas-rag" target="_blank" rel="noopener noreferrer">CodeAtlas</a> · <a href="https://github.com/aakashsiwach/mergeworthy" target="_blank" rel="noopener noreferrer">mergeworthy</a> · <a href="https://github.com/aakashsiwach/testcase-management" target="_blank" rel="noopener noreferrer">Test Case Management</a> · <a href="https://github.com/aakashsiwach/ai-document-analyzer" target="_blank" rel="noopener noreferrer">AI Document Analyzer</a></p>
       </section>
-    </main>
+ </section>
+</main>
     <footer><span>ARTIFICIAL HUMAN · FOUNDED BY AAKASH SIWACH (FATHER)</span><span>SESSION-SECURED <b>·</b> CAMERA OPT-IN</span></footer>
   </div>
 </body>
