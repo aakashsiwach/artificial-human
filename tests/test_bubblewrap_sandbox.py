@@ -42,7 +42,7 @@ def _proposal_diff() -> str:
         "    assert VALUE == 7\n"
     )
     encoded = content.encode("utf-8")
-    blob_id = hashlib.sha1(f"blob {len(encoded)}\\0".encode("ascii") + encoded).hexdigest()[:7]
+    blob_id = hashlib.sha1(f"blob {len(encoded)}\0".encode("ascii") + encoded).hexdigest()[:7]
     lines = content.rstrip("\n").splitlines()
     patch_lines = [
         "diff --git a/tests/test_candidate.py b/tests/test_candidate.py",
