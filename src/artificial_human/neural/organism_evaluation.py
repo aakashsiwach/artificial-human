@@ -44,9 +44,23 @@ def _microcircuit_summary(
         inhibition_enabled=inhibition_enabled,
         connected=connected,
     )
-    trace = result["trace"]
-    spike_count = sum(len(step["spikes"]) for step in trace)
+    trace_value = result.get("trace")
+    if not isinstance(trace_value, list):
+        raise RuntimeError("microcircuit trace is missing or malformed")
+    trace: list[dict[str, object]] = []
+    for step in trace_value:
+        if not isinstance(step, dict):
+            raise RuntimeError("microcircuit trace contains a malformed step")
+        trace.append(step)
+    spike_count = 0
+    for step in trace:
+        spikes = step.get("spikes")
+        if isinstance(spikes, (tuple, list)):
+            spike_count += len(spikes)
     final_step = trace[-1] if trace else {}
+    potentials = final_step.get("membrane_potentials_mV", {})
+    if not isinstance(potentials, dict):
+        potentials = {}
     return {
         "neuron_count": result["neuron_count"],
         "synapse_count": result["synapse_count"],
@@ -55,7 +69,7 @@ def _microcircuit_summary(
         "events_delivered": result["events_delivered"],
         "events_dropped": result["events_dropped"],
         "pending_events": result["pending_events"],
-        "final_membrane_potentials_mV": final_step.get("membrane_potentials_mV", {}),
+        "final_membrane_potentials_mV": potentials,
     }
 
 
@@ -87,8 +101,15 @@ def _closed_loop_summary(
     }
 
 
+def _numeric_metric(run: dict[str, object], key: str) -> float:
+    value = run.get(key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise RuntimeError(f"closed-loop result is missing numeric metric: {key}")
+    return float(value)
+
+
 def _summarize_runs(runs: tuple[dict[str, object], ...]) -> dict[str, object]:
-    successes = sum(bool(run["success"]) for run in runs)
+    successes = sum(run.get("success") is True for run in runs)
     count = len(runs)
     return {
         "runs": list(runs),
@@ -96,13 +117,13 @@ def _summarize_runs(runs: tuple[dict[str, object], ...]) -> dict[str, object]:
         "failure_count": count - successes,
         "success_rate": round(successes / count, 8),
         "mean_final_distance": round(
-            sum(float(run["final_distance"]) for run in runs) / count, 8
+            sum(_numeric_metric(run, "final_distance") for run in runs) / count, 8
         ),
         "mean_abs_prediction_error": round(
-            sum(float(run["mean_abs_prediction_error"]) for run in runs) / count, 8
+            sum(_numeric_metric(run, "mean_abs_prediction_error") for run in runs) / count, 8
         ),
         "mean_post_shift_prediction_error": round(
-            sum(float(run["mean_abs_prediction_error_after_shift"]) for run in runs) / count,
+            sum(_numeric_metric(run, "mean_abs_prediction_error_after_shift") for run in runs) / count,
             8,
         ),
     }
@@ -154,11 +175,21 @@ def run_organism_evaluation(
             "recurrent_inhibition_off": _microcircuit_summary(inhibition_enabled=False),
         }
         fixed_rate = run_fixed_rate_reference()
-        fixed_trace = fixed_rate["trace"]
+        fixed_trace_value = fixed_rate.get("trace")
+        if not isinstance(fixed_trace_value, list):
+            raise RuntimeError("fixed-rate reference trace is missing or malformed")
+        fixed_trace: list[dict[str, object]] = []
+        for step in fixed_trace_value:
+            if not isinstance(step, dict):
+                raise RuntimeError("fixed-rate reference contains a malformed step")
+            fixed_trace.append(step)
+        final_rates = fixed_trace[-1].get("rates", {}) if fixed_trace else {}
+        if not isinstance(final_rates, dict):
+            final_rates = {}
         microcircuits["matched_size_fixed_rate_reference"] = {
             "neuron_count": fixed_rate["neuron_count"],
             "projection_count": fixed_rate["projection_count"],
-            "final_rates": fixed_trace[-1]["rates"] if fixed_trace else {},
+            "final_rates": final_rates,
             "note": fixed_rate["note"],
         }
         suite_seconds["microcircuit_controls"] = round(perf_counter() - started, 6)
@@ -208,7 +239,7 @@ def run_organism_evaluation(
         suite_seconds["organism_integration_ablations"] = round(perf_counter() - started, 6)
 
         current_bytes, peak_bytes = tracemalloc.get_traced_memory()
-        report = {
+        report: dict[str, object] = {
             "schema_version": "1.0",
             "evaluation": "artificial-human-organism-evaluation-v1",
             "python_version": platform.python_version(),
