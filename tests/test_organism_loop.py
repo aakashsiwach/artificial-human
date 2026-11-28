@@ -5,6 +5,7 @@ from artificial_human.neural.organism_loop import (
     OrganismLoop, PlasticSynapse, PopulationEncoder, SafeSelfDevelopment,
     SensoryEvent, SimulatedEnvironment, WorldModel,
     OrganismIntegrationConfig,
+    run_integration_ablation_comparison,
 )
 
 
@@ -159,3 +160,20 @@ def test_integrated_reset_clears_attention_workspace_and_learned_channels() -> N
     assert snapshot["action_selection"]["updates"] == 0
     assert snapshot["episodes"] == 0
     assert snapshot["tick"] == 0
+
+
+
+def test_integration_ablation_report_measures_major_subsystem_contributions() -> None:
+    reports = {
+        item["condition"]: item
+        for item in run_integration_ablation_comparison(ticks=30)
+    }
+    full = reports["full"]
+
+    assert len(reports) == 6
+    assert full["working_memory_items"] > reports["working_memory_disabled"]["working_memory_items"]
+    assert full["episodic_memories"] > reports["episodic_memory_disabled"]["episodic_memories"]
+    assert full["action_learning_updates"] > reports["learned_action_selection_disabled"]["action_learning_updates"]
+    assert full["neural_spikes"] > reports["neural_substrate_disabled"]["neural_spikes"]
+    assert all(item["ticks"] == 30 for item in reports.values())
+    assert all(-30.0 <= item["cumulative_reward"] <= 0.0 for item in reports.values())
