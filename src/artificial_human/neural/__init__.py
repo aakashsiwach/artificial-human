@@ -1,4 +1,4 @@
-"Deterministic, in-memory neural simulation primitives."""
+"""Deterministic, in-memory neural simulation primitives."""""
 
 from artificial_human.neural.action_selection import (
     ActionChoice,

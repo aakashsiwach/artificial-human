@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import random
+from types import MappingProxyType
 from dataclasses import dataclass
 from collections.abc import Sequence
 
@@ -21,8 +22,12 @@ class ActionSpec:
     description: str
 
     def __post_init__(self) -> None:
-        if not self.identifier or self.identifier.strip() != self.identifier:
-            raise ValueError("action identifier must be non-empty and trimmed")
+        if (
+            not isinstance(self.identifier, str)
+            or not self.identifier
+            or self.identifier.strip() != self.identifier
+        ):
+            raise ValueError("action identifier must be a non-empty trimmed string")
         if len(self.identifier) > 64:
             raise ValueError("action identifier must be at most 64 characters")
         if not self.description or not self.description.strip():
@@ -36,13 +41,15 @@ class SafeActionSpace:
 
     def __init__(self, actions: Sequence[ActionSpec]) -> None:
         items = tuple(actions)
+        if any(not isinstance(item, ActionSpec) for item in items):
+            raise ValueError("action space entries must be ActionSpec instances")
         if not items or len(items) > self.MAX_ACTIONS:
             raise ValueError("action space must contain 1..64 actions")
         identifiers = [item.identifier for item in items]
         if len(set(identifiers)) != len(identifiers):
             raise ValueError("action identifiers must be unique")
         self._actions = items
-        self._by_id = {item.identifier: item for item in items}
+        self._by_id = MappingProxyType({item.identifier: item for item in items})
 
     @property
     def actions(self) -> tuple[ActionSpec, ...]:
@@ -147,6 +154,7 @@ class ActionSelectionCircuit:
         self.exploration_rate = float(exploration_rate)
         self.exploration_bonus = float(exploration_bonus)
         self.max_state_action_pairs = max_state_action_pairs
+        self.seed = seed
         self._rng = random.Random(seed)
         self._direct: dict[tuple[str, str], float] = {}
         self._indirect: dict[tuple[str, str], float] = {}
@@ -195,6 +203,7 @@ class ActionSelectionCircuit:
                 count for (known_state, _), count in self._visits.items()
                 if known_state == state_id
             )
+
             def score(action_id: str) -> tuple[float, int]:
                 key = (state_id, action_id)
                 visits = self._visits.get(key, 0)
@@ -317,6 +326,7 @@ class ActionSelectionCircuit:
         self._indirect.clear()
         self._visits.clear()
         self.updates = 0
+        self._rng = random.Random(self.seed)
 
 
 def run_action_selection_comparison(
