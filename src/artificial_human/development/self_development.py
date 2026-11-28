@@ -496,7 +496,12 @@ class SafeSelfDevelopment:
                         failure = "sandbox checked a different source revision"
                         break
                     if result.timed_out or result.exit_code != 0:
-                        failure = f"check failed or timed out: {expected}"
+                        failure = (
+                            f"check failed or timed out: {expected} "
+                            f"(exit_code={result.exit_code}, timed_out={result.timed_out}, "
+                            f"peak_memory_mb={result.peak_memory_mb:.1f}, "
+                            f"output_bytes={result.output_bytes})"
+                        )
                         break
                     if (
                         isinstance(result.elapsed_seconds, bool)
