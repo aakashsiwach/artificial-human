@@ -59,6 +59,20 @@ def test_postnatal_maturation_adds_connections_without_replacing_the_substrate()
     )
 
 
+
+def test_developmental_and_neural_clocks_advance_independently() -> None:
+    substrate = DevelopmentalNeuralSubstrate(seed=19)
+    substrate.advance(1_200)
+
+    assert substrate.snapshot().developmental_day == 1_200
+    assert substrate.snapshot().network["step_index"] == 0
+
+    trace = substrate.run(7)
+    assert len(trace) == 7
+    assert [item.step_index for item in trace] == list(range(7))
+    assert substrate.snapshot().network["step_index"] == 7
+
+
 def test_sensory_capability_is_gated_by_model_development() -> None:
     substrate = DevelopmentalNeuralSubstrate()
     early = substrate.expose(DevelopmentalModality.AUDITORY)
