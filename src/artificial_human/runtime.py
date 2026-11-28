@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import math
 from contextlib import suppress
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from enum import StrEnum
 from queue import Empty, Full, Queue
 from threading import RLock
@@ -223,11 +223,13 @@ class ContinuousOrganismRuntime:
             if elapsed > self.config.tick_budget_seconds:
                 self._overload_count += 1
                 self._health = RuntimeHealth.DEGRADED
-            spike_count = sum(
-                len(step.get("neural", {}).get("spikes", ()))
-                for step in traces
-                if isinstance(step.get("neural"), dict)
-            )
+            spike_count = 0
+            for step in traces:
+                neural = step.get("neural")
+                if isinstance(neural, dict):
+                    spikes = neural.get("spikes")
+                    if isinstance(spikes, (tuple, list)):
+                        spike_count += len(spikes)
             if spike_count > self.config.max_spikes_per_tick:
                 self._overload_count += 1
                 self._health = RuntimeHealth.DEGRADED
@@ -288,9 +290,11 @@ class ContinuousOrganismRuntime:
             if self._state is RuntimeState.RUNNING:
                 return
             if self._state is RuntimeState.PAUSED:
-                self._state = RuntimeState.RUNNING
-                self.organism.resume()
-                return
+                if self._task is not None:
+                    self._state = RuntimeState.RUNNING
+                    self.organism.resume()
+                    return
+                self._state = RuntimeState.STOPPED
             if self._state is not RuntimeState.STOPPED:
                 raise RuntimeError(f"cannot start runtime from {self._state.value}")
             self._state = RuntimeState.RUNNING
@@ -326,7 +330,7 @@ class ContinuousOrganismRuntime:
 
     def pause(self) -> None:
         with self._lock:
-            if self._state in {RuntimeState.RUNNING, RuntimeState.STOPPED}:
+            if self._state is RuntimeState.RUNNING:
                 self._state = RuntimeState.PAUSED
                 self.organism.pause()
 
