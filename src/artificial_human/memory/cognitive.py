@@ -37,10 +37,10 @@ def _validate_capacity(capacity: int, name: str) -> None:
 
 @dataclass(frozen=True, slots=True)
 class CognitiveMemoryRecall:
-    episodic: tuple["EpisodicTrace", ...]
-    semantic: tuple["SemanticFact", ...]
-    procedural: tuple["Procedure", ...]
-    spatial: tuple["SpatialPlace", ...]
+    episodic: tuple[EpisodicTrace, ...]
+    semantic: tuple[SemanticFact, ...]
+    procedural: tuple[Procedure, ...]
+    spatial: tuple[SpatialPlace, ...]
 
 
 @dataclass(frozen=True, slots=True)
