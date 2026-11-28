@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Mapping
 
 from artificial_human.neural.population import PopulationCode, PopulationEncoder, PopulationProjector
 from artificial_human.neural.sensory import EncodedPercept, SensoryModality
@@ -290,13 +289,15 @@ def run_multisensory_comparison(trials: int = 200) -> MultisensoryComparison:
         errors_fusion.append(abs((result.fused_value if result.fused_value is not None else vision_value) - truth))
         errors_causal.append(abs(result.value - truth))
 
-    mean = lambda values: round(sum(values) / len(values), 8)
+    def mean_absolute_error(values: list[float]) -> float:
+        return round(sum(values) / len(values), 8)
+
     return MultisensoryComparison(
         trials=trials,
-        independent_mae=mean(errors_independent),
-        naive_concatenation_mae=mean(errors_naive),
-        reliability_fusion_mae=mean(errors_fusion),
-        causal_integration_mae=mean(errors_causal),
+        independent_mae=mean_absolute_error(errors_independent),
+        naive_concatenation_mae=mean_absolute_error(errors_naive),
+        reliability_fusion_mae=mean_absolute_error(errors_fusion),
+        causal_integration_mae=mean_absolute_error(errors_causal),
         missing_modality_trials=missing_count,
         conflicting_modality_trials=conflicting_count,
     )
