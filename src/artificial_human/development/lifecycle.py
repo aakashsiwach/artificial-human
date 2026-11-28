@@ -574,7 +574,7 @@ def run_developmental_learning_comparison(
     def probe_metrics(network: DevelopmentalNeuralSubstrate) -> tuple[int, int | None]:
         emitted: list[str] = []
         latency: int | None = None
-        for index in range(12):
+        for index in range(18):
             current = {route[0]: 720.0} if index == 0 else None
             step = network._step(current, learn=False)
             emitted.extend(step.spikes)
