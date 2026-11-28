@@ -279,7 +279,7 @@ def _default_action_selection() -> ActionSelectionCircuit:
         discount_factor=0.1,
         exploration_rate=0.1,
         exploration_bonus=0.1,
-        max_state_action_pairs=2048,
+        max_state_action_pairs=4096,
         seed=7,
     )
 
