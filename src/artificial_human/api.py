@@ -189,7 +189,7 @@ class RuntimeEventRequest(BaseModel):
 
 
 class DevelopmentalTimeRequest(BaseModel):
-    postnatal_units: int = Field(default=0, ge=0, le=10_000)
+    postnatal_units: int = Field(default=0, ge=0, le=2_000)
 
 
 class PlanRequest(BaseModel):
