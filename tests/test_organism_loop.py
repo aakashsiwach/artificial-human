@@ -181,3 +181,15 @@ def test_integration_ablation_report_measures_major_subsystem_contributions() ->
     assert full["neural_spikes"] > reports["neural_substrate_disabled"]["neural_spikes"]
     assert all(item["ticks"] == 30 for item in reports.values())
     assert all(-100.0 <= item["cumulative_reward"] <= 0.0 for item in reports.values())
+
+
+
+def test_sensory_event_rejects_malformed_and_unbounded_inputs() -> None:
+    with pytest.raises(ValueError, match="supported Modality"):
+        SensoryEvent("camera", (0.1,), 0)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="timestamp"):
+        SensoryEvent(Modality.VISION, (0.1,), True)
+    with pytest.raises(ValueError, match="finite numbers"):
+        SensoryEvent(Modality.VISION, (float("nan"),), 0)
+    with pytest.raises(ValueError, match="confidence"):
+        SensoryEvent(Modality.VISION, (0.1,), 0, float("inf"))
