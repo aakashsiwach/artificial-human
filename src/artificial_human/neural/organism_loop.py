@@ -707,7 +707,7 @@ def run_integration_ablation_comparison(
             if isinstance(attended, (tuple, list)):
                 attended_items += len(attended)
             sensory_weight = step.get("sensory_attention_weight")
-            if isinstance(sensory_weight, (int, float)):
+            if attended and isinstance(sensory_weight, (int, float)):
                 attention_weight_total += float(sensory_weight)
             neural = step.get("neural")
             if isinstance(neural, dict):
