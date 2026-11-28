@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from artificial_human.core.models import MemoryKind
+from artificial_human.cognition.working_memory import WorkingMemory
 from artificial_human.memory.cognitive import (
     EpisodicMemoryStore,
     InMemoryCognitiveMemory,
@@ -177,3 +178,31 @@ def test_active_organism_uses_same_working_memory_owner_and_resets_in_ram() -> N
     assert organism.memory.list(organism.owner_id) == []
     assert organism.cognitive_memory.snapshot()["semantic"]["count"] == 0
     assert organism.cognitive_memory.snapshot()["working"]["session_count"] == 0
+
+
+
+def test_cognitive_cycle_recalls_specialized_semantic_memory_without_database() -> None:
+    organism = ArtificialOrganism(embedding_provider=None)
+    grant = organism.memory.grant_consent(organism.owner_id)
+    record = organism.memory.add(
+        owner_id=organism.owner_id,
+        kind=MemoryKind.SEMANTIC,
+        content="Python is a programming language",
+        source="owner-provided fact",
+        consent_id=grant.id,
+        metadata={"concept": "Python", "attributes": {"type": "programming language"}},
+    )
+    organism.cognitive_memory.ingest(record)
+
+    cycle = organism.cognitive_brain.architecture.run(
+        owner_id=organism.owner_id,
+        query="Python programming language",
+        memories=(),
+        workspace=WorkingMemory(),
+    )
+
+    assert cycle.specialized_memory_state["semantic_hits"] == 1
+    assert any(
+        item["kind"] == "semantic_fact" and "Python" in item["content"]
+        for item in cycle.working_memory_context
+    )
