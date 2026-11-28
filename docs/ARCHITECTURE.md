@@ -30,6 +30,7 @@ ArtificialOrganism
               ├── bounded episodic memory
               ├── world-state predictor and error feedback
               ├── opponent-channel learned action selection (fixed allowlist)
+              └── bounded simulated body with position, velocity and disturbances
               ├── simulated environment
               ├── homeostatic and forward-control state
               └── DevelopmentalProgram
@@ -167,8 +168,9 @@ add actions or bypass the simulated environment's bounds. Actions are still
 selected by a high-level computational circuit, not decoded directly from LIF
 population activity. The current integration is an end-to-end software
 composition, not a claim that every cognitive process is implemented by
-spiking circuits. The runtime's toy
-environment is not a robotics interface and cannot perform real-world actions.
+spiking circuits. The runtime's one-dimensional body/environment is a bounded simulator with
+velocity, disturbances and a fixed action space. It is not a robotics interface
+and cannot perform real-world actions.
 
 Subsystem ablations are available through
 `run_integration_ablation_comparison`. The deterministic report compares the

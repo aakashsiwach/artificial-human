@@ -10,8 +10,10 @@ they do not construct separate background neural simulations.
 
 The high-level `OrganismLoop` performs deterministic synthetic perception,
 bounded attention selection, seven-item working-memory maintenance, episodic
-recall, world-state prediction, action selection, simulated-environment
-feedback, and bounded memory updates. The same sensory event is encoded and
+recall, world-state prediction, action selection and feedback from the
+one-dimensional `SimulatedBodyEnvironment` (bounded position/velocity, a
+goal, a disturbance schedule and a finite episode budget). It also maintains
+bounded memory updates. The same sensory event is encoded and
 delivered to the developmental LIF substrate, which performs neuron/synapse
 updates, plasticity and homeostatic regulation. Action selection uses the
 opponent-channel `ActionSelectionCircuit` over a fixed three-action simulator
