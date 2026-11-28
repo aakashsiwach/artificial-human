@@ -5,6 +5,17 @@ from artificial_human.development.prenatal import (
     PrenatalModality,
     PrenatalPhase,
 )
+from artificial_human.development.self_development import (
+    EvaluationGap,
+    HumanApprovalRecord,
+    ImprovementProposal,
+    IsolatedSandboxExecutor,
+    RollbackPlan,
+    SafeSelfDevelopment,
+    SandboxCheckResult,
+    SandboxEvidence,
+    SandboxLimits,
+)
 from artificial_human.development.program import (
     DevelopmentalComparison,
     DevelopmentalExperienceOutcome,
@@ -26,4 +37,13 @@ __all__ = [
     "DevelopmentalSnapshot",
     "DevelopmentalStage",
     "run_developmental_comparison",
+    "EvaluationGap",
+    "HumanApprovalRecord",
+    "ImprovementProposal",
+    "IsolatedSandboxExecutor",
+    "RollbackPlan",
+    "SafeSelfDevelopment",
+    "SandboxCheckResult",
+    "SandboxEvidence",
+    "SandboxLimits",
 ]

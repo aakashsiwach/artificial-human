@@ -365,3 +365,12 @@ Apache-2.0. See LICENSE.
 The Control Room uses a same-origin API proxy and owner sign-in; no API URL or bearer token is entered in the browser. Password sign-in uses a PBKDF2-SHA256 verifier in Render environment settings. After signing in, the owner can register a WebAuthn passkey for platform authentication (Face ID, Touch ID, Windows Hello, Android biometrics or device PIN). Passkey private keys and biometric matching remain on the device.
 
 The dashboard restores its HttpOnly session cookie on reload. Camera preview is separately opt-in and remains local to the current browser tab; captured frames are not uploaded or passed to the organism. See [Control Room deployment and security](docs/MONITORING.md) for required environment settings and hosting limits.
+
+
+## Safe self-development
+
+Candidate code changes are immutable, bounded proposals tied to evaluation
+evidence and a base commit. They are checked only through an explicitly
+injected isolated sandbox adapter; the active organism has no shell, host
+filesystem, network, credential, auto-merge or deployment capability. See
+[Safe self-development](docs/SAFE_SELF_DEVELOPMENT.md).

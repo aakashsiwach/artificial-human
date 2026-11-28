@@ -525,3 +525,13 @@ The first in-memory developmental prototype now lives under `src/artificial_huma
 This is intentionally a **scaffold experiment**, not a simulated fetus. It does not model cells, layers, radial migration, neurotransmitters, glia, real sensory waveforms, or biological synapses. Exposure payloads are discarded; only evolving network state and aggregate counters remain in memory. No exposure is persisted to SQLite. The scaffold's topology is an engineering invariant, while its efficacy values and activity state are allowed to adapt.
 
 The first acceptance tests cover deterministic development, gestational gates, unchanged topology, bounded plasticity, no retained stimulus history, and CLI reproduction. Behavioural and biological validation remain open. The prototype must not be described as evidence of fetal-level learning, a human brain, consciousness, or sentience.
+
+
+## Safe self-development implementation boundary
+
+The current implementation packages evaluation-backed proposals and verifies
+attestations from an explicitly injected isolated sandbox adapter. It does not
+execute generated code by default and cannot merge or deploy. The adapter's
+isolation claims require independent implementation review; the core does not
+treat self-reported booleans as cryptographic proof. See
+`docs/SAFE_SELF_DEVELOPMENT.md`.
