@@ -42,6 +42,16 @@ from artificial_human.neural.sensory import (
     VisionEncoder,
     project_percept,
 )
+from artificial_human.neural.integration import (
+    MultisensoryComparison,
+    MultisensoryEstimate,
+    MultisensoryIntegrator,
+    MultisensoryParameters,
+    SensoryEstimate,
+    estimate_from_percept,
+    project_integrated_state,
+    run_multisensory_comparison,
+)
 from artificial_human.neural.homeostasis import (
     HomeostaticController,
     HomeostasisParameters,
@@ -65,4 +75,7 @@ __all__ = [
     "EncodedPercept", "AlignedPercepts", "SensoryEncoderSuite", "SensoryPipeline",
     "VisionEncoder", "AuditionEncoder", "TouchEncoder", "VestibularEncoder",
     "ProprioceptionEncoder", "InteroceptionEncoder", "project_percept",
+    "SensoryEstimate", "MultisensoryParameters", "MultisensoryEstimate",
+    "MultisensoryIntegrator", "MultisensoryComparison", "estimate_from_percept",
+    "project_integrated_state", "run_multisensory_comparison",
 ]
