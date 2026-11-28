@@ -13,9 +13,6 @@ from dataclasses import dataclass, replace
 from threading import RLock
 from uuid import uuid4
 
-from artificial_human.cognition.episodic_replay import EpisodicReplayMemory
-from artificial_human.cognition.relational_memory import RelationalMemoryNetwork
-from artificial_human.cognition.working_memory import WorkingMemorySessions
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.repository import MemoryRecord
 
@@ -789,6 +786,12 @@ class InMemoryCognitiveMemory:
         procedural_capacity: int = 1_000,
         spatial_capacity: int = 2_000,
     ) -> None:
+        # Import cognition modules only when the composed runtime is instantiated.
+        # This avoids the memory <-> cognition package initialisation cycle.
+        from artificial_human.cognition.episodic_replay import EpisodicReplayMemory
+        from artificial_human.cognition.relational_memory import RelationalMemoryNetwork
+        from artificial_human.cognition.working_memory import WorkingMemorySessions
+
         self.working = WorkingMemorySessions(
             capacity=working_capacity, max_sessions=max_working_sessions
         )
