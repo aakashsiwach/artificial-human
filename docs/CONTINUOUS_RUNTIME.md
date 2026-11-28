@@ -90,7 +90,7 @@ The API lifespan starts and stops the same runtime owned by its
 - `GET /runtime/status` — lifecycle, health, counters and bounded trace
 - `POST /runtime/events` — submit an explicit synthetic sensory event
 - `POST /runtime/pause` and `POST /runtime/resume` — control the scheduler
-- `POST /runtime/development` — advance prenatal days or postnatal model units explicitly
+- `POST /runtime/development` — advance postnatal model units explicitly. The default fixture is already postnatal; a custom runtime injected with a prenatal-stage program can use the Python runtime API's `prenatal_days` argument.
 
 The offline CLI runs deterministic accelerated simulation:
 
