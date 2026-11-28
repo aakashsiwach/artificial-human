@@ -474,25 +474,26 @@ class SafeSelfDevelopment:
                         or isinstance(result.exit_code, bool)
                         or not isinstance(result.exit_code, int)
                         or not isinstance(result.timed_out, bool)
-                        or any(
-                            value is not True
-                            for value in (
-                                result.isolated_worktree,
-                                result.base_read_only,
-                                result.filesystem_isolated,
-                                result.process_isolated,
-                                result.network_disabled,
-                                result.credentials_unavailable,
-                            )
-                        )
                     ):
-                        failure = "sandbox result contains invalid identity or isolation attestations"
+                        failure = "sandbox result contains invalid identity or execution status"
+                        break
+                    isolation_requirements = (
+                        (result.isolated_worktree, "isolated worktree"),
+                        (result.base_read_only, "read-only base"),
+                        (result.filesystem_isolated, "filesystem isolation"),
+                        (result.process_isolated, "process isolation"),
+                        (result.network_disabled, "network denial"),
+                        (result.credentials_unavailable, "credential isolation"),
+                    )
+                    missing_control = next(
+                        (label for enabled, label in isolation_requirements if enabled is not True),
+                        None,
+                    )
+                    if missing_control is not None:
+                        failure = f"sandbox {missing_control} was not attested"
                         break
                     if result.base_revision != proposal.base_revision:
                         failure = "sandbox checked a different source revision"
-                        break
-                    if not result.isolated_worktree or not result.base_read_only or not result.network_disabled:
-                        failure = "sandbox isolation, read-only base or network denial was not attested"
                         break
                     if result.timed_out or result.exit_code != 0:
                         failure = f"check failed or timed out: {expected}"
