@@ -119,6 +119,7 @@ class DevelopmentalSnapshot:
     staged_synapses_created: tuple[str, ...]
     functionally_pruned_synapses: tuple[str, ...]
     synapse_usage: tuple[tuple[str, int], ...]
+    synapse_weights: tuple[tuple[str, float], ...]
     network: dict[str, object]
 
     def as_dict(self) -> dict[str, object]:
@@ -133,6 +134,7 @@ class DevelopmentalSnapshot:
             "staged_synapses_created": list(self.staged_synapses_created),
             "functionally_pruned_synapses": list(self.functionally_pruned_synapses),
             "synapse_usage": dict(self.synapse_usage),
+            "synapse_weights": dict(self.synapse_weights),
             "network": self.network,
             "limitations": [
                 "Developmental days and stage boundaries are engineering time, not a person's age.",
@@ -494,6 +496,10 @@ class DevelopmentalNeuralSubstrate:
             staged_synapses_created=tuple(self._staged_ids),
             functionally_pruned_synapses=tuple(self._pruned_ids),
             synapse_usage=tuple(sorted(self._usage.items())),
+            synapse_weights=tuple(sorted(
+                (identifier, synapse.weight)
+                for identifier, synapse in self.simulation.synapses.items()
+            )),
             network=network,
         )
 
