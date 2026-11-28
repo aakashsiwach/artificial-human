@@ -322,12 +322,14 @@ class DevelopmentalNeuralSubstrate:
         external_currents: dict[str, float] | None = None,
         *,
         learn: bool = True,
+        count_experience_usage: bool = False,
     ) -> SimulationStep:
         result = self.simulation.step(external_currents)
-        for spike in result.spikes:
-            for identifier, synapse in self.simulation.synapses.items():
-                if synapse.source == spike:
-                    self._usage[identifier] = self._usage.get(identifier, 0) + 1
+        if count_experience_usage:
+            for spike in result.spikes:
+                for identifier, synapse in self.simulation.synapses.items():
+                    if synapse.source == spike:
+                        self._usage[identifier] = self._usage.get(identifier, 0) + 1
         if learn:
             before = {
                 identifier: synapse.weight
@@ -423,7 +425,7 @@ class DevelopmentalNeuralSubstrate:
         steps = max(6, min(24, math.ceil(float(duration_seconds) * 6.0)))
         for index in range(steps):
             current = {route[0]: 900.0 * float(intensity)} if index == 0 else None
-            self._step(current, learn=True)
+            self._step(current, learn=True, count_experience_usage=True)
         self._accepted_exposures += 1
         after_weights = self._route_weights(route)
         updated = sum(
