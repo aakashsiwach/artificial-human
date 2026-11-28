@@ -15,6 +15,19 @@ from artificial_human.neural.population import (
     PopulationCode,
     PopulationEncoder as DistributedPopulationEncoder,
 )
+from artificial_human.neural.action_selection import (
+    ActionSelectionCircuit,
+    ActionSpec,
+    SafeActionSpace,
+)
+from artificial_human.cognition.attention import (
+    AttentionCandidate,
+    AttentionSystem,
+)
+from artificial_human.cognition.working_memory import (
+    WorkingMemory,
+    WorkingMemoryEntry,
+)
 from artificial_human.development.program import (
     DevelopmentalModality as NeuralModality,
     DevelopmentalProgram as LIFDevelopmentalProgram,
@@ -204,6 +217,48 @@ class ForwardController:
         return error
 
 
+@dataclass(frozen=True, slots=True)
+class OrganismIntegrationConfig:
+    """Explicit ablation switches for the deterministic integrated loop."""
+
+    attention_enabled: bool = True
+    working_memory_enabled: bool = True
+    episodic_memory_enabled: bool = True
+    neural_substrate_enabled: bool = True
+    learned_action_selection_enabled: bool = True
+
+    def __post_init__(self) -> None:
+        if any(
+            not isinstance(value, bool)
+            for value in (
+                self.attention_enabled,
+                self.working_memory_enabled,
+                self.episodic_memory_enabled,
+                self.neural_substrate_enabled,
+                self.learned_action_selection_enabled,
+            )
+        ):
+            raise ValueError("integration ablation switches must be booleans")
+
+
+def _default_action_selection() -> ActionSelectionCircuit:
+    """Build a fixed simulation-only action allowlist and seeded policy."""
+    space = SafeActionSpace((
+        ActionSpec("move_left", "Move the simulated body one step left"),
+        ActionSpec("hold", "Keep the simulated body stationary"),
+        ActionSpec("move_right", "Move the simulated body one step right"),
+    ))
+    return ActionSelectionCircuit(
+        space,
+        learning_rate=0.2,
+        discount_factor=0.1,
+        exploration_rate=0.1,
+        exploration_bonus=0.1,
+        max_state_action_pairs=256,
+        seed=7,
+    )
+
+
 class DevelopmentStage(StrEnum):
     EARLY = "early"
     JUVENILE = "juvenile"
@@ -256,13 +311,22 @@ class OrganismLoop:
     memory: EpisodicMemory = field(default_factory=EpisodicMemory)
     world: WorldModel = field(default_factory=WorldModel.create)
     environment: SimulatedEnvironment = field(default_factory=SimulatedEnvironment)
-    actions: ActionLearner = field(default_factory=ActionLearner)
     controller: ForwardController = field(default_factory=ForwardController)
     homeostat: Homeostat = field(default_factory=Homeostat)
     neural_development: LIFDevelopmentalProgram = field(default_factory=_default_neural_development)
+    attention: AttentionSystem = field(default_factory=AttentionSystem)
+    working_memory: WorkingMemory = field(default_factory=lambda: WorkingMemory(capacity=7))
+    action_selection: ActionSelectionCircuit = field(default_factory=_default_action_selection)
+    config: OrganismIntegrationConfig = field(default_factory=OrganismIntegrationConfig)
     tick_index: int = 0
     episode_count: int = 0
     paused: bool = False
+
+    @staticmethod
+    def _state_id(distance: float) -> str:
+        direction = "ahead" if distance > 0.05 else "behind" if distance < -0.05 else "aligned"
+        bucket = min(30, int(abs(distance) * 10))
+        return f"goal:{direction}:{bucket}"
 
     def tick(self, event: SensoryEvent | None = None) -> dict[str, object]:
         if self.paused:
@@ -270,37 +334,135 @@ class OrganismLoop:
         if self.environment.steps >= self.environment.max_steps:
             self.environment.reset()
             self.episode_count += 1
-        event = event or SensoryEvent(Modality.PROPRIOCEPTION,
-                                      (self.environment.position, self.environment.target),
-                                      self.tick_index)
-        modality_map = {
-            Modality.VISION: NeuralModality.VISION,
-            Modality.AUDITION: NeuralModality.AUDITORY,
-            Modality.TOUCH: NeuralModality.TACTILE,
-            Modality.PROPRIOCEPTION: NeuralModality.PROPRIOCEPTION,
-            Modality.INTEROCEPTION: NeuralModality.INTEROCEPTION,
-        }
-        neural_outcome = self.neural_development.experience(
-            modality_map[event.modality],
-            intensity=event.confidence,
-            duration_steps=1,
+        event = event or SensoryEvent(
+            Modality.PROPRIOCEPTION,
+            (self.environment.position, self.environment.target),
+            self.tick_index,
         )
-        self.neural_development.advance_simulation(1)
         code = self.encoder.encode(event)
         decoded = self.encoder.decode(code)
         cue = tuple(value for value in decoded if value is not None)
-        recalled = self.memory.recall(cue)
-        state = (self.environment.position, self.environment.target,
-                 self.environment.target - self.environment.position, 1.0)
+        recalled = (
+            self.memory.recall(cue)
+            if self.config.episodic_memory_enabled
+            else None
+        )
+
+        candidates = [
+            AttentionCandidate(
+                reference_id=f"sensory:{self.tick_index}",
+                kind="sensory",
+                relevance=event.confidence,
+                salience=1.0 - code.uncertainty,
+                channels=(event.modality.value,),
+            )
+        ]
+        if recalled is not None:
+            candidates.append(AttentionCandidate(
+                reference_id=f"episode:{self.tick_index}",
+                kind="episodic",
+                relevance=0.7,
+                salience=0.6,
+                channels=("episodic_memory",),
+            ))
+        attended = (
+            self.attention.select(candidates, limit=3)
+            if self.config.attention_enabled
+            else []
+        )
+        attended_weight = attended[0].weight if attended else (
+            1.0 if not self.config.attention_enabled else 0.0
+        )
+
+        if self.config.working_memory_enabled:
+            self.working_memory.remember(WorkingMemoryEntry(
+                id=f"sensory:{self.tick_index}",
+                content=",".join(f"{value:.6f}" for value in event.values),
+                kind="percept",
+                source="synthetic_sensory_event",
+                salience=min(1.0, max(0.0, event.confidence * attended_weight)),
+                created_at=f"simulation-tick:{self.tick_index:012d}",
+            ))
+            if recalled is not None:
+                self.working_memory.remember(WorkingMemoryEntry(
+                    id=f"recall:{self.tick_index}",
+                    content=recalled,
+                    kind="episodic_recall",
+                    source="volatile_episodic_memory",
+                    salience=0.6,
+                    created_at=f"simulation-tick:{self.tick_index:012d}",
+                ))
+
+        neural_outcome: dict[str, object] = {
+            "accepted": False,
+            "spikes": (),
+            "total_weight_change": 0.0,
+            "simulation_step": self.neural_development.simulation.step_index,
+        }
+        if self.config.neural_substrate_enabled:
+            modality_map = {
+                Modality.VISION: NeuralModality.VISION,
+                Modality.AUDITION: NeuralModality.AUDITORY,
+                Modality.TOUCH: NeuralModality.TACTILE,
+                Modality.PROPRIOCEPTION: NeuralModality.PROPRIOCEPTION,
+                Modality.INTEROCEPTION: NeuralModality.INTEROCEPTION,
+            }
+            neural_intensity = min(
+                1.0,
+                max(0.0, event.confidence * (0.5 + 0.5 * attended_weight)),
+            )
+            outcome = self.neural_development.experience(
+                modality_map[event.modality],
+                intensity=neural_intensity,
+                duration_steps=1,
+            )
+            self.neural_development.advance_simulation(1)
+            neural_outcome = {
+                "accepted": outcome.accepted,
+                "spikes": outcome.spikes,
+                "total_weight_change": outcome.total_weight_change,
+                "simulation_step": self.neural_development.simulation.step_index,
+            }
+
+        distance = self.environment.target - self.environment.position
+        state = (
+            self.environment.position,
+            self.environment.target,
+            distance,
+            attended_weight,
+        )
         predicted = self.world.predict(state)
-        action = self.actions.choose(self.environment.target - self.environment.position)
+        state_id = self._state_id(distance)
+        if self.config.learned_action_selection_enabled:
+            choice = self.action_selection.select(state_id, explore=True)
+            action_map = {"move_left": -1, "hold": 0, "move_right": 1}
+            action = action_map[choice.action_id]
+        else:
+            choice = None
+            action = 1 if distance > 0.05 else -1 if distance < -0.05 else 0
+
         before = self.environment.position
+        distance_before = abs(self.environment.target - before)
         reward = self.environment.act(action)
         delta = self.environment.position - before
+        distance_after = abs(self.environment.target - self.environment.position)
+        reward_signal = max(
+            -1.0,
+            min(1.0, (distance_before - distance_after) / self.environment.step_size),
+        )
+        next_state_id = self._state_id(self.environment.target - self.environment.position)
+        update = None
+        if self.config.learned_action_selection_enabled and choice is not None:
+            update = self.action_selection.observe(
+                state_id,
+                choice.action_id,
+                reward_signal,
+                next_state_id=next_state_id,
+            )
         error = self.world.observe(state, reward)
         self.controller.adapt(action, delta)
-        self.actions.learn(action, reward)
-        self.memory.store(self.tick_index, cue, f"action={action};reward={reward:.3f}")
+        if self.config.episodic_memory_enabled:
+            self.memory.store(self.tick_index, cue, f"action={action};reward={reward:.3f}")
         threshold = self.homeostat.update(min(1.0, abs(delta) * 2))
         stage = self.neural_development.stage
         result: dict[str, object] = {
@@ -308,20 +470,37 @@ class OrganismLoop:
             "modality": event.modality.value,
             "code": code.values,
             "uncertainty": code.uncertainty,
+            "attended": tuple(
+                {
+                    "reference_id": item.reference_id,
+                    "kind": item.kind,
+                    "weight": item.weight,
+                    "channels": item.channels,
+                }
+                for item in attended
+            ),
+            "working_memory": self.working_memory.public_state(),
             "recalled": recalled,
             "prediction": predicted,
             "prediction_error": error,
             "action": action,
+            "action_selection": (
+                {
+                    "state_id": choice.state_id,
+                    "action_id": choice.action_id,
+                    "net_value": choice.net_value,
+                    "uncertainty": choice.uncertainty,
+                    "explored": choice.explored,
+                    "prediction_error": update.prediction_error if update else None,
+                }
+                if choice is not None else {"mode": "directional_ablation_baseline"}
+            ),
             "reward": reward,
+            "reward_signal": reward_signal,
             "position": self.environment.position,
             "threshold": threshold,
             "stage": stage.value,
-            "neural": {
-                "accepted": neural_outcome.accepted,
-                "spikes": neural_outcome.spikes,
-                "total_weight_change": neural_outcome.total_weight_change,
-                "simulation_step": self.neural_development.simulation.step_index,
-            },
+            "neural": neural_outcome,
         }
         self.tick_index += 1
         return result
@@ -341,7 +520,8 @@ class OrganismLoop:
         self.memory.episodes.clear()
         self.world.weights[:] = [0.0] * len(self.world.weights)
         self.environment.reset()
-        self.actions.values = {-1: 0.0, 0: 0.0, 1: 0.0}
+        self.working_memory = WorkingMemory(capacity=7)
+        self.action_selection.reset()
         self.controller.gain = 0.1
         self.homeostat = Homeostat()
         self.neural_development = _default_neural_development()
@@ -356,6 +536,8 @@ class OrganismLoop:
             "episodes": len(self.memory.episodes),
             "episode_count": self.episode_count,
             "weights": tuple(self.world.weights),
+            "working_memory": self.working_memory.public_state(),
+            "action_selection": self.action_selection.snapshot(),
             "stage": development.stage.value,
             "developmental_time": {
                 "prenatal_days": development.prenatal_days,
