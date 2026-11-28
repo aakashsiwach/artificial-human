@@ -101,6 +101,7 @@ def test_integrated_loop_connects_attention_working_memory_action_selection_and_
 
     assert first["attended"]
     assert first["working_memory"]["item_count"] == 1
+    assert first["working_memory_focus"] > 0.0
     assert first["action_selection"]["action_id"] in {
         "move_left", "hold", "move_right"
     }
@@ -128,6 +129,7 @@ def test_integrated_subsystem_ablations_are_explicit_and_observable() -> None:
 
     assert result["attended"] == ()
     assert result["working_memory"]["item_count"] == 0
+    assert result["working_memory_focus"] == 0.0
     assert result["recalled"] is None
     assert result["action_selection"]["mode"] == "directional_ablation_baseline"
     assert result["neural"]["accepted"] is False
