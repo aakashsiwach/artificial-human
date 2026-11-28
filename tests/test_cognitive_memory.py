@@ -121,6 +121,12 @@ def test_spatial_memory_uses_coordinates_and_explicit_relations() -> None:
         owner_id="owner", consent_id="c", source_id="s2",
         label="office", coordinates=(10.0, 0.0, 0.0), context_id="home",
     )
+    repeated_observation = store.observe(
+        owner_id="owner", consent_id="c", source_id="s3",
+        label="kitchen", coordinates=(0.5, 0.0, 0.0), context_id="home",
+        tags=("food",),
+    )
+    assert repeated_observation.id != kitchen.id
     store.connect("owner", kitchen.id, office.id, "east_of")
     nearest = store.nearest("owner", (1.0, 0.0, 0.0), context_id="home")
 
@@ -129,6 +135,7 @@ def test_spatial_memory_uses_coordinates_and_explicit_relations() -> None:
     assert store.retrieve("owner", "food kitchen")[0].id == kitchen.id
     assert store.nearest("another-owner", (0.0, 0.0, 0.0)) == ()
     assert store.forget_source("s1") == 1
+    assert store.snapshot()["count"] == 2
     assert store.snapshot()["relations"] == 0
 
 
