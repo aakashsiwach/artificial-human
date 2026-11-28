@@ -197,7 +197,7 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
         second = network.step({"post_paired": 400.0})
         controller.observe_step(second.spikes, gate=gate)
         # The unpaired control receives presynaptic activity only.
-        for _ in range(30):
+        for _ in range(100):
             quiet = network.step()
             controller.observe_step(quiet.spikes)
 
