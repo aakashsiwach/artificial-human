@@ -17,19 +17,59 @@ The north star is one executable computational organism grounded in human neuros
 
 ## Verified current baseline
 
-The merged main branch contains the following implementation foundation:
+The merged main branch and the current issue #36 implementation contain the
+following foundation. Issue #36 is complete only when its PR is merged with
+green post-merge CI.
 
-- The active `ArtificialOrganism` uses source-defined identity and a bounded in-memory repository in both local and public modes. Default construction does not open SQLite or create persistence files; the SQLite repository and `--legacy-sqlite` CLI path are retained only for explicit legacy work.
-- `neural/simulation.py` provides deterministic integer-step time, LIF membrane integration, excitatory/inhibitory synapses, delayed events, stable ordering, bounded event queues/currents, cancellation, pause/resume/single-step/reset and in-memory snapshot/restore.
-- `neural/circuits.py` provides a four-neuron recurrent microcircuit with feed-forward/recurrent and inhibition-on/off controls. Tests check propagation, inhibition ablation, deterministic event order and bounds.
-- The API idle loop advances this microcircuit while the process is awake. A suspended host does not execute it.
-- A reproducible benchmark reports throughput and Python-traced heap usage. On the recorded Python 3.13 GitHub runner, 20,000 steps took 1.035225 s (19,319.47 steps/s) with 150,864 bytes peak traced memory. These values are machine-specific.
-- The cognitive cycle still includes heuristic attention, working memory, lexical novelty, deterministic planning and an optional LLM language interface. Existing seven-population rate dynamics remain a separate baseline.
-- Perception is explicit text input. Vision, audition, touch, proprioception, interoception, a predictive world model and body/environment action loop remain future work.
-- The RAM repository uses typed records and consent/provenance policies, but does not yet implement distinct biologically motivated memory systems or interference/forgetting/strengthening. Full #30 remains open.
-- Code repair currently creates proposals only; there is no isolated self-authored code/test lifecycle.
+- The active `ArtificialOrganism` uses source-defined identity and bounded
+  process-local memory in local and public modes. Default construction does not
+  open SQLite or create persistence files. The SQLite repository is lazy-loaded
+  only for explicit legacy operations.
+- `neural/simulation.py` provides deterministic LIF membrane integration,
+  excitatory/inhibitory synapses, delayed events, stable ordering, bounded
+  queues/currents, cancellation, pause/resume, single-step, reset and
+  in-memory snapshots.
+- `development/program.py` is the active developmental LIF program. It uses
+  12 neurons and stage-dependent synapses, membrane/refractory maturation,
+  conduction-delay refinement, bounded STDP-inspired plasticity, homeostatic
+  regulation and functional pruning. Prenatal and postnatal model clocks are
+  explicit. These are engineering hypotheses, not anatomical replicas.
+- `neural/circuits.py` retains a four-neuron recurrent circuit as a controlled
+  baseline; `cognition/dynamics.py` retains the seven-population rate model as
+  a request-path comparison component. Neither is advanced as a second
+  autonomous brain by the continuous runtime.
+- PR #55 adds a bounded LIF episodic engram circuit with sparse keyed feature
+  codes, context binding, partial-cue completion, inhibitory competition,
+  interference/pattern-separation measures and retrieval-dependent
+  strengthening. Owner-scoped memory records remain the source of event
+  content; raw text is not retained in the neural engram index.
+- The high-level `OrganismLoop` processes explicit synthetic sensory events,
+  bounded episodic memory, world-state prediction, a simple action learner,
+  homeostatic state and a deterministic simulated environment. The same event
+  is delivered to the developmental LIF program. Action choice is not yet
+  decoded from LIF population activity; issues #32–#34 and #38 remain open.
+- Issue #36's `ContinuousOrganismRuntime` implementation gives
+  `ArtificialOrganism` one composition-owned runtime. The API lifespan starts
+  and stops it; the CLI supports deterministic accelerated ticks. It adds a
+  bounded sensory queue, drop-newest backpressure, per-tick resource budgets,
+  pause/resume, shutdown, reset, snapshots and a bounded recent trace. Neural,
+  developmental and wall-clock time remain independent.
+- Synthetic sensory events exercise vision, audition, touch, proprioception
+  and interoception interfaces. No camera, microphone, physical actuator or
+  real-world action is enabled.
+- The consent-aware RAM repository, specialized cognitive-memory stores and
+  neural episodic circuit remain in process memory. The continuous loop's
+  synthetic episodes are distinct from owner-controlled personal memories.
+- The optional LLM is a language/request adapter. The continuous neural,
+  memory, prediction, regulation and simulated-action loop does not require
+  it.
+- Code repair currently creates proposals only; there is no autonomous
+  self-authored code/test lifecycle or automatic merge/deployment.
 
-These are engineering mechanisms, not biological equivalence or claims of consciousness. See [Brain](BRAIN.md), [Architecture](ARCHITECTURE.md), [Memory](MEMORY.md), and [Safety](SAFETY.md).
+These are engineering mechanisms, not biological equivalence or claims of
+consciousness. See [Brain](BRAIN.md), [Architecture](ARCHITECTURE.md),
+[Continuous runtime](CONTINUOUS_RUNTIME.md), [Memory](MEMORY.md), and
+[Safety](SAFETY.md).
 
 ## Ordered implementation programme
 
@@ -52,24 +92,24 @@ These are engineering mechanisms, not biological equivalence or claims of consci
 
 ### Phase 2 — learning, regulation, representation, and memory
 
-- [ ] [#24 — Local synaptic plasticity and learning-rule comparisons](https://github.com/aakashsiwach/artificial-human/issues/24).
-- [ ] [#25 — Neural homeostasis and bounded internal regulation](https://github.com/aakashsiwach/artificial-human/issues/25).
-- [ ] [#26 — Population coding and distributed neural representations](https://github.com/aakashsiwach/artificial-human/issues/26).
-- [ ] [#30 — Replace database-backed memory with bounded in-memory cognitive memory](https://github.com/aakashsiwach/artificial-human/issues/30). The active storage adapter is RAM-only; distinct memory systems, forgetting, interference and retrieval-dependent strengthening remain open.
+- [x] [#24 — Local synaptic plasticity and learning-rule comparisons](https://github.com/aakashsiwach/artificial-human/issues/24). Merged and closed.
+- [x] [#25 — Neural homeostasis and bounded internal regulation](https://github.com/aakashsiwach/artificial-human/issues/25). Merged and closed.
+- [x] [#26 — Population coding and distributed neural representations](https://github.com/aakashsiwach/artificial-human/issues/26). Merged and closed.
+- [x] [#30 — Replace database-backed memory with bounded in-memory cognitive memory](https://github.com/aakashsiwach/artificial-human/issues/30). Merged and closed; the active runtime uses bounded in-memory cognitive stores.
 
 **Exit gate:** independent, bounded RAM mechanisms learn, retrieve, associate, forget, and replay without an LLM or database; learning is compared against fixed-weight and simpler baselines.
 
 ### Phase 3 — perception and world modelling
 
-- [ ] [#27 — Permission-scoped sensory encoders](https://github.com/aakashsiwach/artificial-human/issues/27).
-- [ ] [#28 — Multimodal integration and perceptual state estimation](https://github.com/aakashsiwach/artificial-human/issues/28).
-- [ ] [#29 — Predictive world-state model and prediction-error loop](https://github.com/aakashsiwach/artificial-human/issues/29).
+- [x] [#27 — Permission-scoped sensory encoders](https://github.com/aakashsiwach/artificial-human/issues/27). Merged and closed; the current runtime uses synthetic events only.
+- [x] [#28 — Multimodal integration and perceptual state estimation](https://github.com/aakashsiwach/artificial-human/issues/28). Merged and closed for the current synthetic task.
+- [x] [#29 — Predictive world-state model and prediction-error loop](https://github.com/aakashsiwach/artificial-human/issues/29). Merged and closed with a bounded synthetic world model.
 
 **Exit gate:** explicit, permission-scoped sensory streams produce uncertainty-aware neural state; predicted environment changes are compared with observed outcomes.
 
 ### Phase 4 — connected brain circuits, body, and action
 
-- [ ] [#31 — Episodic binding, replay, and consolidation circuits](https://github.com/aakashsiwach/artificial-human/issues/31).
+- [x] [#31 — Episodic binding, replay, and consolidation circuits](https://github.com/aakashsiwach/artificial-human/issues/31). Merged and closed after PR #55.
 - [ ] [#32 — Action selection and reward learning](https://github.com/aakashsiwach/artificial-human/issues/32).
 - [ ] [#33 — Forward prediction and adaptive control](https://github.com/aakashsiwach/artificial-human/issues/33).
 - [ ] [#34 — Simulated body and environment](https://github.com/aakashsiwach/artificial-human/issues/34).
@@ -78,8 +118,8 @@ These are engineering mechanisms, not biological equivalence or claims of consci
 
 ### Phase 5 — development and continuous organism runtime
 
-- [ ] [#35 — Unify prenatal and runtime substrate; extend postnatal development](https://github.com/aakashsiwach/artificial-human/issues/35).
-- [ ] [#36 — Run the organism as a continuous in-memory process](https://github.com/aakashsiwach/artificial-human/issues/36).
+- [x] [#35 — Unify prenatal and runtime substrate; extend postnatal development](https://github.com/aakashsiwach/artificial-human/issues/35). Merged and closed after PR #60.
+- [x] [#36 — Run the organism as a continuous in-memory process](https://github.com/aakashsiwach/artificial-human/issues/36). Implemented in PR #61; closes on merge and green CI.
 
 **Exit gate:** one coherent substrate follows a developmental clock and continues bounded internal neural, regulatory, memory, and predictive processes without incoming requests or LLM calls.
 
