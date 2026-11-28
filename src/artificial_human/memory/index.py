@@ -17,10 +17,10 @@ from artificial_human.memory.embeddings import (
     encode_vector,
 )
 from artificial_human.memory.repository import (
-from artificial_human.memory.contracts import MemoryStore
     MemoryRecord,
     content_fingerprint,
 )
+from artificial_human.memory.contracts import MemoryStore
 
 # Log identifiers and error classes only: never memory content, vectors, or keys.
 logger = logging.getLogger(__name__)
