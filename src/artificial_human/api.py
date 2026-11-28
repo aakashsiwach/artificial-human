@@ -189,7 +189,6 @@ class RuntimeEventRequest(BaseModel):
 
 
 class DevelopmentalTimeRequest(BaseModel):
-    prenatal_days: int = Field(default=0, ge=0, le=280)
     postnatal_units: int = Field(default=0, ge=0, le=10_000)
 
 
@@ -680,7 +679,6 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     def advance_runtime_development(request: DevelopmentalTimeRequest) -> dict[str, object]:
         try:
             return runtime_organism.runtime.advance_developmental_time(
-                prenatal_days=request.prenatal_days,
                 postnatal_units=request.postnatal_units,
             )
         except (ValueError, RuntimeError) as error:
