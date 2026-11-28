@@ -323,7 +323,6 @@ def run_adaptive_control_comparison(
     adaptive_errors, _ = _simulate_tracking(
         adaptive,
         steps=steps,
-        feedback_delay_steps=feedback_delay_steps,
         sensor_noise_std=sensor_noise_std,
         seed=seed,
     )
