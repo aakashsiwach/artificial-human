@@ -18,8 +18,9 @@ delivered to the developmental LIF substrate, which performs neuron/synapse
 updates, plasticity and homeostatic regulation. Action selection uses the
 opponent-channel `ActionSelectionCircuit` over a fixed three-action simulator
 allowlist. Learned values cannot expand that allowlist or trigger real-world
-actions. Actions are not decoded directly from LIF population activity; this
-remains an explicit integration boundary. The old
+actions. A bounded summary of downstream LIF activity is included in the action
+selector's discretized context. Individual LIF spikes are not directly decoded
+into motor commands; that remains an explicit modelling boundary. The old
 population-dynamics engine remains available to the request-driven assistant
 path for compatibility, but it is not advanced as a second autonomous brain by
 the continuous runtime.
@@ -101,7 +102,11 @@ The API lifespan starts and stops the same runtime owned by its
 - `POST /runtime/development` — advance postnatal model units explicitly. The default fixture is already postnatal; a custom runtime injected with a prenatal-stage program can use the Python runtime API's `prenatal_days` argument.
 
 The active loop exposes explicit ablation switches for attention, working
-memory, episodic memory, the LIF substrate and learned action selection.
+memory, episodic memory, the LIF substrate and learned action selection. The
+LIF substrate receives the selected modality/intensity, then advances through
+a fixed ten-step propagation window; a bounded activity summary conditions
+the high-level action-selection state. The tabular state space is bounded by
+coarse position/velocity, neural-state and working-memory-focus bins.
 `run_integration_ablation_comparison(ticks=N)` runs the same seeded synthetic
 task across the full model and five single-subsystem ablations. It reports
 cumulative reward, mean absolute prediction error, neural spike count, memory

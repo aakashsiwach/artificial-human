@@ -160,13 +160,17 @@ synthetic sensory event
 ```
 
 The same event is encoded, ranked by bounded attention, placed in working
-memory, and delivered to the LIF substrate. Episodic recall and world-state
-prediction inform a fixed simulation-only action space. The active action
-selector is the opponent-channel `ActionSelectionCircuit`; the legacy
-`ActionLearner` remains only as a comparison baseline. Learned values cannot
-add actions or bypass the simulated environment's bounds. Actions are still
-selected by a high-level computational circuit, not decoded directly from LIF
-population activity. The current integration is an end-to-end software
+memory, and delivered to the LIF substrate. Each organism tick advances a
+fixed ten-step propagation window after sensory stimulation so delayed
+synaptic events can reach downstream populations. A bounded neural activity
+summary (`silent`, `sensory_only`, or `distributed`) becomes part of the
+state representation used by the learned action selector, together with
+coarse body-state and working-memory-focus bins. The selector is therefore
+conditioned on live neural-substrate activity, but it is still a high-level
+tabular computational circuit; individual LIF spikes are not directly decoded
+into motor commands. Episodic recall and the world-state predictor remain
+inspectable parts of the same loop. Learned values cannot add actions or
+bypass the simulated environment's bounds. The current integration is an end-to-end software
 composition, not a claim that every cognitive process is implemented by
 spiking circuits. The runtime's one-dimensional body/environment is a bounded simulator with
 velocity, disturbances and a fixed action space. It is not a robotics interface

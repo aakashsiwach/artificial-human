@@ -350,11 +350,28 @@ class OrganismLoop:
     paused: bool = False
 
     @staticmethod
-    def _state_id(distance: float, velocity: float) -> str:
+    def _state_id(
+        distance: float,
+        velocity: float,
+        *,
+        neural_state: str,
+        working_memory_focus: float,
+    ) -> str:
+        """Build a small, explicit state space from body and cognitive signals.
+
+        The bins are intentionally coarse: 3 directions × 9 distance bins ×
+        5 velocity bins × 3 neural states × 2 focus states = 810 states.
+        With three approved actions, the tabular learner stays below 2,500
+        state-action pairs.
+        """
         direction = "ahead" if distance > 0.05 else "behind" if distance < -0.05 else "aligned"
-        distance_bucket = min(30, int(abs(distance) * 10))
-        velocity_bucket = max(-10, min(10, int(round(velocity * 10))))
-        return f"goal:{direction}:{distance_bucket}:velocity:{velocity_bucket}"
+        distance_bucket = min(8, int(abs(distance) * 6))
+        velocity_bucket = max(-2, min(2, int(round(velocity * 2))))
+        focus_state = "engaged" if working_memory_focus >= 0.35 else "low"
+        return (
+            f"goal:{direction}:{distance_bucket}:velocity:{velocity_bucket}"
+            f":neural={neural_state}:focus={focus_state}"
+        )
 
     def tick(self, event: SensoryEvent | None = None) -> dict[str, object]:
         if self.paused:
@@ -400,8 +417,18 @@ class OrganismLoop:
             if self.config.attention_enabled
             else []
         )
-        attended_weight = attended[0].weight if attended else (
-            1.0 if not self.config.attention_enabled else 0.0
+        sensory_attention = next(
+            (
+                item
+                for item in attended
+                if item.reference_id == f"sensory:{self.tick_index}"
+            ),
+            None,
+        )
+        attended_weight = (
+            1.0
+            if not self.config.attention_enabled
+            else sensory_attention.weight if sensory_attention is not None else 0.0
         )
 
         if self.config.working_memory_enabled:
@@ -426,6 +453,10 @@ class OrganismLoop:
         neural_outcome: dict[str, object] = {
             "accepted": False,
             "spikes": (),
+            "downstream_spikes": (),
+            "population_state": "disabled",
+            "simulation_steps_advanced": 0,
+            "input_intensity": 0.0,
             "total_weight_change": 0.0,
             "simulation_step": self.neural_development.simulation.step_index,
         }
@@ -446,10 +477,34 @@ class OrganismLoop:
                 intensity=neural_intensity,
                 duration_steps=1,
             )
-            self.neural_development.advance_simulation(1)
+            # Advance the shared recurrent substrate beyond the sensory input
+            # step so delayed synaptic events can reach downstream populations.
+            # This is a fixed, bounded integration window rather than an
+            # adaptive or unbounded simulation loop.
+            propagation_steps = self.neural_development.advance_simulation(10)
+            spikes = outcome.spikes + tuple(
+                neuron
+                for step in propagation_steps
+                for neuron in step.spikes
+            )
+            sensory_spikes = tuple(
+                neuron for neuron in spikes if neuron.startswith("sensory_")
+            )
+            downstream_spikes = tuple(
+                neuron for neuron in spikes if not neuron.startswith("sensory_")
+            )
+            population_state = (
+                "distributed"
+                if downstream_spikes
+                else "sensory_only" if sensory_spikes else "silent"
+            )
             neural_outcome = {
                 "accepted": outcome.accepted,
-                "spikes": outcome.spikes,
+                "spikes": spikes,
+                "downstream_spikes": downstream_spikes,
+                "population_state": population_state,
+                "simulation_steps_advanced": len(propagation_steps),
+                "input_intensity": round(neural_intensity, 6),
                 "total_weight_change": outcome.total_weight_change,
                 "simulation_step": self.neural_development.simulation.step_index,
             }
@@ -469,7 +524,13 @@ class OrganismLoop:
             working_memory_focus,
         )
         predicted = self.world.predict(state)
-        state_id = self._state_id(distance, body_state.velocity)
+        neural_state = str(neural_outcome["population_state"])
+        state_id = self._state_id(
+            distance,
+            body_state.velocity,
+            neural_state=neural_state,
+            working_memory_focus=working_memory_focus,
+        )
         if self.config.learned_action_selection_enabled:
             choice = self.action_selection.select(state_id, explore=True)
             action_map = {"move_left": -1, "hold": 0, "move_right": 1}
@@ -494,6 +555,8 @@ class OrganismLoop:
         next_state_id = self._state_id(
             transition.current.goal_position - transition.current.position,
             transition.current.velocity,
+            neural_state=neural_state,
+            working_memory_focus=working_memory_focus,
         )
         update = None
         terminal = transition.current.tick >= self.environment.max_steps
@@ -528,6 +591,7 @@ class OrganismLoop:
             "working_memory": self.working_memory.public_state(),
             "recalled": recalled,
             "working_memory_focus": working_memory_focus,
+            "sensory_attention_weight": attended_weight,
             "prediction": predicted,
             "prediction_error": error,
             "action": action,
@@ -642,10 +706,9 @@ def run_integration_ablation_comparison(
             attended = step.get("attended")
             if isinstance(attended, (tuple, list)):
                 attended_items += len(attended)
-                if attended and isinstance(attended[0], dict):
-                    weight = attended[0].get("weight")
-                    if isinstance(weight, (int, float)):
-                        attention_weight_total += float(weight)
+            sensory_weight = step.get("sensory_attention_weight")
+            if isinstance(sensory_weight, (int, float)):
+                attention_weight_total += float(sensory_weight)
             neural = step.get("neural")
             if isinstance(neural, dict):
                 spikes = neural.get("spikes")

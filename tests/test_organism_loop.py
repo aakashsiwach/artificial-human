@@ -106,13 +106,15 @@ def test_integrated_loop_connects_attention_working_memory_action_selection_and_
         "move_left", "hold", "move_right"
     }
     assert first["neural"]["accepted"] is True
-    assert first["neural"]["simulation_step"] == 2
+    assert first["neural"]["simulation_steps_advanced"] == 10
+    assert first["neural"]["simulation_step"] == 11
+    assert ":neural=" in first["action_selection"]["state_id"]
 
     loop.run(12)
     snapshot = loop.snapshot()
     assert snapshot["working_memory"]["item_count"] <= 7
     assert snapshot["action_selection"]["updates"] >= 13
-    assert snapshot["neural"]["simulation_step"] >= 26
+    assert snapshot["neural"]["simulation_step"] >= 13 * 11
 
 
 def test_integrated_subsystem_ablations_are_explicit_and_observable() -> None:
@@ -193,3 +195,35 @@ def test_sensory_event_rejects_malformed_and_unbounded_inputs() -> None:
         SensoryEvent(Modality.VISION, (float("nan"),), 0)
     with pytest.raises(ValueError, match="confidence"):
         SensoryEvent(Modality.VISION, (0.1,), 0, float("inf"))
+
+
+
+def test_action_selection_state_includes_the_live_neural_population_state() -> None:
+    full = OrganismLoop().tick()
+    neural_disabled = OrganismLoop(config=OrganismIntegrationConfig(
+        neural_substrate_enabled=False,
+    )).tick()
+
+    assert full["neural"]["population_state"] in {
+        "distributed", "sensory_only", "silent"
+    }
+    assert neural_disabled["neural"]["population_state"] == "disabled"
+    assert ":neural=disabled:" in neural_disabled["action_selection"]["state_id"]
+    assert (
+        f":neural={full['neural']['population_state']}:"
+        in full["action_selection"]["state_id"]
+    )
+
+
+def test_sensory_attention_weight_is_not_replaced_by_a_higher_episode_score() -> None:
+    loop = OrganismLoop()
+    event = SensoryEvent(Modality.PROPRIOCEPTION, (0.1,), 0, confidence=0.1)
+    encoded = loop.encoder.encode(event)
+    cue = tuple(value for value in loop.encoder.decode(encoded) if value is not None)
+    loop.memory.store(0, cue, "recalled episode")
+
+    result = loop.tick(event)
+
+    assert result["attended"][0]["reference_id"] == "episode:0"
+    assert result["sensory_attention_weight"] == pytest.approx(0.1)
+    assert result["neural"]["input_intensity"] == pytest.approx(0.055)
