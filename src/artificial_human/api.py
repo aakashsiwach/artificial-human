@@ -963,6 +963,8 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
         organism_ref.cognitive_memory.forget_source(memory_id)
+        organism_ref.cognitive_memory.forget_source(memory_id)
+        organism_ref.cognitive_memory.ingest(record)
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
         organism_ref.schema_extraction.forget_memory(organism_ref.owner_id, memory_id)
@@ -985,6 +987,8 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             raise HTTPException(status_code=403, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
+        organism_ref.cognitive_memory.forget_source(memory_id)
+        organism_ref.cognitive_memory.ingest(record)
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
         organism_ref.schema_extraction.forget_memory(organism_ref.owner_id, memory_id)
