@@ -31,10 +31,7 @@ from artificial_human.development.program import (
     DevelopmentalModality as NeuralModality,
     DevelopmentalProgram as LIFDevelopmentalProgram,
 )
-from artificial_human.development.self_development import (
-    ImprovementProposal,
-    SafeSelfDevelopment,
-)
+from artificial_human.development.self_development import SafeSelfDevelopment  # noqa: F401
 
 
 def _default_neural_development() -> LIFDevelopmentalProgram:
