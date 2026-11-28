@@ -422,7 +422,7 @@ class DevelopmentalNeuralSubstrate:
                 gate, 0, self._mean(before_weights), self._mean(before_weights),
             )
 
-        steps = max(6, min(24, math.ceil(float(duration_seconds) * 6.0)))
+        steps = max(12, min(24, math.ceil(float(duration_seconds) * 12.0)))
         for index in range(steps):
             current = {route[0]: 900.0 * float(intensity)} if index == 0 else None
             self._step(current, learn=True, count_experience_usage=True)
