@@ -509,42 +509,42 @@ class CognitiveArchitecture:
                     salience=attended_lookup[(example.id, "learning_example")],
                 )
             )
-        for item in specialized_recall.episodic:
+        for episodic_item in specialized_recall.episodic:
             workspace.remember(
                 new_working_memory_entry(
-                    id=f"cognitive:episodic:{item.id}",
-                    content=item.content[:1200],
+                    id=f"cognitive:episodic:{episodic_item.id}",
+                    content=episodic_item.content[:1200],
                     kind="episodic_trace",
                     source="volatile_episodic_memory",
-                    salience=item.salience * item.strength,
+                    salience=episodic_item.salience * episodic_item.strength,
                 )
             )
-        for item in specialized_recall.semantic:
-            details = "; ".join(f"{key}: {value}" for key, value in item.attributes)
+        for semantic_item in specialized_recall.semantic:
+            details = "; ".join(f"{key}: {value}" for key, value in semantic_item.attributes)
             workspace.remember(
                 new_working_memory_entry(
-                    id=f"cognitive:semantic:{item.id}",
-                    content=(item.concept + (f" ({details})" if details else ""))[:1200],
+                    id=f"cognitive:semantic:{semantic_item.id}",
+                    content=(semantic_item.concept + (f" ({details})" if details else ""))[:1200],
                     kind="semantic_fact",
                     source="volatile_semantic_memory",
-                    salience=item.confidence * item.strength,
+                    salience=semantic_item.confidence * semantic_item.strength,
                 )
             )
-        for item in specialized_recall.procedural:
+        for procedure_item in specialized_recall.procedural:
             workspace.remember(
                 new_working_memory_entry(
-                    id=f"cognitive:procedural:{item.id}",
-                    content=(item.task + ": " + " -> ".join(item.steps))[:1200],
+                    id=f"cognitive:procedural:{procedure_item.id}",
+                    content=(procedure_item.task + ": " + " -> ".join(procedure_item.steps))[:1200],
                     kind="procedural_sequence",
                     source="volatile_procedural_memory",
-                    salience=item.success_rate * item.strength,
+                    salience=procedure_item.success_rate * procedure_item.strength,
                 )
             )
-        for item in specialized_recall.spatial:
+        for spatial_item in specialized_recall.spatial:
             workspace.remember(
                 new_working_memory_entry(
-                    id=f"cognitive:spatial:{item.id}",
-                    content=f"{item.label} at {item.coordinates}",
+                    id=f"cognitive:spatial:{spatial_item.id}",
+                    content=f"{spatial_item.label} at {spatial_item.coordinates}",
                     kind="spatial_place",
                     source="volatile_spatial_memory",
                     salience=0.5,
