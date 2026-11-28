@@ -380,7 +380,7 @@ class HomeostaticController:
         ):
             raise ValueError("homeostasis snapshot neuron states do not match topology")
 
-        for identifier, state in states.items():
+        for state in states.values():
             values = (
                 state.observed_spike_rate,
                 state.smoothed_spike_rate,
