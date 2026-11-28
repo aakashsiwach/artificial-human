@@ -170,10 +170,16 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
         network.add_neuron(LIFNeuron(identifier))
     starting_weight = 300.0
     maximum_weight = 350.0
-    network.add_synapse(Synapse("paired", "pre_paired", "post_paired", starting_weight, maximum_weight=maximum_weight))
-    network.add_synapse(Synapse("unpaired", "pre_unpaired", "post_unpaired", starting_weight, maximum_weight=maximum_weight))
+    network.add_synapse(
+        Synapse("paired", "pre_paired", "post_paired", starting_weight, maximum_weight=maximum_weight)
+    )
+    network.add_synapse(
+        Synapse("unpaired", "pre_unpaired", "post_unpaired", starting_weight, maximum_weight=maximum_weight)
+    )
     if rule_name in {"stdp", "stdp_gate_off"}:
-        rule: PlasticityRule = PairBasedSTDP(\n            STDPParameters(potentiation=1.0, depression=0.8, trace_decay=0.9)\n        )
+        rule: PlasticityRule = PairBasedSTDP(
+            STDPParameters(potentiation=1.0, depression=0.8, trace_decay=0.9)
+        )
     elif rule_name == "rate_hebbian":
         rule = RateBasedHebbian()
     elif rule_name == "fixed":
@@ -203,8 +209,12 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
     probe = NeuralSimulation()
     for identifier in ("pre_paired", "post_paired", "pre_unpaired", "post_unpaired"):
         probe.add_neuron(LIFNeuron(identifier))
-    probe.add_synapse(Synapse("paired", "pre_paired", "post_paired", paired, maximum_weight=maximum_weight))
-    probe.add_synapse(Synapse("unpaired", "pre_unpaired", "post_unpaired", unpaired, maximum_weight=maximum_weight))
+    probe.add_synapse(
+        Synapse("paired", "pre_paired", "post_paired", paired, maximum_weight=maximum_weight)
+    )
+    probe.add_synapse(
+        Synapse("unpaired", "pre_unpaired", "post_unpaired", unpaired, maximum_weight=maximum_weight)
+    )
     probe.step({"pre_paired": 400.0, "pre_unpaired": 400.0})
     recall = probe.step()
     paired_recall_spike = "post_paired" in recall.spikes
