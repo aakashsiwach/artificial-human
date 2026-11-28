@@ -41,6 +41,9 @@ jobs:
       - name: Neural simulation performance and memory baseline
         if: matrix.python-version == '3.13'
         run: python scripts/benchmark_neural_simulation.py --steps 20000 --output benchmark-output/neural-simulation-baseline.json
+      - name: Organism evaluation (offline, fixed-seed baselines and ablations)
+        if: matrix.python-version == '3.13'
+        run: python scripts/evaluate_organism.py --output benchmark-output/organism-evaluation.json
       - name: Upload offline benchmark reports
         uses: actions/upload-artifact@v4
         with:
