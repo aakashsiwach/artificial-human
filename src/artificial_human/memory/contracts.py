@@ -1,15 +1,16 @@
-"""Runtime memory-store contract, independent of any persistence implementation."""
+"""Storage-neutral base for active and legacy memory-store adapters."""
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Any
 
 
-class MemoryStore(Protocol):
-    """Structural interface used by the active organism's volatile memory store.
+class MemoryStore:
+    """Persistence-independent memory-store base.
 
-    The protocol intentionally describes behavior rather than inheritance from
-    the legacy SQLite repository. Implementations may be process-local or test
-    doubles; the active organism wires the bounded in-memory implementation.
+    The concrete stores own their behavior. The fallback keeps older optional
+    repository capabilities structurally available while callers migrate to
+    explicit methods; it performs no persistence or database initialization.
     """
 
-    def __getattr__(self, name: str) -> Any: ...
+    def __getattr__(self, name: str) -> Any:
+        raise AttributeError(f"{type(self).__name__!s} has no memory-store capability {name!r}")
