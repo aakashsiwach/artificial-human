@@ -12,9 +12,12 @@ The high-level `OrganismLoop` performs deterministic synthetic perception,
 episodic recall, world-state prediction, action selection, simulated-environment
 feedback, and bounded memory updates. The same sensory event is also delivered
 to the developmental LIF substrate, which performs neuron/synapse updates,
-plasticity and homeostatic regulation. The old population-dynamics engine
-remains available to the request-driven assistant path for compatibility, but
-it is not advanced as a second autonomous brain by the continuous runtime.
+plasticity and homeostatic regulation. The current action policy is still the
+high-level `ActionLearner`; it is not yet decoded from LIF population activity.
+That circuit-to-action integration is a later work package. The old
+population-dynamics engine remains available to the request-driven assistant
+path for compatibility, but it is not advanced as a second autonomous brain by
+the continuous runtime.
 
 The default loop starts from a source-defined prenatal-280/postnatal-500
 developmental fixture so all synthetic modalities used by the loop are
