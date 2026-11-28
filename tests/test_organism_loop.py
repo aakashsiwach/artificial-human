@@ -4,6 +4,7 @@ from artificial_human.neural.organism_loop import (
     DevelopmentProgram, DevelopmentStage, EpisodicMemory, Homeostat, Modality,
     OrganismLoop, PlasticSynapse, PopulationEncoder, SafeSelfDevelopment,
     SensoryEvent, SimulatedEnvironment, WorldModel,
+    OrganismIntegrationConfig,
 )
 
 
@@ -90,3 +91,71 @@ def test_pause_resume_and_reset():
     loop.reset()
     assert loop.snapshot()["tick"] == 0
     assert loop.snapshot()["episodes"] == 0
+
+
+
+def test_integrated_loop_connects_attention_working_memory_action_selection_and_lif() -> None:
+    loop = OrganismLoop()
+    first = loop.tick()
+
+    assert first["attended"]
+    assert first["working_memory"]["item_count"] == 1
+    assert first["action_selection"]["action_id"] in {
+        "move_left", "hold", "move_right"
+    }
+    assert first["neural"]["accepted"] is True
+    assert first["neural"]["simulation_step"] == 2
+
+    loop.run(12)
+    snapshot = loop.snapshot()
+    assert snapshot["working_memory"]["item_count"] <= 7
+    assert snapshot["action_selection"]["updates"] >= 13
+    assert snapshot["neural"]["simulation_step"] >= 26
+
+
+def test_integrated_subsystem_ablations_are_explicit_and_observable() -> None:
+    ablated = OrganismLoop(config=OrganismIntegrationConfig(
+        attention_enabled=False,
+        working_memory_enabled=False,
+        episodic_memory_enabled=False,
+        neural_substrate_enabled=False,
+        learned_action_selection_enabled=False,
+    ))
+
+    result = ablated.tick()
+    snapshot = ablated.snapshot()
+
+    assert result["attended"] == ()
+    assert result["working_memory"]["item_count"] == 0
+    assert result["recalled"] is None
+    assert result["action_selection"]["mode"] == "directional_ablation_baseline"
+    assert result["neural"]["accepted"] is False
+    assert snapshot["neural"]["simulation_step"] == 0
+    assert snapshot["action_selection"]["updates"] == 0
+    assert snapshot["episodes"] == 0
+
+
+def test_learned_action_selection_never_leaves_the_simulation_allowlist() -> None:
+    loop = OrganismLoop()
+    allowed = {"move_left", "hold", "move_right"}
+
+    for result in loop.run(80):
+        assert result["action_selection"]["action_id"] in allowed
+        assert result["action"] in {-1, 0, 1}
+        assert -1.0 <= result["reward_signal"] <= 1.0
+
+    assert loop.snapshot()["action_selection"]["updates"] == 80
+
+
+def test_integrated_reset_clears_attention_workspace_and_learned_channels() -> None:
+    loop = OrganismLoop()
+    loop.run(10)
+    assert loop.snapshot()["working_memory"]["item_count"] > 0
+    assert loop.snapshot()["action_selection"]["updates"] > 0
+
+    loop.reset()
+    snapshot = loop.snapshot()
+    assert snapshot["working_memory"]["item_count"] == 0
+    assert snapshot["action_selection"]["updates"] == 0
+    assert snapshot["episodes"] == 0
+    assert snapshot["tick"] == 0
