@@ -36,6 +36,14 @@ def _validate_capacity(capacity: int, name: str) -> None:
 
 
 @dataclass(frozen=True, slots=True)
+class CognitiveMemoryRecall:
+    episodic: tuple["EpisodicTrace", ...]
+    semantic: tuple["SemanticFact", ...]
+    procedural: tuple["Procedure", ...]
+    spatial: tuple["SpatialPlace", ...]
+
+
+@dataclass(frozen=True, slots=True)
 class EpisodicTrace:
     id: str
     owner_id: str
@@ -842,13 +850,13 @@ class InMemoryCognitiveMemory:
             return "spatial"
         return None
 
-    def recall(self, owner_id: str, query: str, *, context_id: str | None = None) -> dict[str, tuple[object, ...]]:
-        return {
-            "episodic": self.episodic.retrieve(owner_id, query, context_id=context_id),
-            "semantic": self.semantic.retrieve(owner_id, query),
-            "procedural": self.procedural.retrieve(owner_id, query),
-            "spatial": self.spatial.retrieve(owner_id, query),
-        }
+    def recall(self, owner_id: str, query: str, *, context_id: str | None = None) -> CognitiveMemoryRecall:
+        return CognitiveMemoryRecall(
+            episodic=self.episodic.retrieve(owner_id, query, context_id=context_id),
+            semantic=self.semantic.retrieve(owner_id, query),
+            procedural=self.procedural.retrieve(owner_id, query),
+            spatial=self.spatial.retrieve(owner_id, query),
+        )
 
     def forget_source(self, source_id: str) -> dict[str, int]:
         return {
