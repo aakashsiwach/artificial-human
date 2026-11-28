@@ -79,7 +79,7 @@ class SimulatedBodyEnvironment:
     ) -> None:
         if isinstance(max_steps, bool) or not isinstance(max_steps, int) or not 80 <= max_steps <= 500:
             raise ValueError("max_steps must be in [80, 500]")
-        shift = max_steps // 3 if disturbance_shift_tick is None else disturbance_shift_tick
+        shift = max_steps // 2 if disturbance_shift_tick is None else disturbance_shift_tick
         if isinstance(shift, bool) or not isinstance(shift, int) or not 1 <= shift < max_steps:
             raise ValueError("disturbance_shift_tick must be within the episode")
         _require_finite(initial_position, "initial_position")
