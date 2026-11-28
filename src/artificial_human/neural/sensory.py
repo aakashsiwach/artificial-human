@@ -49,17 +49,27 @@ class SensoryEvent:
             raise ValueError("provenance must be explicit")
         if isinstance(self.timestamp, bool) or not isinstance(self.timestamp, int) or self.timestamp < 0:
             raise ValueError("timestamp must be a non-negative integer")
-        if not self.values or len(self.values) > 256:
-            raise ValueError("sensory event must contain 1..256 samples")
+        if not isinstance(self.values, tuple) or not self.values or len(self.values) > 256:
+            raise ValueError("sensory event values must be a tuple containing 1..256 samples")
         if not any(value is not None for value in self.values):
             raise ValueError("sensory event must contain at least one observed sample")
         if any(
             value is not None
-            and (isinstance(value, bool) or not math.isfinite(value) or abs(value) > 1_000_000.0)
+            and (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or abs(value) > 1_000_000.0
+            )
             for value in self.values
         ):
             raise ValueError("sensory values must be finite and within [-1000000, 1000000], or None")
-        if isinstance(self.confidence, bool) or not math.isfinite(self.confidence) or not 0.0 <= self.confidence <= 1.0:
+        if (
+            isinstance(self.confidence, bool)
+            or not isinstance(self.confidence, (int, float))
+            or not math.isfinite(self.confidence)
+            or not 0.0 <= self.confidence <= 1.0
+        ):
             raise ValueError("confidence must be finite and in [0, 1]")
 
 
@@ -101,8 +111,10 @@ class SensoryPermissionLedger:
             raise PermissionDeniedError("explicit consent is required to grant a modality")
         if not isinstance(modality, SensoryModality) or not isinstance(retention, RetentionPolicy):
             raise ValueError("invalid modality or retention policy")
-        if not purpose.strip():
+        if not isinstance(purpose, str) or not purpose.strip():
             raise ValueError("permission purpose is required")
+        if explicit_consent is not True:
+            raise PermissionDeniedError("explicit consent is required to grant a modality")
         if (
             isinstance(granted_at, bool) or not isinstance(granted_at, int)
             or isinstance(expires_at, bool) or not isinstance(expires_at, int)
