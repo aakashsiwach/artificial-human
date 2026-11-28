@@ -34,7 +34,6 @@ from artificial_human.core.models import MemoryKind
 from artificial_human.memory.index import SemanticIndex
 from artificial_human.memory.repository import MemoryLink, MemoryRecord
 from artificial_human.memory.temporal import (
-from artificial_human.memory.contracts import MemoryStore
     TemporalIntent,
     TemporalQuery,
     TemporalStatus,
