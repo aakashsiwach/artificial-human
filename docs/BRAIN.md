@@ -34,20 +34,15 @@ experiences are a separate memory problem and are deliberately not durable in pu
 
 ## Recurrent in-process population dynamics
 
-`cognition/dynamics.py` runs a small fixed-topology recurrent activity model for each
-explicit text input. The current experiment uses seven abstract population nodes and ten
-directed projections from the developmental scaffold, performs eight bounded synchronous
-updates, applies activity leak and an inhibitory projection, and reports population-level
-activity without storing raw input text. An API lifespan task also advances one low-amplitude,
-deterministic resting-state approximation each second while the process is awake. A lock
-serialises idle ticks and message-driven updates. Both states reset when the service restarts;
-a suspended free-tier instance does not run the loop.
+`cognition/dynamics.py` retains the seven-node/ten-projection rate model as a
+request-path comparison engine used by the optional assistant pipeline. It
+applies bounded synchronous updates and reports aggregate activity; it is not
+the active autonomous neural substrate and is no longer advanced by the API
+lifespan. Its fixed weights and abstract populations are not biological neurons.
 
-Text features provide hand-authored external channel drives. They are not biologically
-grounded sensory encoders. Projection weights are currently fixed; no synaptic learning is
-claimed by this runtime engine. The model is a testable engineering abstraction, not a
-simulation of biological neurons. The prenatal developmental simulator remains a separate
-model with its own maturity clock and plasticity experiment.
+The active continuous runtime advances the developmental LIF program described
+below. Keeping the rate engine available for comparison does not make it a
+second autonomous brain.
 
 ## Source-defined constitution and knowledge
 
@@ -70,29 +65,83 @@ Local and public `ArtificialOrganism` instances now use the same bounded process
 
 The RAM storage migration is not the complete cognitive-memory redesign in #30. Memory records retain typed kinds, consent, provenance and temporal metadata, but separate working/episodic/semantic/procedural/spatial mechanisms, biological-style forgetting, interference, retrieval-dependent strengthening and a richer associative memory model remain future work.
 
-## Neural simulation substrate — first LIF microcircuit
+## Developmental LIF substrate and continuous runtime
 
-`neural/simulation.py` implements a deterministic discrete-time engine. It contains inspectable LIF neurons with resting potential, membrane time constant, input current, threshold, reset, refractory interval, spike count and last-spike timestamp. Directed synapses carry excitatory or inhibitory sign, bounded weight, transmission delay and a postsynaptic-current decay time constant. Spikes schedule events by integer simulation step with a stable insertion-order tie-break.
+`development/program.py` defines the active developmental neural substrate:
+a deterministic 12-neuron LIF network with excitatory/inhibitory synapses,
+delayed event propagation, stage-dependent connectivity, membrane/refractory
+maturation, conduction-delay refinement, bounded STDP-inspired plasticity,
+homeostatic regulation and functional pruning. The developmental clock is
+explicit: prenatal days and postnatal model units advance only through
+developmental commands. The default continuous loop starts from a documented
+prenatal-280/postnatal-500 synthetic fixture so its test modalities are
+available. This is not an individual age or biological prediction.
 
-The engine provides explicit event queue capacity and overflow accounting, pending-event cancellation, deterministic simultaneous delivery, pause/resume, single-step, bounded fast-forward, reset, and in-memory state snapshot/restore. No wall-clock scheduler, database or LLM call is needed by the kernel.
+`neural/circuits.py` still provides the four-neuron recurrent microcircuit as
+a controlled baseline. `development/prenatal.py` retains the earlier
+seven-population/ten-projection prenatal scaffold as a compatibility/reference
+experiment. The developmental LIF program is the active neuron/synapse path.
+The 12-neuron network and its parameters are engineering abstractions, not
+anatomical replicas.
 
-`neural/circuits.py` builds a four-neuron recurrent demonstration with sensory, excitatory and inhibitory roles. The experiment includes feed-forward and inhibition-off controls; it is an engineering microcircuit, not a claim of anatomical replication. Synaptic weights are fixed. There is no STDP, homeostasis, population coding, sensory encoder, predictive world model or body/environment loop yet.
+The episodic-memory path also includes `neural/episodic.py`: sparse,
+process-keyed engram features, context binding, partial-cue completion,
+inhibitory competition, interference/pattern-separation measurements and
+retrieval-dependent strengthening. Event content remains in the owner-scoped,
+consent-governed in-memory repository; the neural index does not retain raw
+event text. See [Neural episodic engrams](EPISODIC_CIRCUITS.md).
 
-The API idle task advances this LIF circuit while the process is awake. The experiment includes disconnected, feed-forward, recurrent, inhibition-off and same-size fixed-rate controls. In the current fixed-parameter demo, the four-step sensory stimulus produces a finite transient; with the inhibitory projection enabled, spiking stops after the transient and membrane potentials return to rest. In the matched inhibition-off control, recurrent excitatory firing persists. The fixed-rate control has continuous bounded activity but no membrane threshold, refractory period or event delays. The older `cognition/dynamics.py` seven-population rate model remains a separate comparison baseline; the LIF package has not yet replaced or been integrated into the full cognitive cycle.
+### Continuous organism runtime
 
-The benchmark and its recorded Python 3.13 runner result are in [Neural simulation baseline](benchmarks/neural-simulation-baseline.md). The 20,000-step CI run recorded 19,319.47 steps/second and 150,864 bytes peak Python-traced memory on that runner. These are host-specific measurements, not biological or cross-machine performance claims.
+`ContinuousOrganismRuntime` is owned by `ArtificialOrganism`. Its API lifespan
+starts and stops the same composition-owned runtime; the CLI can run
+deterministic accelerated ticks without sleeping. Each tick advances the
+high-level `OrganismLoop` and its developmental LIF substrate. The loop
+processes explicit synthetic sensory events, bounded episodic memory,
+world-state prediction, a simple action learner, and feedback from a
+deterministic simulated environment. When no external event is queued, it
+generates an internal proprioceptive event from that environment.
+
+The runtime has bounded event and memory queues, drop-newest backpressure,
+per-tick declared-work and wall-time budgets, health state, pause/resume,
+safe shutdown, reset, snapshots and a bounded recent trace. Neural simulation
+time, developmental model time and wall-clock scheduling are independent.
+Developmental age does not advance merely because the process remains running.
+
+The current action policy is the high-level `ActionLearner`; actions are not
+yet decoded from LIF population activity. The toy environment and action loop
+are not a full body, basal-ganglia or cerebellar model. No camera, microphone,
+physical actuator, database or LLM is used by this continuous loop. A suspended
+host does not execute it.
 
 ## Living-code status — partial foundation
 
-The source-defined organism and first neural simulation substrate now have bounded RAM execution, but the full living-organism goal remains future work. In particular:
-- The idle simulation advances while the API process is awake; a suspended host does not execute it.
-- The current LIF circuit uses fixed parameters and weights. Learning and adaptation are not yet implemented in this network.
-- The cognitive cycle still relies on text perception and heuristic software stages; it is not driven by neural circuit outputs.
-- Sensory events, world-state prediction, homeostasis, action selection and a closed-loop simulated body/environment are not implemented.
-- Restart resets runtime experience and learned state. No automatic persistence or source rewrite occurs.
-- Self-development may only produce isolated candidate code, tests and immutable diffs; human approval remains required before source adoption, merge or deployment.
+The project now has a continuously advancing, bounded in-memory runtime and a
+developmental LIF substrate with local learning and regulation. Important
+limitations remain:
+- The default runtime begins from a synthetic postnatal fixture; it is not a
+  clinical or person-specific developmental simulation.
+- The LIF program receives synthetic modality events, not real camera,
+  microphone or device data.
+- High-level action selection is not yet decoded from neural circuit outputs;
+  basal-ganglia-inspired reward learning and cerebellar adaptive control remain
+  separate work packages.
+- The simulated environment is deliberately small and deterministic. No
+  physical-world action is enabled.
+- The request-driven cognitive cycle still includes heuristic attention,
+  working memory and lexical novelty; it is not wholly driven by neural
+  population activity.
+- The optional LLM supports language only. Core continuous ticks, memory,
+  regulation and simulated action run without it.
+- Runtime experience and learned parameters reset according to the documented
+  in-memory lifecycle. No automatic persistence or source rewrite occurs.
+- Self-development may only produce isolated candidate code, tests and
+  immutable diffs; human approval remains required before source adoption,
+  merge or deployment.
 
-“Living” describes the research goal of a continuously executing and adapting computational process. It is not a claim of biological life, subjective experience, sentience or consciousness.
+“Living” describes a continuously executing and adapting computational
+process. It is not a claim of biological life, subjective experience,
+sentience or consciousness.
 
 ## Implemented cognitive cycle
 
@@ -110,9 +159,9 @@ A request passes through an explicit pipeline:
 The cycle is coordinated by `CognitiveArchitecture` in `src/artificial_human/cognition/architecture.py`. Its component implementations live beside it in the `cognition` package.
 
 ## Biological inspiration and honest implementation status
-## Target research architecture (not yet implemented)
+## Integrated research architecture — partial implementation
 
-The longer-term target is a closed-loop cognitive system:
+The longer-term target is a fully integrated closed-loop cognitive system. Several software slices now exist, but their neural outputs and high-level policies are not yet unified:
 
 **Sensory and interoceptive input → perceptual state estimation → memory retrieval and association → attention and limited workspace → predictive world model → affective appraisal and homeostatic state → goal and action selection → environment interaction → outcome/prediction-error evaluation → learning, plasticity, and memory consolidation.**
 
@@ -121,17 +170,17 @@ Language is a communication and representation capability within this wider syst
 
 | Human cognitive function / system | Current software component | Current status |
 | --- | --- | --- |
-| Sensory processing | `PerceptionSystem` | Explicit language input only |
+| Sensory processing | `PerceptionSystem`, `OrganismLoop`, `DevelopmentalProgram` | Language in the request path; explicit synthetic vision, audition, touch, proprioceptive and interoceptive events in the continuous simulation; no device access |
 | Selective attention | `AttentionSystem` | Bounded relevance/salience heuristic |
 | Working memory | `WorkingMemory` | Capacity-limited volatile workspace |
-| Episodic and semantic recall | `LongTermMemory` + `HybridMemorySearch` | Consent-filtered hybrid lexical/semantic/temporal retrieval with explanations; measured on a synthetic benchmark |
+| Episodic and semantic recall | `LongTermMemory`, specialized in-memory stores, `EpisodicNeuralCircuit` | Consent-filtered personal memory plus bounded synthetic episodes; context binding, partial-cue completion, interference and retrieval-dependent engram strengthening; not human episodic memory |
 | Temporal organisation of memory | `memory.temporal` + supersession links | Event, recorded and validity times; current/historical/as-of recall by explicit rules |
-| Predictive processing | `PredictionSystem` | Lexical novelty / overlap heuristic |
-| Executive functions | `ExecutiveControlSystem` + `Planner` | Deterministic goal decomposition and approval gate |
+| Predictive processing | `PredictionSystem`, `OrganismLoop.WorldModel` | Lexical novelty in the request path; a small deterministic transition/prediction-error model in the simulated environment |
+| Executive functions | `ExecutiveControlSystem`, `Planner`, `OrganismLoop.ActionLearner` | Deterministic plans and approval gate for requests; bounded synthetic action learning in the toy environment, not a basal-ganglia model |
 | Language | Configurable chat-completions provider | Language generation and deliberation support |
-| Learning | Existing owner-reviewed learning system | Approved demonstrations; no automatic model training |
-| Sleep / consolidation | `SleepSystem` | Replay-derived owner-review proposals; no silent rewriting |
-| Schema extraction | `SchemaExtractionSystem` | Owner-annotated event-type sequences, typed slots/constants, owner-approved inferred procedural schemas |
+| Learning | `DevelopmentalProgram`, owner-reviewed learning system | Bounded STDP-inspired synaptic updates in the LIF program; owner-approved language examples remain separate; no LLM training |
+| Sleep / consolidation | `SleepSystem`, episodic replay and engram stores | Replay-derived owner-review proposals and bounded episodic replay; no silent rewriting or full sleep physiology |
+| Homeostasis / regulation | `DevelopmentalProgram`, `OrganismLoop.Homeostat` | Bounded neural activity regulation and a simple synthetic homeostat; no literal hypothalamus or subjective affect |
 
 These are functional inspirations, not one-to-one anatomical mappings. Brain regions work through distributed, interacting networks and each has multiple roles.
 
@@ -177,6 +226,11 @@ Use the model identifier exactly as configured in your provider. The project doe
 ## API
 
 - `GET /brain/status` — provider configuration status without exposing credentials.
+- `GET /runtime/status` — continuous runtime state, health, counters and bounded trace.
+- `POST /runtime/events` — submit an explicit synthetic sensory event.
+- `POST /runtime/pause` and `POST /runtime/resume` — control the background scheduler.
+- `POST /runtime/development` — advance postnatal model units explicitly.
+- See [Continuous runtime](CONTINUOUS_RUNTIME.md) for clock, bounds and lifecycle semantics.
 - `GET /brain/cognition/status` — status of each cognitive subsystem.
 - `POST /brain/respond` — run the cognitive cycle and generate a response in `assistant` or `style_clone` mode.
 - `DELETE /brain/sessions/{session_id}` — clear an optional volatile working-memory session.
