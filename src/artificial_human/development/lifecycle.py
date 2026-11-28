@@ -55,10 +55,10 @@ class DevelopmentalModality(StrEnum):
 
 POSTNATAL_PATHS: dict[DevelopmentalModality, tuple[str, ...]] = {
     DevelopmentalModality.VISION: (
-        "sensory_input", "recurrent_integration", "association", "action_prediction",
+        "sensory_input", "recurrent_integration", "action_prediction", "association",
     ),
     DevelopmentalModality.PROPRIOCEPTION: (
-        "sensory_input", "action_prediction", "association",
+        "sensory_input", "recurrent_integration", "action_prediction", "association",
     ),
     DevelopmentalModality.INTEROCEPTION: (
         "regulation", "recurrent_integration", "association",
