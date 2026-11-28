@@ -112,7 +112,6 @@ class ArtificialOrganism:
             }
         provider_status["neural_dynamics"] = self.neural_dynamics.snapshot().as_dict()
         provider_status["neural_simulation"] = self.neural_simulation.snapshot().as_dict()
-        provider_status["continuous_runtime"] = self.runtime.snapshot().as_dict()
         return provider_status
 
     def status(self) -> dict[str, Any]:
