@@ -168,10 +168,12 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
     network = NeuralSimulation()
     for identifier in ("pre_paired", "post_paired", "pre_unpaired", "post_unpaired"):
         network.add_neuron(LIFNeuron(identifier))
-    network.add_synapse(Synapse("paired", "pre_paired", "post_paired", 0.5))
-    network.add_synapse(Synapse("unpaired", "pre_unpaired", "post_unpaired", 0.5))
+    starting_weight = 300.0
+    maximum_weight = 350.0
+    network.add_synapse(Synapse("paired", "pre_paired", "post_paired", starting_weight, maximum_weight=maximum_weight))
+    network.add_synapse(Synapse("unpaired", "pre_unpaired", "post_unpaired", starting_weight, maximum_weight=maximum_weight))
     if rule_name in {"stdp", "stdp_gate_off"}:
-        rule: PlasticityRule = PairBasedSTDP()
+        rule: PlasticityRule = PairBasedSTDP(\n            STDPParameters(potentiation=1.0, depression=0.8, trace_decay=0.9)\n        )
     elif rule_name == "rate_hebbian":
         rule = RateBasedHebbian()
     elif rule_name == "fixed":
@@ -195,14 +197,28 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
 
     paired = network.synapses["paired"].weight
     unpaired = network.synapses["unpaired"].weight
-    threshold = 0.6
-    correct = int(paired >= threshold) + int(unpaired < threshold)
+
+    # Test recall in a fresh network: only presynaptic cues are supplied.
+    # A paired pathway must now evoke the target through its learned synapse.
+    probe = NeuralSimulation()
+    for identifier in ("pre_paired", "post_paired", "pre_unpaired", "post_unpaired"):
+        probe.add_neuron(LIFNeuron(identifier))
+    probe.add_synapse(Synapse("paired", "pre_paired", "post_paired", paired, maximum_weight=maximum_weight))
+    probe.add_synapse(Synapse("unpaired", "pre_unpaired", "post_unpaired", unpaired, maximum_weight=maximum_weight))
+    probe.step({"pre_paired": 400.0, "pre_unpaired": 400.0})
+    recall = probe.step()
+    paired_recall_spike = "post_paired" in recall.spikes
+    unpaired_recall_spike = "post_unpaired" in recall.spikes
+    correct = int(paired_recall_spike) + int(not unpaired_recall_spike)
     return {
         "rule": rule_name,
         "trials": trials,
+        "initial_weight": starting_weight,
+        "maximum_weight": maximum_weight,
         "paired_weight": round(paired, 8),
         "unpaired_weight": round(unpaired, 8),
-        "decision_threshold": threshold,
+        "paired_recall_spike": paired_recall_spike,
+        "unpaired_recall_spike": unpaired_recall_spike,
         "correct": correct,
         "accuracy": correct / 2,
     }
@@ -234,7 +250,7 @@ def run_learning_rule_comparison(*, trials: int = 12) -> dict[str, object]:
     fixed_accuracy = next(cast(float, row["accuracy"]) for row in results if row["rule"] == "fixed")
     return {
         "task": "pre-before-post temporal association with unpaired negative control",
-        "metric": "two-example classification accuracy at weight threshold 0.6",
+        "metric": "two-pathway recall accuracy from postsynaptic spikes caused by learned synapses",
         "results": results,
         "stdp_improvement_over_fixed": (
             next(cast(float, row["accuracy"]) for row in results if row["rule"] == "stdp")
