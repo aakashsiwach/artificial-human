@@ -279,3 +279,63 @@ def test_evidence_dataclasses_are_immutable() -> None:
         evidence.verified = False  # type: ignore[misc]
     with pytest.raises(ValueError, match="human approval reference"):
         SafeSelfDevelopment.record_human_approval(proposal, evidence, " ")
+
+
+
+def test_proposal_accepts_new_regression_test_files_but_rejects_file_deletion() -> None:
+    new_file = """diff --git a/tests/test_regression.py b/tests/test_regression.py
+new file mode 100644
+--- /dev/null
++++ b/tests/test_regression.py
+@@ -0,0 +1 @@
++def test_regression(): assert True
+"""
+    proposal = make_proposal(checks=("pytest -q",), diff=new_file)
+    assert proposal.file_paths == ("tests/test_regression.py",)
+
+    deleted_file = new_file.replace(
+        "--- /dev/null", "--- a/tests/test_regression.py"
+    ).replace(
+        "+++ b/tests/test_regression.py", "+++ /dev/null"
+    )
+    with pytest.raises(ValueError, match="deletion"):
+        make_proposal(checks=("pytest -q",), diff=deleted_file)
+
+
+def test_sandbox_limits_have_absolute_upper_bounds() -> None:
+    with pytest.raises(ValueError, match="max_wall_seconds"):
+        SandboxLimits(max_wall_seconds=601.0)
+    with pytest.raises(ValueError, match="max_memory_mb"):
+        SandboxLimits(max_memory_mb=4097.0)
+    with pytest.raises(ValueError, match="max_checks"):
+        SandboxLimits(max_checks=4)
+
+
+def test_approval_rejects_evidence_for_another_base_revision() -> None:
+    proposal = make_proposal(checks=("pytest -q",))
+    evidence = SafeSelfDevelopment().verify(
+        proposal, (make_result("pytest -q"),)
+    )
+    forged = replace(evidence, base_revision="b" * 40)
+
+    with pytest.raises(ValueError, match="verified evidence"):
+        SafeSelfDevelopment.record_human_approval(
+            proposal, forged, "human-approval"
+        )
+
+
+def test_sandbox_result_rejects_boolean_exit_code_and_non_boolean_isolation_flags() -> None:
+    proposal = make_proposal(checks=("pytest -q",))
+    guard = SafeSelfDevelopment()
+
+    boolean_exit = guard.verify(
+        proposal, (make_result("pytest -q", exit_code=False),)
+    )
+    string_flag = guard.verify(
+        proposal, (make_result("pytest -q", network_disabled="yes"),)  # type: ignore[arg-type]
+    )
+
+    assert not boolean_exit.verified
+    assert "invalid identity or isolation" in (boolean_exit.failure_reason or "")
+    assert not string_flag.verified
+    assert "isolation" in (string_flag.failure_reason or "")
