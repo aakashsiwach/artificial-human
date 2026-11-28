@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import platform
 import shutil
@@ -40,11 +41,13 @@ def _proposal_diff() -> str:
         "def test_candidate_value() -> None:\n"
         "    assert VALUE == 7\n"
     )
+    encoded = content.encode("utf-8")
+    blob_id = hashlib.sha1(f"blob {len(encoded)}\\0".encode("ascii") + encoded).hexdigest()[:7]
     lines = content.rstrip("\n").splitlines()
     patch_lines = [
         "diff --git a/tests/test_candidate.py b/tests/test_candidate.py",
         "new file mode 100644",
-        "index 0000000..1111111",
+        f"index 0000000..{blob_id}",
         "--- /dev/null",
         "+++ b/tests/test_candidate.py",
         f"@@ -0,0 +1,{len(lines)} @@",
