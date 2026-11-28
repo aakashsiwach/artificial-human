@@ -15,9 +15,13 @@ clinical, or individual human-development simulator.
 
 ## Developmental time
 
-The API uses an integer `developmental_day` model clock. The following epochs
-are engineering regimes chosen to exercise transitions and are **not** a
-mapping from simulation time to an individual's chronological age:
+The API uses an integer `developmental_day` model clock, separate from the
+LIF simulation's millisecond step counter and from wall-clock uptime.
+`advance(days)` changes developmental stage and maturity without stepping
+neurons. `run(steps)` or `step()` advances the neural clock independently;
+the continuous wall-clock scheduler belongs to the later runtime integration.
+The following epochs are engineering regimes chosen to exercise transitions
+and are **not** a mapping from simulation time to an individual's chronological age:
 
 | Model day | Epoch | Implemented change |
 | ---: | --- | --- |
@@ -48,9 +52,10 @@ developmental measurements or clinical predictions.
 - **Sensory capability:** tactile, vestibular and auditory channels retain the
   prenatal onset gates. Vision, proprioception and interoception have explicit
   model availability gates. Inputs are scalar synthetic events only.
-- **Intrinsic activity:** deterministic low-amplitude currents advance the same
-  LIF network as model time advances. No wall-clock scheduler, device, database
-  or LLM is involved.
+- **Intrinsic activity:** `run(steps)` supplies deterministic bounded currents
+  to the same LIF network. Developmental advancement does not implicitly step
+  neurons, so model age, neural time and wall-clock scheduling cannot be
+  accidentally conflated. No device, database or LLM is involved.
 
 The implementation intentionally does not claim to model myelination, glia,
 cell-type-specific neurogenesis, endocrine development, detailed receptor
