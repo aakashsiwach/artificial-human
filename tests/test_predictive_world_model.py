@@ -91,6 +91,9 @@ def test_multi_step_rollout_uses_each_prior_prediction_as_next_state() -> None:
     assert rollout[1].state.values == pytest.approx(
         model.predict(rollout[0].state, actions[1]).state.values
     )
+    assert rollout[0].standard_deviation == pytest.approx((0.5, 0.5))
+    assert rollout[1].standard_deviation[0] > rollout[0].standard_deviation[0]
+    assert rollout[2].standard_deviation[0] > rollout[1].standard_deviation[0]
 
 
 def test_model_clone_has_independent_parameters() -> None:
