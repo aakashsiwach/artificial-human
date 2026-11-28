@@ -262,7 +262,7 @@ class SafeSelfDevelopment:
             if line.startswith("+") and not line.startswith("+++"):
                 changed_lines += 1
                 if _PROHIBITED_ADDED_CODE.search(line[1:]):
-                    raise ValueError("proposal contains a prohibited execution or network primitive")
+                    raise ValueError("proposal contains a prohibited execution primitive or network primitive")
             elif line.startswith("-") and not line.startswith("---"):
                 changed_lines += 1
         if changed_lines > self.limits.max_changed_lines:
@@ -475,7 +475,7 @@ class SafeSelfDevelopment:
                         or not isinstance(result.exit_code, int)
                         or not isinstance(result.timed_out, bool)
                     ):
-                        failure = "sandbox result contains invalid identity or execution status"
+                        failure = "sandbox result contains invalid identity or isolation flags or execution status"
                         break
                     isolation_requirements = (
                         (result.isolated_worktree, "isolated worktree"),
@@ -490,7 +490,7 @@ class SafeSelfDevelopment:
                         None,
                     )
                     if missing_control is not None:
-                        failure = f"sandbox {missing_control} was not attested"
+                        failure = f"sandbox isolation control {missing_control} was not attested"
                         break
                     if result.base_revision != proposal.base_revision:
                         failure = "sandbox checked a different source revision"
