@@ -103,6 +103,8 @@ def test_long_run_resets_simulated_episodes_and_keeps_memory_bounded() -> None:
     assert snapshot.organism["episodes"] == 128
     assert snapshot.organism["neural"]["simulation_step"] >= 700
     assert snapshot.pending_events == 0
+    assert len(snapshot.recent_trace) == 128
+    assert snapshot.recent_trace[-1].tick_index == 350
 
 
 def test_reset_clears_volatile_runtime_and_reinitializes_neural_program() -> None:
