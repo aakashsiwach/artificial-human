@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from artificial_human.neural.plasticity import PairBasedSTDP, PlasticityController, RateBasedHebbian, run_learning_rule_comparison
+from artificial_human.neural.plasticity import (
+    PairBasedSTDP,
+    PlasticityController,
+    RateBasedHebbian,
+    STDPParameters,
+    run_learning_rule_comparison,
+)
 from artificial_human.neural.simulation import LIFNeuron, NeuralSimulation, Synapse
 
 
@@ -29,9 +35,24 @@ def test_stdp_direction_depends_on_spike_order_and_is_bounded() -> None:
     for _ in range(100):
         rule.observe(potentiated, ("pre",))
         rule.observe(potentiated, ("post",))
-    assert potentiated.synapses["connection"].weight == 1.0
     assert 0 <= potentiated.synapses["connection"].weight <= 1.0
 
+
+def test_stdp_weight_updates_saturate_at_both_configured_bounds() -> None:
+    potentiated = network()
+    PairBasedSTDP(STDPParameters(potentiation=5.0, depression=0.0)).observe(
+        potentiated, ("pre",)
+    )
+    PairBasedSTDP(STDPParameters(potentiation=5.0, depression=0.0)).observe(
+        potentiated, ("post",)
+    )
+    assert potentiated.synapses["connection"].weight == 1.0
+
+    depressed = network()
+    rule = PairBasedSTDP(STDPParameters(potentiation=0.0, depression=5.0))
+    rule.observe(depressed, ("post",))
+    rule.observe(depressed, ("pre",))
+    assert depressed.synapses["connection"].weight == 0.0
 
 def test_gate_zero_disables_learning_and_reset_restores_initial_weights() -> None:
     simulation = network()
