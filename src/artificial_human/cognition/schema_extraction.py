@@ -15,9 +15,10 @@ from uuid import uuid4
 from artificial_human.cognition.episodic_replay import EpisodicReplayMemory
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.repository import (
+from artificial_human.memory.contracts import MemoryStore
     MemoryNotFoundError,
     MemoryRecord,
-    MemoryRepository,
+    MemoryStore,
 )
 
 
@@ -224,7 +225,7 @@ class SchemaExtractionSystem:
         owner_id: str,
         context_prefix: str,
         episodic_memory: EpisodicReplayMemory,
-        repository: MemoryRepository,
+        repository: MemoryStore,
     ) -> tuple[SchemaProposal, ...]:
         """Find repeated annotated sequences and propose fixed/variable attributes."""
         episodes = episodic_memory.episodes_for_context_prefix(context_prefix)
