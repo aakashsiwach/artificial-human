@@ -22,6 +22,17 @@ These findings motivate stabilising feedback, but they do not establish that one
 
 The chosen control variable is an input-current gain, not a synaptic weight. This separation is deliberate: it preserves the learned synaptic magnitudes from issue #24 and makes the homeostatic action independently inspectable. The gain is a software control parameter, not a claim about a specific ion channel or receptor.
 
+### Candidate mechanism comparison
+
+| Candidate | Evidence / expected benefit | Engineering cost and limitation | Decision |
+|---|---|---|---|
+| Homeostatic synaptic scaling | Local/global firing-rate feedback can stabilise activity while scaling synaptic strengths | Changes learned connection weights and may interfere with issue #24 plasticity; requires explicit normalisation and stability analysis | Defer to a dedicated synaptic-scaling experiment |
+| Inhibitory synaptic plasticity | Can contribute to excitation/inhibition balance in recurrent networks | Requires explicit inhibitory pathways and an E/I objective; the current stress experiment is deliberately excitatory | Defer until inhibitory-circuit evaluation |
+| Intrinsic excitability / threshold adaptation | Activity history can change a neuron's input-output gain and sensitivity | A faithful implementation would require additional intrinsic-current or threshold dynamics, not merely a biological label on a scalar | Strong candidate for a later comparison |
+| Bounded software input-current gain | Gives a deterministic, inspectable per-neuron control variable while leaving learned synapses intact | A reduced control abstraction; it does not reproduce channels, calcium sensors, or synaptic scaling | Selected for this Phase 2 vertical slice and compared with fixed gain |
+
+This is a design-level comparison of candidate mechanisms. The executable experiment below statistically tests the selected gain controller against the unregulated fixed-gain baseline; it does not claim an empirical head-to-head biological comparison among all candidates.
+
 Proposed deterministic controller:
 
 - Count spikes per neuron over a fixed 20-step observation window.
@@ -32,7 +43,7 @@ Proposed deterministic controller:
 - Expose the observed rate, smoothed rate, target error, current gain, quiescent windows, and low/high saturation counts.
 - Snapshot and restore controller state in RAM; reset returns the gain to its source-defined initial value.
 
-The first experiment uses a two-neuron recurrent excitatory loop under sustained external drive. It compares the same network and stimulus with regulation disabled versus enabled. The report records total/per-neuron spikes, rates, gain trajectory, saturation and dropped events. Separate tests cover silence, saturation, and recovery. This is a narrow computational stress test, not a claim of a general firing-rate law.
+The first experiment uses a two-neuron recurrent excitatory loop under sustained external drive. It compares the same network and stimulus with regulation disabled versus enabled. The report records total/per-neuron spikes and rates, final per-neuron gains, the regulator's final observed/smoothed rates and saturation counters, and dropped events. It does not yet retain a full per-window gain time-series. Separate tests cover silence, saturation, and recovery. This is a narrow computational stress test, not a claim of a general firing-rate law.
 
 ## Distinct internal signals for plasticity modulation
 
