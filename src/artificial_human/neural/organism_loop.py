@@ -5,9 +5,7 @@ filesystem mutation, or physical actuator is used by this module.
 """
 from __future__ import annotations
 
-import hashlib
 import math
-import re
 from collections import deque
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -32,6 +30,10 @@ from artificial_human.cognition.working_memory import (
 from artificial_human.development.program import (
     DevelopmentalModality as NeuralModality,
     DevelopmentalProgram as LIFDevelopmentalProgram,
+)
+from artificial_human.development.self_development import (
+    ImprovementProposal,
+    SafeSelfDevelopment,
 )
 
 
@@ -304,30 +306,6 @@ class DevelopmentProgram:
         elif self.tick >= 100:
             self.stage = DevelopmentStage.JUVENILE
         return self.stage
-
-
-@dataclass(frozen=True, slots=True)
-class ImprovementProposal:
-    identifier: str
-    hypothesis: str
-    diff: str
-    checks: tuple[str, ...]
-    status: str = "awaiting_human_review"
-
-
-class SafeSelfDevelopment:
-    _secret = re.compile(r"(?:gh[pousr]_[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)")
-
-    def propose(self, hypothesis: str, diff: str, checks: tuple[str, ...]) -> ImprovementProposal:
-        if not hypothesis.strip() or not diff.strip() or len(diff) > 50_000:
-            raise ValueError("invalid or oversized proposal")
-        if self._secret.search(diff) or re.search(r"(?m)^\+\s*(?:eval\(|exec\(|os\.system|subprocess\.)", diff):
-            raise ValueError("proposal contains a secret or prohibited execution primitive")
-        allowed = {"ruff check .", "mypy src", "pytest -q"}
-        if not checks or len(checks) > 20 or any(c not in allowed for c in checks):
-            raise ValueError("checks must be non-empty and allowlisted")
-        digest = hashlib.sha256((hypothesis + diff).encode()).hexdigest()[:16]
-        return ImprovementProposal(digest, hypothesis, diff, checks)
 
 
 @dataclass(slots=True)
