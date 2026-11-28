@@ -525,29 +525,55 @@ def run_developmental_learning_comparison(
     trained = DevelopmentalNeuralSubstrate(seed=seed)
     baseline.advance(1_200)
     trained.advance(1_200)
+    initial_weights = {
+        identifier: synapse.weight
+        for identifier, synapse in baseline.simulation.synapses.items()
+    }
     for _ in range(training_exposures):
         trained.expose(DevelopmentalModality.AUDITORY, intensity=0.8)
-        for _step in range(6):
-            baseline._step(learn=False)
-    baseline_spikes = baseline.probe(DevelopmentalModality.AUDITORY, intensity=0.8)
-    trained_spikes = trained.probe(DevelopmentalModality.AUDITORY, intensity=0.8)
+
+    # Match every dynamic variable to the trained network, then restore only
+    # the frozen baseline weights. This isolates the effect of learning rather
+    # than comparing networks with different membrane/event-queue histories.
+    baseline.simulation.restore(trained.simulation.state())
+    for identifier, weight in initial_weights.items():
+        baseline.simulation.update_synapse_weight(identifier, weight)
+
+    route = ("sensory_input", "recurrent_integration", "association", "sequence_context")
     target = "sequence_context"
-    baseline_target = sum(item == target for item in baseline_spikes)
-    trained_target = sum(item == target for item in trained_spikes)
-    baseline_path = baseline._route_weights(
-        ("sensory_input", "recurrent_integration", "association", "sequence_context")
-    )
-    trained_path = trained._route_weights(
-        ("sensory_input", "recurrent_integration", "association", "sequence_context")
+
+    def probe_metrics(network: DevelopmentalNeuralSubstrate) -> tuple[int, int | None]:
+        emitted: list[str] = []
+        latency: int | None = None
+        for index in range(12):
+            current = {route[0]: 720.0} if index == 0 else None
+            step = network._step(current, learn=False)
+            emitted.extend(step.spikes)
+            if target in step.spikes and latency is None:
+                latency = index
+        return sum(item == target for item in emitted), latency
+
+    baseline_target, baseline_latency = probe_metrics(baseline)
+    trained_target, trained_latency = probe_metrics(trained)
+    baseline_path = baseline._route_weights(route)
+    trained_path = trained._route_weights(route)
+    behavioural_improvement = (
+        trained_target > baseline_target
+        or (
+            trained_latency is not None
+            and (baseline_latency is None or trained_latency < baseline_latency)
+        )
     )
     return {
         "seed": seed,
         "training_exposures": training_exposures,
         "baseline_target_spikes": baseline_target,
         "trained_target_spikes": trained_target,
+        "baseline_target_latency_steps": baseline_latency,
+        "trained_target_latency_steps": trained_latency,
         "baseline_path_weight": DevelopmentalNeuralSubstrate._mean(baseline_path),
         "trained_path_weight": DevelopmentalNeuralSubstrate._mean(trained_path),
-        "behavioural_improvement": trained_target > baseline_target,
+        "behavioural_improvement": behavioural_improvement,
         "path_efficacy_improvement": DevelopmentalNeuralSubstrate._mean(trained_path)
         > DevelopmentalNeuralSubstrate._mean(baseline_path),
         "limitations": [
