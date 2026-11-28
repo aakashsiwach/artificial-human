@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from artificial_human.memory.contracts import MemoryStore
 from artificial_human.memory.repository import (
     LearningExample,
-    MemoryRepository,
 )
 
 
@@ -15,7 +15,7 @@ class LearningSystem:
     traits automatically.
     """
 
-    def __init__(self, repository: MemoryRepository) -> None:
+    def __init__(self, repository: MemoryStore) -> None:
         self.repository = repository
 
     def capture(
