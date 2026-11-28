@@ -580,22 +580,39 @@ def run_integration_ablation_comparison(
         organism = OrganismLoop(config=config)
         trace = organism.run(ticks)
         snapshot = organism.snapshot()
-        neural_spikes = sum(
-            len(step["neural"]["spikes"])
-            for step in trace
-            if isinstance(step.get("neural"), dict)
+        neural_spikes = 0
+        reward_total = 0.0
+        prediction_error_total = 0.0
+        for step in trace:
+            neural = step.get("neural")
+            if isinstance(neural, dict):
+                spikes = neural.get("spikes")
+                if isinstance(spikes, (tuple, list)):
+                    neural_spikes += len(spikes)
+            reward_value = step.get("reward")
+            if isinstance(reward_value, (int, float)):
+                reward_total += float(reward_value)
+            error_value = step.get("prediction_error")
+            if isinstance(error_value, (int, float)):
+                prediction_error_total += abs(float(error_value))
+        working_memory_state = snapshot.get("working_memory")
+        working_memory_items = (
+            working_memory_state.get("item_count", 0)
+            if isinstance(working_memory_state, dict) else 0
         )
-        prediction_error = sum(
-            abs(float(step["prediction_error"])) for step in trace
-        ) / ticks
+        action_state = snapshot.get("action_selection")
+        action_updates = (
+            action_state.get("updates", 0)
+            if isinstance(action_state, dict) else 0
+        )
         reports.append({
             "condition": name,
             "ticks": ticks,
-            "cumulative_reward": round(sum(float(step["reward"]) for step in trace), 8),
-            "mean_absolute_prediction_error": round(prediction_error, 8),
+            "cumulative_reward": round(reward_total, 8),
+            "mean_absolute_prediction_error": round(prediction_error_total / ticks, 8),
             "neural_spikes": neural_spikes,
-            "working_memory_items": snapshot["working_memory"]["item_count"],
+            "working_memory_items": working_memory_items,
             "episodic_memories": snapshot["episodes"],
-            "action_learning_updates": snapshot["action_selection"]["updates"],
+            "action_learning_updates": action_updates,
         })
     return tuple(reports)
