@@ -112,7 +112,7 @@ def test_real_bubblewrap_runs_allowlisted_checks_in_isolated_tmpfs(
     finally:
         executor.close()
 
-    assert evidence.verified, evidence.failure_reason
+    assert evidence.verified, f"{evidence.failure_reason}; results={evidence.results!r}"
     assert evidence.status == "verified_for_human_review"
     assert len(evidence.results) == 3
     assert len({item.sandbox_id for item in evidence.results}) == 1
