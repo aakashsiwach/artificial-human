@@ -389,3 +389,125 @@ class HomeostaticController:
             self._high_gain_saturation_windows[identifier] = 0
         self._window_steps_elapsed = 0
         self._last_step_index = None
+
+
+
+def _build_recurrent_stress_network() -> NeuralSimulation:
+    """Build a fixed two-cell excitatory loop for controlled stress experiments."""
+    from artificial_human.neural.simulation import Synapse
+
+    simulation = NeuralSimulation(
+        dt_ms=1.0,
+        max_neurons=2,
+        max_synapses=2,
+        max_pending_events=2_048,
+    )
+    simulation.add_neuron(LIFNeuron("excitatory_a"))
+    simulation.add_neuron(LIFNeuron("excitatory_b"))
+    simulation.add_synapse(
+        Synapse(
+            "a_to_b",
+            "excitatory_a",
+            "excitatory_b",
+            180.0,
+            time_constant_ms=10.0,
+            maximum_weight=250.0,
+        )
+    )
+    simulation.add_synapse(
+        Synapse(
+            "b_to_a",
+            "excitatory_b",
+            "excitatory_a",
+            180.0,
+            time_constant_ms=10.0,
+            maximum_weight=250.0,
+        )
+    )
+    return simulation
+
+
+def run_homeostasis_comparison(
+    *,
+    steps: int = 400,
+    stress_current: float = 400.0,
+    parameters: HomeostasisParameters | None = None,
+) -> dict[str, object]:
+    """Compare fixed gain and adaptive gain on identical recurrent stress inputs.
+
+    The experiment uses the same source-defined two-neuron recurrent topology,
+    simulation timestep, external drive, and number of steps for both runs.
+    It is a small deterministic stability experiment, not a biological model.
+    """
+    if isinstance(steps, bool) or not isinstance(steps, int) or not 1 <= steps <= 100_000:
+        raise ValueError("steps must be an integer in [1, 100000]")
+    if (
+        isinstance(stress_current, bool)
+        or not math.isfinite(stress_current)
+        or not 0.0 <= stress_current <= 1_000.0
+    ):
+        raise ValueError("stress_current must be finite and in [0, 1000]")
+
+    selected_parameters = parameters or HomeostasisParameters()
+
+    def run(regulated: bool) -> tuple[dict[str, object], HomeostasisSnapshot | None]:
+        simulation = _build_recurrent_stress_network()
+        controller = (
+            HomeostaticController(simulation, selected_parameters) if regulated else None
+        )
+        spike_counts = {identifier: 0 for identifier in simulation.neurons}
+        for _ in range(steps):
+            step = simulation.step({"excitatory_a": stress_current})
+            for identifier in step.spikes:
+                spike_counts[identifier] += 1
+            if controller is not None:
+                controller.observe_step(step)
+        mean_rate = sum(spike_counts.values()) / (len(spike_counts) * steps)
+        report: dict[str, object] = {
+            "spike_counts": spike_counts,
+            "spike_rates_per_step": {
+                identifier: round(count / steps, 8)
+                for identifier, count in spike_counts.items()
+            },
+            "mean_spike_rate_per_step": round(mean_rate, 8),
+            "pending_events": simulation.snapshot().pending_events,
+            "events_dropped": simulation.snapshot().events_dropped,
+            "input_gains": {
+                identifier: round(neuron.input_gain, 12)
+                for identifier, neuron in simulation.neurons.items()
+            },
+        }
+        return report, controller.snapshot() if controller is not None else None
+
+    fixed_gain, _ = run(regulated=False)
+    regulated, state = run(regulated=True)
+    fixed_rate = float(fixed_gain["mean_spike_rate_per_step"])
+    regulated_rate = float(regulated["mean_spike_rate_per_step"])
+    return {
+        "task": "two-neuron recurrent excitation under sustained external drive",
+        "steps": steps,
+        "stress_current": stress_current,
+        "fixed_gain_baseline": fixed_gain,
+        "homeostatically_regulated": regulated,
+        "mean_spike_rate_reduction": round(fixed_rate - regulated_rate, 8),
+        "relative_spike_rate_reduction": (
+            round((fixed_rate - regulated_rate) / fixed_rate, 8)
+            if fixed_rate > 0.0 else 0.0
+        ),
+        "homeostasis_state": state.as_dict() if state is not None else None,
+        "parameters": {
+            "observation_window_steps": selected_parameters.observation_window_steps,
+            "target_spike_rate": selected_parameters.target_spike_rate,
+            "rate_ema_decay": selected_parameters.rate_ema_decay,
+            "adaptation_rate": selected_parameters.adaptation_rate,
+            "deadband": selected_parameters.deadband,
+            "minimum_input_gain": selected_parameters.minimum_input_gain,
+            "maximum_input_gain": selected_parameters.maximum_input_gain,
+        },
+        "limitations": [
+            "Reduced two-neuron LIF stress task, not a biological network validation.",
+            "Input gain is a bounded software control knob, not a specific ion-channel model.",
+            "The controller does not implement synaptic scaling or inhibitory plasticity.",
+            "The target and observation window are engineering parameters in simulation steps.",
+        ],
+    }
