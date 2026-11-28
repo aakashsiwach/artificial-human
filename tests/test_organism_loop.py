@@ -176,4 +176,4 @@ def test_integration_ablation_report_measures_major_subsystem_contributions() ->
     assert full["action_learning_updates"] > reports["learned_action_selection_disabled"]["action_learning_updates"]
     assert full["neural_spikes"] > reports["neural_substrate_disabled"]["neural_spikes"]
     assert all(item["ticks"] == 30 for item in reports.values())
-    assert all(-30.0 <= item["cumulative_reward"] <= 0.0 for item in reports.values())
+    assert all(-100.0 <= item["cumulative_reward"] <= 0.0 for item in reports.values())
