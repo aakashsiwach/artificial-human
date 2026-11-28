@@ -168,8 +168,8 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
     network = NeuralSimulation()
     for identifier in ("pre_paired", "post_paired", "pre_unpaired", "post_unpaired"):
         network.add_neuron(LIFNeuron(identifier))
-    starting_weight = 300.0
-    maximum_weight = 350.0
+    starting_weight = 75.0
+    maximum_weight = 150.0
     network.add_synapse(
         Synapse("paired", "pre_paired", "post_paired", starting_weight, maximum_weight=maximum_weight)
     )
@@ -178,7 +178,7 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
     )
     if rule_name in {"stdp", "stdp_gate_off"}:
         rule: PlasticityRule = PairBasedSTDP(
-            STDPParameters(potentiation=1.0, depression=0.8, trace_decay=0.9)
+            STDPParameters(potentiation=2.5, depression=1.6, trace_decay=0.9)
         )
     elif rule_name == "rate_hebbian":
         rule = RateBasedHebbian()
@@ -216,9 +216,9 @@ def _association_trial(rule_name: str, trials: int = 12) -> dict[str, object]:
         Synapse("unpaired", "pre_unpaired", "post_unpaired", unpaired, maximum_weight=maximum_weight)
     )
     probe.step({"pre_paired": 400.0, "pre_unpaired": 400.0})
-    recall = probe.step()
-    paired_recall_spike = "post_paired" in recall.spikes
-    unpaired_recall_spike = "post_unpaired" in recall.spikes
+    recall_steps = probe.run(12)
+    paired_recall_spike = any("post_paired" in step.spikes for step in recall_steps)
+    unpaired_recall_spike = any("post_unpaired" in step.spikes for step in recall_steps)
     correct = int(paired_recall_spike) + int(not unpaired_recall_spike)
     return {
         "rule": rule_name,
