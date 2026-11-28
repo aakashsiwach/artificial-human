@@ -799,6 +799,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
         if not changed:
             raise HTTPException(status_code=404, detail="Active consent not found")
         organism_ref = get_organism()
+        organism_ref.cognitive_memory.forget_consent(organism_ref.owner_id, consent_id)
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         organism_ref.sleep.clear_consent(organism_ref.owner_id, consent_id)
         organism_ref.schema_extraction.clear_consent(organism_ref.owner_id, consent_id)
@@ -816,6 +817,11 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
                 valid_to=payload.valid_to, fact_key=payload.fact_key,
                 epistemic_status=payload.epistemic_status,
             )
+            try:
+                organism_ref.cognitive_memory.ingest(record)
+            except ValueError:
+                organism_ref.memory.delete(organism_ref.owner_id, record.id)
+                raise
         except ConsentRequiredError as error:
             raise HTTPException(status_code=403, detail=str(error)) from error
         except ValueError as error:
@@ -956,6 +962,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Memory not found") from error
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
+        organism_ref.cognitive_memory.forget_source(memory_id)
         organism_ref.cognitive_brain.clear_owner_sessions(organism_ref.owner_id)
         organism_ref.sleep.forget_memory(organism_ref.owner_id, memory_id)
         organism_ref.schema_extraction.forget_memory(organism_ref.owner_id, memory_id)
@@ -1020,6 +1027,7 @@ def create_app(organism: ArtificialOrganism | None = None) -> FastAPI:
     def erase_memories() -> dict[str, int]:
         organism_ref = get_organism()
         count = organism_ref.memory.erase_owner(organism_ref.owner_id)
+        organism_ref.cognitive_memory.forget_owner(organism_ref.owner_id)
         sessions_cleared = organism_ref.cognitive_brain.clear_owner_sessions(
             organism_ref.owner_id
         )
