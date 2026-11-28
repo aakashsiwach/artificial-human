@@ -67,7 +67,7 @@ class ArtificialOrganism:
         self.chat_provider = brain_provider or OpenAICompatibleProvider()
         self.neural_dynamics = RecurrentDynamicsEngine()
         # One composition-owned organism loop and its developmental LIF network.
-        # API, CLI and deterministic tests all attach to this same runtime.
+        # API, CLI and deterministic tests use this composition-owned runtime.
         self.organism_loop = OrganismLoop()
         self.neural_simulation = self.organism_loop.neural_development.simulation
         self.runtime = ContinuousOrganismRuntime(self.organism_loop)
