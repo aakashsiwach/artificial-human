@@ -16,7 +16,7 @@ from artificial_human.development.prenatal import (
     PrenatalPhase,
     phase_for_week,
 )
-from artificial_human.neural.homeostasis import HomeostaticController
+from artificial_human.neural.homeostasis import HomeostaticController, HomeostasisParameters
 from artificial_human.neural.plasticity import PairBasedSTDP, PlasticityController, STDPParameters
 from artificial_human.neural.simulation import (
     LIFNeuron, LIFParameters, NeuralSimulation, Polarity, SimulationStep, Synapse,
@@ -183,7 +183,18 @@ class DevelopmentalProgram:
                 trace_decay=0.9,
             )),
         )
-        self.homeostasis = HomeostaticController(self.simulation)
+        self.homeostasis = HomeostaticController(
+            self.simulation,
+            HomeostasisParameters(
+                observation_window_steps=100,
+                target_spike_rate=0.12,
+                rate_ema_decay=0.8,
+                adaptation_rate=0.05,
+                deadband=0.04,
+                minimum_input_gain=0.1,
+                maximum_input_gain=1.0,
+            ),
+        )
         if mature_from_start:
             self.prenatal_days = self.MAX_PRENATAL_DAYS
             self.postnatal_units = 2000
