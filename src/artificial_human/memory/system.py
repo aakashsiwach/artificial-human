@@ -12,11 +12,11 @@ from typing import Any
 
 from artificial_human.memory.embeddings import EmbeddingProvider
 from artificial_human.memory.index import IndexOutcome, ReindexReport, SemanticIndex
+from artificial_human.memory.contracts import MemoryStore
 from artificial_human.memory.repository import (
     UNSET,
     MemoryLink,
     MemoryRecord,
-    MemoryRepository,
 )
 from artificial_human.memory.search import (
     HybridMemorySearch,
@@ -29,7 +29,7 @@ from artificial_human.memory.search import (
 class LongTermMemory:
     def __init__(
         self,
-        repository: MemoryRepository,
+        repository: MemoryStore,
         provider: EmbeddingProvider | None = None,
         config: SearchConfig | None = None,
     ) -> None:
