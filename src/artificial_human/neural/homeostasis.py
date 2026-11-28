@@ -134,6 +134,8 @@ class HomeostasisSnapshot:
 
     version: str
     neuron_ids: tuple[str, ...]
+    parameters: HomeostasisParameters
+    initial_gains: tuple[tuple[str, float], ...]
     window_steps_elapsed: int
     window_spike_counts: tuple[tuple[str, int], ...]
     last_step_index: int | None
@@ -143,6 +145,16 @@ class HomeostasisSnapshot:
         return {
             "version": self.version,
             "neuron_ids": list(self.neuron_ids),
+            "parameters": {
+                "observation_window_steps": self.parameters.observation_window_steps,
+                "target_spike_rate": self.parameters.target_spike_rate,
+                "rate_ema_decay": self.parameters.rate_ema_decay,
+                "adaptation_rate": self.parameters.adaptation_rate,
+                "deadband": self.parameters.deadband,
+                "minimum_input_gain": self.parameters.minimum_input_gain,
+                "maximum_input_gain": self.parameters.maximum_input_gain,
+            },
+            "initial_gains": dict(self.initial_gains),
             "window_steps_elapsed": self.window_steps_elapsed,
             "window_spike_counts": dict(self.window_spike_counts),
             "last_step_index": self.last_step_index,
@@ -301,6 +313,8 @@ class HomeostaticController:
         return HomeostasisSnapshot(
             version=self.VERSION,
             neuron_ids=self._neuron_ids,
+            parameters=self.parameters,
+            initial_gains=tuple(sorted(self._initial_gains.items())),
             window_steps_elapsed=self._window_steps_elapsed,
             window_spike_counts=tuple(sorted(self._window_spike_counts.items())),
             last_step_index=self._last_step_index,
@@ -310,13 +324,21 @@ class HomeostaticController:
     def restore(self, snapshot: HomeostasisSnapshot) -> None:
         """Restore controller state into its original simulation topology."""
         self._validate_topology()
-        if snapshot.version != self.VERSION or snapshot.neuron_ids != self._neuron_ids:
-            raise ValueError("homeostasis snapshot version or topology does not match")
+        if (
+            snapshot.version != self.VERSION
+            or snapshot.neuron_ids != self._neuron_ids
+            or snapshot.parameters != self.parameters
+            or dict(snapshot.initial_gains) != self._initial_gains
+        ):
+            raise ValueError("homeostasis snapshot version, parameters or topology does not match")
         if not 0 <= snapshot.window_steps_elapsed < self.parameters.observation_window_steps:
             raise ValueError("homeostasis snapshot window position is invalid")
         if (
             snapshot.last_step_index is not None
-            and snapshot.last_step_index != self.simulation.step_index - 1
+            and (
+                snapshot.last_step_index < 0
+                or snapshot.last_step_index != self.simulation.step_index - 1
+            )
         ):
             raise ValueError("homeostasis snapshot clock does not match simulation state")
 
@@ -329,7 +351,10 @@ class HomeostaticController:
         ):
             raise ValueError("homeostasis snapshot contains invalid window counts")
         states = {state.identifier: state for state in snapshot.neuron_states}
-        if set(states) != set(self._neuron_ids):
+        if (
+            len(snapshot.neuron_states) != len(self._neuron_ids)
+            or set(states) != set(self._neuron_ids)
+        ):
             raise ValueError("homeostasis snapshot neuron states do not match topology")
 
         for identifier, state in states.items():
@@ -450,7 +475,9 @@ def run_homeostasis_comparison(
 
     selected_parameters = parameters or HomeostasisParameters()
 
-    def run(regulated: bool) -> tuple[dict[str, object], HomeostasisSnapshot | None]:
+    def run(
+        regulated: bool,
+    ) -> tuple[dict[str, object], HomeostasisSnapshot | None, float]:
         simulation = _build_recurrent_stress_network()
         controller = (
             HomeostaticController(simulation, selected_parameters) if regulated else None
@@ -477,12 +504,14 @@ def run_homeostasis_comparison(
                 for identifier, neuron in simulation.neurons.items()
             },
         }
-        return report, controller.snapshot() if controller is not None else None
+        return (
+            report,
+            controller.snapshot() if controller is not None else None,
+            mean_rate,
+        )
 
-    fixed_gain, _ = run(regulated=False)
-    regulated, state = run(regulated=True)
-    fixed_rate = float(fixed_gain["mean_spike_rate_per_step"])
-    regulated_rate = float(regulated["mean_spike_rate_per_step"])
+    fixed_gain, _, fixed_rate = run(regulated=False)
+    regulated, state, regulated_rate = run(regulated=True)
     return {
         "task": "two-neuron recurrent excitation under sustained external drive",
         "steps": steps,
