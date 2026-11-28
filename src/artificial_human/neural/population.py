@@ -205,7 +205,7 @@ class PopulationEncoder:
             or not isinstance(units_per_feature, int)
             or not 2 <= units_per_feature <= 128
         ):
-            raise ValueError("units_per_feature must be an integer in [2, 64]")
+            raise ValueError("units_per_feature must be an integer in [2, 128]")
         if (
             isinstance(tuning_width, bool)
             or not math.isfinite(tuning_width)
@@ -366,14 +366,23 @@ class PopulationAssociativeMemory:
             raise ValueError("capacity must be an integer in [1, 10000]")
         self.capacity = capacity
         self._patterns: list[StoredPopulationPattern] = []
+        self._geometry: tuple[int, int, tuple[float, ...]] | None = None
 
     def store(self, identifier: str, code: PopulationCode) -> None:
         if not identifier or not identifier.strip():
             raise ValueError("pattern identifier is required")
         if any(pattern.identifier == identifier for pattern in self._patterns):
             raise ValueError(f"duplicate pattern identifier: {identifier}")
+        geometry = (
+            code.feature_count,
+            code.units_per_feature,
+            code.preferred_values,
+        )
+        if self._geometry is not None and geometry != self._geometry:
+            raise ValueError("population code geometry does not match stored patterns")
         if len(self._patterns) >= self.capacity:
             raise RuntimeError("population associative memory capacity reached")
+        self._geometry = geometry
         self._patterns.append(StoredPopulationPattern(identifier, code))
 
     def complete(self, cue: PopulationCode) -> PatternCompletion | None:
@@ -381,6 +390,13 @@ class PopulationAssociativeMemory:
             return None
         if not self._patterns:
             return None
+        cue_geometry = (
+            cue.feature_count,
+            cue.units_per_feature,
+            cue.preferred_values,
+        )
+        if cue_geometry != self._geometry:
+            raise ValueError("population cue geometry does not match stored patterns")
         best: StoredPopulationPattern | None = None
         best_similarity = -1.0
         for pattern in self._patterns:
@@ -399,6 +415,7 @@ class PopulationAssociativeMemory:
 
     def clear(self) -> None:
         self._patterns.clear()
+        self._geometry = None
 
     def __len__(self) -> int:
         return len(self._patterns)
@@ -500,9 +517,7 @@ def run_population_coding_comparison() -> dict[str, object]:
             "near_is_more_similar": dense_near_similarity > dense_distant_similarity,
         },
         "one_hot_interference": {
-            "same_bin_collision": first_one_hot.activations == second_one_hot.activations[:9] + (
-                first_one_hot.activations[9:]
-            ),
+            "same_bin_collision": first_one_hot.activations[:9] == second_one_hot.activations[:9],
             "dense_retrieval": dense_retrieval.identifier if dense_retrieval else None,
             "one_hot_retrieval": one_hot_retrieval.identifier if one_hot_retrieval else None,
         },
