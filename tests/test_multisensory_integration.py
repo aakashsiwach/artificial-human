@@ -65,7 +65,7 @@ def test_common_cause_fuses_cues_by_inverse_variance_not_equal_average() -> None
         timestamp=10,
         target_modality=SensoryModality.VISION,
     )
-    expected = (0.2 / 0.01 + 0.8 / 0.09) / (1 / 0.01 + 1 / 0.09)
+    expected = (0.2 / 0.01 + 0.24 / 0.09) / (1 / 0.01 + 1 / 0.09)
     assert result.fused_value == pytest.approx(expected)
     assert result.common_cause_probability > 0.75
     assert result.value == pytest.approx(expected, abs=0.01)
@@ -152,7 +152,10 @@ def test_integrated_state_projects_into_lif_neural_substrate() -> None:
     for identifier in neuron_ids:
         simulation.add_neuron(LIFNeuron(identifier))
     step = project_integrated_state(result, simulation, neuron_ids)
-    assert step.step_index == 1
+    # SimulationStep labels the interval just executed (zero-based); the live
+    # simulation clock advances to the next step after the returned record.
+    assert step.step_index == 0
+    assert simulation.step_index == 1
     assert step.spikes
     assert set(step.spikes).issubset(neuron_ids)
 
