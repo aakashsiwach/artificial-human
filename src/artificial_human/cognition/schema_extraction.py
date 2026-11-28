@@ -17,8 +17,8 @@ from artificial_human.core.models import MemoryKind
 from artificial_human.memory.repository import (
     MemoryNotFoundError,
     MemoryRecord,
-    MemoryRepository,
 )
+from artificial_human.memory.contracts import MemoryStore
 
 
 _EVENT_TYPE = re.compile(r"^[a-z][a-z0-9_.-]{0,63}$")
@@ -224,7 +224,7 @@ class SchemaExtractionSystem:
         owner_id: str,
         context_prefix: str,
         episodic_memory: EpisodicReplayMemory,
-        repository: MemoryRepository,
+        repository: MemoryStore,
     ) -> tuple[SchemaProposal, ...]:
         """Find repeated annotated sequences and propose fixed/variable attributes."""
         episodes = episodic_memory.episodes_for_context_prefix(context_prefix)

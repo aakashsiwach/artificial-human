@@ -26,19 +26,19 @@ from artificial_human.memory.repository import (
     MemoryLink,
     MemoryNotFoundError,
     MemoryRecord,
-    MemoryRepository,
     StoredEmbedding,
     UNSET,
     content_fingerprint,
 )
 from artificial_human.memory.temporal import optional_utc_iso
+from artificial_human.memory.contracts import MemoryStore
 
 DEFAULT_MAX_RECORDS = 10_000
 DEFAULT_MAX_TRAINING_EXAMPLES = 1_000
 DEFAULT_MAX_EMBEDDINGS = 10_000
 
 
-class InMemoryMemoryRepository(MemoryRepository):
+class InMemoryMemoryRepository(MemoryStore):
     """Consent-aware repository backed only by bounded in-process dictionaries."""
 
     def __init__(
@@ -508,7 +508,9 @@ class InMemoryMemoryRepository(MemoryRepository):
 
     @staticmethod
     def record_to_dict(item: MemoryRecord) -> dict[str, Any]:
-        return MemoryRepository.record_to_dict(item)
+        from artificial_human.memory.records import memory_record_to_dict
+
+        return memory_record_to_dict(item)
 
     def export(self, owner_id: str) -> builtins.list[dict[str, Any]]:
         self._ensure_open()

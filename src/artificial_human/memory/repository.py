@@ -27,6 +27,7 @@ else:
 
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.temporal import optional_utc_iso
+from artificial_human.memory.contracts import MemoryStore
 
 
 class ConsentRequiredError(PermissionError):
@@ -250,7 +251,7 @@ MIGRATIONS: Final[tuple[tuple[int, Callable[[sqlite3.Connection], None]], ...]] 
 )
 
 
-class MemoryRepository:
+class MemoryRepository(MemoryStore):
     """SQLite memory store; personal-memory writes require active owner consent."""
 
     def __init__(

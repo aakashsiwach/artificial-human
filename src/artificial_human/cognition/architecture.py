@@ -27,6 +27,7 @@ from artificial_human.memory.repository import (
     MemoryRecord,
 )
 from artificial_human.memory.search import HybridMemorySearch
+from artificial_human.memory.cognitive import InMemoryCognitiveMemory
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +43,7 @@ class CognitiveCycle:
     retrieval: dict[str, Any] = field(default_factory=dict)
     associative_memory_state: dict[str, object] = field(default_factory=dict)
     episodic_replay_state: dict[str, object] = field(default_factory=dict)
+    specialized_memory_state: dict[str, object] = field(default_factory=dict)
 
     @property
     def plan(self) -> GoalPlan:
@@ -89,6 +91,7 @@ class CognitiveCycle:
             },
             "relational_memory": self.associative_memory_state,
             "episodic_replay": self.episodic_replay_state,
+            "specialized_memory": self.specialized_memory_state,
             "learning": {
                 "attended_demonstration_count": len(self.demonstrations),
                 "demonstration_ids": [item.id for item, _ in self.demonstrations],
@@ -110,6 +113,7 @@ class CognitiveArchitecture:
         memory_search: HybridMemorySearch | None = None,
         relational_memory: RelationalMemoryNetwork | None = None,
         episodic_memory: EpisodicReplayMemory | None = None,
+        cognitive_memory: InMemoryCognitiveMemory | None = None,
         learning: LearningSystem,
     ) -> None:
         self.perception = perception or PerceptionSystem()
@@ -118,8 +122,9 @@ class CognitiveArchitecture:
         self.executive = executive or ExecutiveControlSystem()
         self.retriever = retriever or MemoryRetriever()
         self.memory_search = memory_search
-        self.relational_memory = relational_memory or RelationalMemoryNetwork()
-        self.episodic_memory = episodic_memory or EpisodicReplayMemory()
+        self.cognitive_memory = cognitive_memory or InMemoryCognitiveMemory()
+        self.relational_memory = relational_memory or self.cognitive_memory.relational
+        self.episodic_memory = episodic_memory or self.cognitive_memory.episodic_replay
         self.learning = learning
 
     @staticmethod
@@ -137,7 +142,10 @@ class CognitiveArchitecture:
             "associative_memory": (
                 "session_scoped_relational_links_with_contradiction_suppression"
             ),
-            "episodic_memory": "attention_gated_temporal_sequences_with_volatile_replay",
+            "episodic_memory": "one_trial_context_bound_events_with_partial_cue_recall",
+            "semantic_memory": "concept_attribute_facts_with_evidence_and_retrieval_strengthening",
+            "procedural_memory": "task_step_sequences_with_outcome_based_strengthening",
+            "spatial_memory": "coordinate_indexed_places_with_nearest_neighbour_recall",
             "prediction": "lexical_novelty_error_heuristic",
             "executive_control": "goal_decomposition_with_approval_gate",
             "memory": (
@@ -242,6 +250,7 @@ class CognitiveArchitecture:
         association_context_id: str = "global",
     ) -> CognitiveCycle:
         percept = self.perception.perceive(query)
+        specialized_recall = self.cognitive_memory.recall(owner_id, query)
         prior_context = workspace.context(limit=workspace.capacity)
         prediction = self.prediction.assess(
             percept, [entry.content for entry in prior_context]
@@ -500,6 +509,47 @@ class CognitiveArchitecture:
                     salience=attended_lookup[(example.id, "learning_example")],
                 )
             )
+        for episodic_item in specialized_recall.episodic:
+            workspace.remember(
+                new_working_memory_entry(
+                    id=f"cognitive:episodic:{episodic_item.id}",
+                    content=episodic_item.content[:1200],
+                    kind="episodic_trace",
+                    source="volatile_episodic_memory",
+                    salience=episodic_item.salience * episodic_item.strength,
+                )
+            )
+        for semantic_item in specialized_recall.semantic:
+            details = "; ".join(f"{key}: {value}" for key, value in semantic_item.attributes)
+            workspace.remember(
+                new_working_memory_entry(
+                    id=f"cognitive:semantic:{semantic_item.id}",
+                    content=(semantic_item.concept + (f" ({details})" if details else ""))[:1200],
+                    kind="semantic_fact",
+                    source="volatile_semantic_memory",
+                    salience=semantic_item.confidence * semantic_item.strength,
+                )
+            )
+        for procedure_item in specialized_recall.procedural:
+            workspace.remember(
+                new_working_memory_entry(
+                    id=f"cognitive:procedural:{procedure_item.id}",
+                    content=(procedure_item.task + ": " + " -> ".join(procedure_item.steps))[:1200],
+                    kind="procedural_sequence",
+                    source="volatile_procedural_memory",
+                    salience=procedure_item.success_rate * procedure_item.strength,
+                )
+            )
+        for spatial_item in specialized_recall.spatial:
+            workspace.remember(
+                new_working_memory_entry(
+                    id=f"cognitive:spatial:{spatial_item.id}",
+                    content=f"{spatial_item.label} at {spatial_item.coordinates}",
+                    kind="spatial_place",
+                    source="volatile_spatial_memory",
+                    salience=0.5,
+                )
+            )
 
         executive = self.executive.prepare(query)
         attended_trace = tuple(
@@ -516,6 +566,13 @@ class CognitiveArchitecture:
             retrieval=retrieval,
             associative_memory_state=relational_state,
             episodic_replay_state=episodic_replay_state,
+            specialized_memory_state={
+                "episodic_hits": len(specialized_recall.episodic),
+                "semantic_hits": len(specialized_recall.semantic),
+                "procedural_hits": len(specialized_recall.procedural),
+                "spatial_hits": len(specialized_recall.spatial),
+                "stores": self.cognitive_memory.snapshot(),
+            },
             working_memory_context=tuple(
                 {
                     "id": item.id,

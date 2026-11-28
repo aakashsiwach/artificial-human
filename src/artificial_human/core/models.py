@@ -18,6 +18,7 @@ class MemoryKind(StrEnum):
     PREFERENCE = "preference"
     DECISION = "decision"
     WORKING = "working"
+    SPATIAL = "spatial"
 
 
 class Severity(StrEnum):

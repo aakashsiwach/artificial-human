@@ -129,6 +129,22 @@ class WorkingMemorySessions:
                 del self._sessions[key]
             return len(keys)
 
+    def reset(self) -> None:
+        """Clear every volatile workspace at organism reset."""
+        with self._lock:
+            self._sessions.clear()
+
+    def snapshot(self) -> dict[str, int | str]:
+        with self._lock:
+            return {
+                "kind": "working",
+                "session_count": len(self._sessions),
+                "capacity_per_session": self.capacity,
+                "max_sessions": self.max_sessions,
+                "item_count": sum(len(workspace.items()) for workspace in self._sessions.values()),
+                "state_storage": "volatile_process_memory",
+            }
+
 
 def new_working_memory_entry(
     *,
