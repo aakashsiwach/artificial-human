@@ -13,9 +13,13 @@ from dataclasses import dataclass, replace
 from threading import RLock
 from uuid import uuid4
 
+from typing import TYPE_CHECKING
+
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.repository import MemoryRecord
-from artificial_human.neural.episodic import EpisodicNeuralCircuit, EpisodicNeuralRecall
+
+if TYPE_CHECKING:
+    from artificial_human.neural.episodic import EpisodicNeuralRecall
 
 
 def _tokens(value: str) -> frozenset[str]:
@@ -797,6 +801,10 @@ class InMemoryCognitiveMemory:
         self.working = WorkingMemorySessions(
             capacity=working_capacity, max_sessions=max_working_sessions
         )
+        # Defer neural package import until initialization to avoid an
+        # import cycle through neural.__init__ -> cognition.architecture.
+        from artificial_human.neural.episodic import EpisodicNeuralCircuit
+
         self.episodic = EpisodicMemoryStore(capacity=episodic_capacity)
         self.episodic_neural = EpisodicNeuralCircuit(capacity=episodic_capacity)
         self.semantic = SemanticMemoryStore(capacity=semantic_capacity)
