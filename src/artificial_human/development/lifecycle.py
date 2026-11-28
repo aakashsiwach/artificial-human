@@ -550,19 +550,23 @@ def run_developmental_learning_comparison(
     trained = DevelopmentalNeuralSubstrate(seed=seed)
     baseline.advance(1_200)
     trained.advance(1_200)
-    initial_weights = {
-        identifier: synapse.weight
-        for identifier, synapse in baseline.simulation.synapses.items()
-    }
     for _ in range(training_exposures):
         trained.expose(DevelopmentalModality.AUDITORY, intensity=0.8)
+    trained_weights = {
+        identifier: synapse.weight
+        for identifier, synapse in trained.simulation.synapses.items()
+    }
 
-    # Match every dynamic variable to the trained network, then restore only
-    # the frozen baseline weights. This isolates the effect of learning rather
-    # than comparing networks with different membrane/event-queue histories.
-    baseline.simulation.restore(trained.simulation.state())
-    for identifier, weight in initial_weights.items():
-        baseline.simulation.update_synapse_weight(identifier, weight)
+    # Reset both networks to identical resting membrane, queue and current
+    # states. Only the trained network receives its learned weights back.
+    baseline.simulation.reset()
+    trained.simulation.reset()
+    baseline._stdp.reset()
+    trained._stdp.reset()
+    baseline._refresh_maturity()
+    trained._refresh_maturity()
+    for identifier, weight in trained_weights.items():
+        trained.simulation.update_synapse_weight(identifier, weight)
 
     route = ("sensory_input", "recurrent_integration", "association", "sequence_context")
     target = "sequence_context"
