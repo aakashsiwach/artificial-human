@@ -127,7 +127,7 @@ def main():
     # Bound both process count and each process address space. Their product
     # cannot exceed the proposal memory budget, even if children are spawned.
     max_processes = int(LIMITS["max_processes"])
-    per_process_memory = max(64 * 1024 * 1024, memory_bytes // max_processes)
+    per_process_memory = memory_bytes // max_processes
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds + 1))
     resource.setrlimit(resource.RLIMIT_AS, (per_process_memory, per_process_memory))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
