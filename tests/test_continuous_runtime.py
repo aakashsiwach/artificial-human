@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from artificial_human.neural.organism_loop import Modality, SensoryEvent
+from artificial_human.neural.organism_loop import Modality, OrganismLoop, SensoryEvent
 from artificial_human.runtime import (
     ContinuousOrganismRuntime,
     RuntimeConfig,
@@ -169,3 +169,23 @@ def test_runtime_config_rejects_unbounded_or_inconsistent_budgets() -> None:
         RuntimeConfig(queue_capacity=0)
     with pytest.raises(ValueError, match="cannot exceed"):
         RuntimeConfig(max_events_per_tick=9, max_operations_per_tick=8)
+
+
+
+def test_tick_exception_transitions_runtime_to_failed_and_can_be_reset(monkeypatch: pytest.MonkeyPatch) -> None:
+    runtime = ContinuousOrganismRuntime()
+
+    def fail_tick(self: OrganismLoop, event: SensoryEvent | None = None) -> dict[str, object]:
+        raise RuntimeError("synthetic tick failure")
+
+    monkeypatch.setattr(OrganismLoop, "tick", fail_tick)
+    with pytest.raises(RuntimeError, match="synthetic tick failure"):
+        runtime.tick()
+
+    snapshot = runtime.snapshot()
+    assert snapshot.state is RuntimeState.FAILED
+    assert snapshot.health is RuntimeHealth.DEGRADED
+    assert snapshot.last_error == "RuntimeError: synthetic tick failure"
+    runtime.reset()
+    assert runtime.snapshot().state is RuntimeState.STOPPED
+    assert runtime.snapshot().last_error is None
