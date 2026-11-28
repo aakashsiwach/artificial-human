@@ -312,7 +312,7 @@ class SafeSelfDevelopment:
             (
                 f"{base_revision}\0{hypothesis}\0{patch_digest}\0"
                 f"{trigger_benchmark_id or ''}\0{trigger_evidence_digest or ''}"
-            ).encode("utf-8")
+            ).encode()
         ).hexdigest()[:24]
         rollback = RollbackPlan(
             base_revision=base_revision,
