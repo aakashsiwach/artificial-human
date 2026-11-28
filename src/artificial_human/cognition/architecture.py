@@ -43,6 +43,7 @@ class CognitiveCycle:
     retrieval: dict[str, Any] = field(default_factory=dict)
     associative_memory_state: dict[str, object] = field(default_factory=dict)
     episodic_replay_state: dict[str, object] = field(default_factory=dict)
+    episodic_neural_state: dict[str, object] = field(default_factory=dict)
     specialized_memory_state: dict[str, object] = field(default_factory=dict)
 
     @property
@@ -91,6 +92,7 @@ class CognitiveCycle:
             },
             "relational_memory": self.associative_memory_state,
             "episodic_replay": self.episodic_replay_state,
+            "episodic_neural": self.episodic_neural_state,
             "specialized_memory": self.specialized_memory_state,
             "learning": {
                 "attended_demonstration_count": len(self.demonstrations),
@@ -142,7 +144,7 @@ class CognitiveArchitecture:
             "associative_memory": (
                 "session_scoped_relational_links_with_contradiction_suppression"
             ),
-            "episodic_memory": "one_trial_context_bound_events_with_partial_cue_recall",
+            "episodic_memory": "sparse_neural_engram_completion_with_context_binding_and_temporal_replay",
             "semantic_memory": "concept_attribute_facts_with_evidence_and_retrieval_strengthening",
             "procedural_memory": "task_step_sequences_with_outcome_based_strengthening",
             "spatial_memory": "coordinate_indexed_places_with_nearest_neighbour_recall",
@@ -257,9 +259,6 @@ class CognitiveArchitecture:
         )
 
         retrieved, retrieval = self._retrieve(owner_id, query, memories, max_memories)
-        contradictions = self._contradiction_pairs(retrieved)
-        direct_memory_ids = [item.memory.id for item in retrieved]
-        direct_ids = set(direct_memory_ids)
         visible_contradictions: set[tuple[str, str]] = set()
         for link in self.learning.repository.links(owner_id):
             if link.relation == "contradicts":
@@ -268,11 +267,87 @@ class CognitiveArchitecture:
                     if link.from_memory_id < link.to_memory_id
                     else (link.to_memory_id, link.from_memory_id)
                 )
+
+        # Resolve neural engram identifiers back through the same owner-scoped
+        # memory repository before admitting them to attention or working memory.
+        direct_ids = {item.memory.id for item in retrieved}
+        neural_report = specialized_recall.episodic_neural
+        neural_matches_added = 0
+        for neural_match in neural_report.matches:
+            source_id = neural_match.source_id
+            record = self._associated_record(owner_id, source_id, memories)
+            if record is None or record.kind is not MemoryKind.EPISODIC:
+                continue
+            conflicting = any(
+                (
+                    (direct_id, source_id)
+                    if direct_id < source_id
+                    else (source_id, direct_id)
+                ) in visible_contradictions
+                for direct_id in direct_ids
+                if direct_id != source_id
+            )
+            if conflicting:
+                continue
+            neural_explanation = {
+                "episodic_neural": {
+                    "symbolic_score": neural_match.symbolic_score,
+                    "neural_activation": neural_match.neural_activation,
+                    "completed_feature_count": neural_match.completed_feature_count,
+                    "expected_completion_count": neural_match.expected_completion_count,
+                    "completion_ratio": neural_match.completion_ratio,
+                    "latency_steps": neural_match.latency_steps,
+                },
+            }
+            existing_index = next(
+                (
+                    index for index, item in enumerate(retrieved)
+                    if item.memory.id == source_id
+                ),
+                None,
+            )
+            if existing_index is not None:
+                existing = retrieved[existing_index]
+                retrieved[existing_index] = MemoryMatch(
+                    memory=existing.memory,
+                    score=max(existing.score, neural_match.score),
+                    channels=tuple(dict.fromkeys(
+                        (*existing.channels, "episodic_neural_completion")
+                    )),
+                    explanation={**existing.explanation, **neural_explanation},
+                )
+            else:
+                retrieved.append(
+                    MemoryMatch(
+                        memory=record,
+                        score=max(neural_match.score, 1e-6),
+                        channels=("episodic_neural_completion",),
+                        explanation={
+                            **neural_explanation,
+                            "conflicts_with": [],
+                        },
+                    )
+                )
+                neural_matches_added += 1
+            direct_ids.add(source_id)
+
+        contradictions = self._contradiction_pairs(retrieved)
+        direct_memory_ids = [item.memory.id for item in retrieved]
+        direct_ids = set(direct_memory_ids)
         direct_conflicts = {
             pair for pair in visible_contradictions
             if pair[0] in direct_ids and pair[1] in direct_ids
         }
         contradictions = tuple(sorted(set(contradictions) | direct_conflicts))
+        retrieval = {
+            **retrieval,
+            "episodic_neural": {
+                "candidate_count": neural_report.candidate_count,
+                "activated_count": neural_report.activated_count,
+                "network_spikes": neural_report.network_spikes,
+                "neural_matches_added": neural_matches_added,
+            },
+        }
         associated = self.relational_memory.activate(
             direct_memory_ids,
             context_id=association_context_id,
@@ -455,6 +530,18 @@ class CognitiveArchitecture:
             reinforced_replays,
             context_id=association_context_id,
         )
+        neural_strengthenings = sum(
+            self.cognitive_memory.episodic_neural.strengthen(
+                owner_id, item.memory.id
+            )
+            for item in selected_memories
+            if item.memory.kind is MemoryKind.EPISODIC
+        )
+        episodic_neural_state = {
+            **neural_report.as_dict(),
+            "neural_matches_added": neural_matches_added,
+            "successful_retrieval_strengthenings_this_cycle": neural_strengthenings,
+        }
         selected_episodes = [
             EpisodicEvent(
                 memory_id=item.memory.id,
@@ -566,6 +653,7 @@ class CognitiveArchitecture:
             retrieval=retrieval,
             associative_memory_state=relational_state,
             episodic_replay_state=episodic_replay_state,
+            episodic_neural_state=episodic_neural_state,
             specialized_memory_state={
                 "episodic_hits": len(specialized_recall.episodic),
                 "semantic_hits": len(specialized_recall.semantic),

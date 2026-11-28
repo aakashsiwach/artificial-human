@@ -15,6 +15,7 @@ from uuid import uuid4
 
 from artificial_human.core.models import MemoryKind
 from artificial_human.memory.repository import MemoryRecord
+from artificial_human.neural.episodic import EpisodicNeuralCircuit, EpisodicNeuralRecall
 
 
 def _tokens(value: str) -> frozenset[str]:
@@ -38,6 +39,7 @@ class CognitiveMemoryRecall:
     semantic: tuple[SemanticFact, ...]
     procedural: tuple[Procedure, ...]
     spatial: tuple[SpatialPlace, ...]
+    episodic_neural: EpisodicNeuralRecall
 
 
 @dataclass(frozen=True, slots=True)
@@ -796,6 +798,7 @@ class InMemoryCognitiveMemory:
             capacity=working_capacity, max_sessions=max_working_sessions
         )
         self.episodic = EpisodicMemoryStore(capacity=episodic_capacity)
+        self.episodic_neural = EpisodicNeuralCircuit(capacity=episodic_capacity)
         self.semantic = SemanticMemoryStore(capacity=semantic_capacity)
         self.procedural = ProceduralMemoryStore(capacity=procedural_capacity)
         self.spatial = SpatialMemoryStore(capacity=spatial_capacity)
@@ -810,14 +813,31 @@ class InMemoryCognitiveMemory:
             "source_id": record.id,
         }
         if record.kind is MemoryKind.EPISODIC:
+            context_id = str(record.metadata.get("context_id", record.owner_id))
+            tags = tuple(str(item) for item in record.metadata.get("tags", ()) if str(item))
+            occurred_at = int(record.metadata.get("tick", 0))
+            salience = float(record.metadata.get("salience", 0.5))
             self.episodic.store(
                 **common,
-                context_id=str(record.metadata.get("context_id", record.owner_id)),
+                context_id=context_id,
                 content=record.content,
-                occurred_at=int(record.metadata.get("tick", 0)),
-                tags=tuple(str(item) for item in record.metadata.get("tags", ()) if str(item)),
-                salience=float(record.metadata.get("salience", 0.5)),
+                occurred_at=occurred_at,
+                tags=tags,
+                salience=salience,
             )
+            try:
+                self.episodic_neural.encode(
+                    **common,
+                    context_id=context_id,
+                    content=record.content,
+                    occurred_at=occurred_at,
+                    tags=tags,
+                    salience=salience,
+                )
+            except Exception:
+                # Keep the two derived representations atomic on a failed encode.
+                self.episodic.forget_source(record.id)
+                raise
             return "episodic"
         if record.kind in {MemoryKind.SEMANTIC, MemoryKind.PREFERENCE, MemoryKind.DECISION}:
             attributes = record.metadata.get("attributes", {})
@@ -864,11 +884,15 @@ class InMemoryCognitiveMemory:
             semantic=self.semantic.retrieve(owner_id, query),
             procedural=self.procedural.retrieve(owner_id, query),
             spatial=self.spatial.retrieve(owner_id, query),
+            episodic_neural=self.episodic_neural.recall(
+                owner_id, query, context_id=context_id
+            ),
         )
 
     def forget_source(self, source_id: str) -> dict[str, int]:
         counts = {
             "episodic": int(self.episodic.forget_source(source_id)),
+            "episodic_neural": self.episodic_neural.forget_source(source_id),
             "semantic": self.semantic.forget_source(source_id),
             "procedural": self.procedural.forget_source(source_id),
             "spatial": self.spatial.forget_source(source_id),
@@ -882,6 +906,7 @@ class InMemoryCognitiveMemory:
     def forget_consent(self, owner_id: str, consent_id: str) -> dict[str, int]:
         counts = {
             "episodic": self.episodic.forget_consent(owner_id, consent_id),
+            "episodic_neural": self.episodic_neural.forget_consent(owner_id, consent_id),
             "semantic": self.semantic.forget_consent(owner_id, consent_id),
             "procedural": self.procedural.forget_consent(owner_id, consent_id),
             "spatial": self.spatial.forget_consent(owner_id, consent_id),
@@ -895,6 +920,7 @@ class InMemoryCognitiveMemory:
     def forget_owner(self, owner_id: str) -> dict[str, int]:
         counts = {
             "episodic": self.episodic.forget_owner(owner_id),
+            "episodic_neural": self.episodic_neural.forget_owner(owner_id),
             "semantic": self.semantic.forget_owner(owner_id),
             "procedural": self.procedural.forget_owner(owner_id),
             "spatial": self.spatial.forget_owner(owner_id),
@@ -909,6 +935,7 @@ class InMemoryCognitiveMemory:
     def reset(self) -> None:
         self.working.reset()
         self.episodic.reset()
+        self.episodic_neural.reset()
         self.semantic.reset()
         self.procedural.reset()
         self.spatial.reset()
@@ -919,6 +946,7 @@ class InMemoryCognitiveMemory:
         return {
             "working": self.working.snapshot(),
             "episodic": self.episodic.snapshot(),
+            "episodic_neural": self.episodic_neural.snapshot(),
             "semantic": self.semantic.snapshot(),
             "procedural": self.procedural.snapshot(),
             "spatial": self.spatial.snapshot(),
