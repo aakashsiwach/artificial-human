@@ -499,7 +499,9 @@ class DevelopmentalNeuralSubstrate:
 
     def reset(self) -> None:
         """Reset all learned and developmental state to source-defined defaults."""
-        self.__init__(seed=self.seed)
+        fresh = DevelopmentalNeuralSubstrate(seed=self.seed)
+        self.__dict__.clear()
+        self.__dict__.update(fresh.__dict__)
 
 
 def run_developmental_learning_comparison(
