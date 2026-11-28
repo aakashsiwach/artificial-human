@@ -205,7 +205,7 @@ class VisionEncoder:
             raise ValueError("vision encoder received another modality")
         values = _observed(event)
         mean, contrast, rms, peak = _moments(values)
-        adjacent = sum(abs(b - a) for a, b in zip(values, values[1:], strict=True)) / max(1, len(values) - 1)
+        adjacent = sum(abs(b - a) for a, b in zip(values, values[1:], strict=False)) / max(1, len(values) - 1)
         return _percept(event, encoder, (mean, contrast, adjacent, peak), quality=1.0 / (1.0 + rms * 0.01))
 
 
@@ -217,7 +217,7 @@ class AuditionEncoder:
             raise ValueError("audition encoder received another modality")
         values = _observed(event)
         mean, spread, rms, peak = _moments(values)
-        crossings = sum((a < 0 <= b) or (b < 0 <= a) for a, b in zip(values, values[1:], strict=True))
+        crossings = sum((a < 0 <= b) or (b < 0 <= a) for a, b in zip(values, values[1:], strict=False))
         zero_crossing_rate = crossings / max(1, len(values) - 1)
         return _percept(event, encoder, (rms, spread, zero_crossing_rate, peak), quality=1.0 / (1.0 + abs(mean)))
 
@@ -242,7 +242,7 @@ class VestibularEncoder:
             raise ValueError("vestibular encoder received another modality")
         values = _observed(event)
         mean, spread, rms, peak = _moments(values)
-        change = sum(abs(b - a) for a, b in zip(values, values[1:], strict=True)) / max(1, len(values) - 1)
+        change = sum(abs(b - a) for a, b in zip(values, values[1:], strict=False)) / max(1, len(values) - 1)
         return _percept(event, encoder, (mean, spread, rms, change))
 
 
