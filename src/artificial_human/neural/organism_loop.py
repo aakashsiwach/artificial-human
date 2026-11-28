@@ -193,6 +193,8 @@ class SimulatedEnvironment:
 
 @dataclass(slots=True)
 class ActionLearner:
+    """Legacy directional learner retained as a comparison baseline only."""
+
     values: dict[int, float] = field(default_factory=lambda: {-1: 0.0, 0: 0.0, 1: 0.0})
 
     def choose(self, direction: float) -> int:
@@ -552,3 +554,48 @@ class OrganismLoop:
                 "mean_conduction_delay_steps": development.mean_conduction_delay_steps,
             },
         }
+
+
+
+def run_integration_ablation_comparison(
+    *, ticks: int = 100
+) -> tuple[dict[str, object], ...]:
+    """Measure end-to-end subsystem ablations on identical deterministic tasks."""
+    if isinstance(ticks, bool) or not isinstance(ticks, int) or not 1 <= ticks <= 10_000:
+        raise ValueError("ticks must be an integer in [1, 10000]")
+
+    conditions = (
+        ("full", OrganismIntegrationConfig()),
+        ("attention_disabled", OrganismIntegrationConfig(attention_enabled=False)),
+        ("working_memory_disabled", OrganismIntegrationConfig(working_memory_enabled=False)),
+        ("episodic_memory_disabled", OrganismIntegrationConfig(episodic_memory_enabled=False)),
+        ("neural_substrate_disabled", OrganismIntegrationConfig(neural_substrate_enabled=False)),
+        (
+            "learned_action_selection_disabled",
+            OrganismIntegrationConfig(learned_action_selection_enabled=False),
+        ),
+    )
+    reports: list[dict[str, object]] = []
+    for name, config in conditions:
+        organism = OrganismLoop(config=config)
+        trace = organism.run(ticks)
+        snapshot = organism.snapshot()
+        neural_spikes = sum(
+            len(step["neural"]["spikes"])
+            for step in trace
+            if isinstance(step.get("neural"), dict)
+        )
+        prediction_error = sum(
+            abs(float(step["prediction_error"])) for step in trace
+        ) / ticks
+        reports.append({
+            "condition": name,
+            "ticks": ticks,
+            "cumulative_reward": round(sum(float(step["reward"]) for step in trace), 8),
+            "mean_absolute_prediction_error": round(prediction_error, 8),
+            "neural_spikes": neural_spikes,
+            "working_memory_items": snapshot["working_memory"]["item_count"],
+            "episodic_memories": snapshot["episodes"],
+            "action_learning_updates": snapshot["action_selection"]["updates"],
+        })
+    return tuple(reports)
