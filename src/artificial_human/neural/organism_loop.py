@@ -20,6 +20,7 @@ from artificial_human.neural.action_selection import (
     ActionSpec,
     SafeActionSpace,
 )
+from artificial_human.neural.body_environment import SimulatedBodyEnvironment
 from artificial_human.cognition.attention import (
     AttentionCandidate,
     AttentionSystem,
@@ -312,7 +313,9 @@ class OrganismLoop:
     encoder: PopulationEncoder = field(default_factory=PopulationEncoder)
     memory: EpisodicMemory = field(default_factory=EpisodicMemory)
     world: WorldModel = field(default_factory=WorldModel.create)
-    environment: SimulatedEnvironment = field(default_factory=SimulatedEnvironment)
+    environment: SimulatedBodyEnvironment = field(
+        default_factory=lambda: SimulatedBodyEnvironment(max_steps=100)
+    )
     controller: ForwardController = field(default_factory=ForwardController)
     homeostat: Homeostat = field(default_factory=Homeostat)
     neural_development: LIFDevelopmentalProgram = field(default_factory=_default_neural_development)
@@ -325,20 +328,23 @@ class OrganismLoop:
     paused: bool = False
 
     @staticmethod
-    def _state_id(distance: float) -> str:
+    def _state_id(distance: float, velocity: float) -> str:
         direction = "ahead" if distance > 0.05 else "behind" if distance < -0.05 else "aligned"
-        bucket = min(30, int(abs(distance) * 10))
-        return f"goal:{direction}:{bucket}"
+        distance_bucket = min(30, int(abs(distance) * 10))
+        velocity_bucket = max(-10, min(10, int(round(velocity * 10))))
+        return f"goal:{direction}:{distance_bucket}:velocity:{velocity_bucket}"
 
     def tick(self, event: SensoryEvent | None = None) -> dict[str, object]:
         if self.paused:
             return {"tick": self.tick_index, "paused": True}
-        if self.environment.steps >= self.environment.max_steps:
+        body_before = self.environment.state
+        if body_before.tick >= self.environment.max_steps:
             self.environment.reset()
             self.episode_count += 1
+        body_state = self.environment.state
         event = event or SensoryEvent(
             Modality.PROPRIOCEPTION,
-            (self.environment.position, self.environment.target),
+            (body_state.position, body_state.velocity, body_state.goal_position),
             self.tick_index,
         )
         code = self.encoder.encode(event)
@@ -426,15 +432,16 @@ class OrganismLoop:
                 "simulation_step": self.neural_development.simulation.step_index,
             }
 
-        distance = self.environment.target - self.environment.position
+        body_state = self.environment.state
+        distance = body_state.goal_position - body_state.position
         state = (
-            self.environment.position,
-            self.environment.target,
+            body_state.position,
+            body_state.goal_position,
             distance,
             attended_weight,
         )
         predicted = self.world.predict(state)
-        state_id = self._state_id(distance)
+        state_id = self._state_id(distance, body_state.velocity)
         if self.config.learned_action_selection_enabled:
             choice = self.action_selection.select(state_id, explore=True)
             action_map = {"move_left": -1, "hold": 0, "move_right": 1}
@@ -443,16 +450,23 @@ class OrganismLoop:
             choice = None
             action = 1 if distance > 0.05 else -1 if distance < -0.05 else 0
 
-        before = self.environment.position
-        distance_before = abs(self.environment.target - before)
-        reward = self.environment.act(action)
-        delta = self.environment.position - before
-        distance_after = abs(self.environment.target - self.environment.position)
+        transition = self.environment.step(float(action))
+        delta = transition.current.position - transition.previous.position
+        distance_before = abs(
+            transition.previous.goal_position - transition.previous.position
+        )
+        distance_after = abs(
+            transition.current.goal_position - transition.current.position
+        )
+        reward = -distance_after
         reward_signal = max(
             -1.0,
-            min(1.0, (distance_before - distance_after) / self.environment.step_size),
+            min(1.0, (distance_before - distance_after) / 0.28),
         )
-        next_state_id = self._state_id(self.environment.target - self.environment.position)
+        next_state_id = self._state_id(
+            transition.current.goal_position - transition.current.position,
+            transition.current.velocity,
+        )
         update = None
         if self.config.learned_action_selection_enabled and choice is not None:
             update = self.action_selection.observe(
@@ -499,7 +513,10 @@ class OrganismLoop:
             ),
             "reward": reward,
             "reward_signal": reward_signal,
-            "position": self.environment.position,
+            "position": transition.current.position,
+            "velocity": transition.current.velocity,
+            "goal_position": transition.current.goal_position,
+            "reached_goal": transition.reached_goal,
             "threshold": threshold,
             "stage": stage.value,
             "neural": neural_outcome,
@@ -534,7 +551,7 @@ class OrganismLoop:
         return {
             "tick": self.tick_index,
             "paused": self.paused,
-            "position": self.environment.position,
+            "position": self.environment.state.position,
             "episodes": len(self.memory.episodes),
             "episode_count": self.episode_count,
             "weights": tuple(self.world.weights),
