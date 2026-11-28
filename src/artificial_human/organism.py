@@ -91,6 +91,13 @@ class ArtificialOrganism:
         self.metabolism = ResourceGovernor()
         self.nervous_system = EventBus()
 
+    def reset_volatile_state(self) -> None:
+        """Clear all process-local personal memory and derived cognitive state."""
+        self.memory.reset()
+        self.cognitive_memory.reset()
+        self.sleep.clear_owner(self.owner_id)
+        self.schema_extraction.clear_owner(self.owner_id)
+
     def reasoning_status(self) -> dict[str, object]:
         if isinstance(self.chat_provider, OpenAICompatibleProvider):
             provider_status = self.chat_provider.status()
