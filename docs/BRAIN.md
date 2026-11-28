@@ -181,6 +181,8 @@ Language is a communication and representation capability within this wider syst
 | Learning | `DevelopmentalProgram`, owner-reviewed learning system | Bounded STDP-inspired synaptic updates in the LIF program; owner-approved language examples remain separate; no LLM training |
 | Sleep / consolidation | `SleepSystem`, episodic replay and engram stores | Replay-derived owner-review proposals and bounded episodic replay; no silent rewriting or full sleep physiology |
 | Homeostasis / regulation | `DevelopmentalProgram`, `OrganismLoop.Homeostat` | Bounded neural activity regulation and a simple synthetic homeostat; no literal hypothalamus or subjective affect |
+| Affect and appraisal | Salience metadata only | No emotion inference or subjective affect model |
+| Schema extraction | `SchemaExtractionSystem` | Owner-annotated event sequences, typed slots/constants and owner-approved procedural schemas |
 
 These are functional inspirations, not one-to-one anatomical mappings. Brain regions work through distributed, interacting networks and each has multiple roles.
 
