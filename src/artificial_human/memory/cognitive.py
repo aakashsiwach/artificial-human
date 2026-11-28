@@ -844,7 +844,11 @@ class InMemoryCognitiveMemory:
             self.spatial.observe(
                 **common,
                 label=str(record.metadata.get("label", record.content)),
-                coordinates=tuple(float(value) for value in raw_coordinates),
+                coordinates=(
+                    float(raw_coordinates[0]),
+                    float(raw_coordinates[1]),
+                    float(raw_coordinates[2]),
+                ),
                 context_id=str(record.metadata.get("context_id", "default")),
                 tags=tuple(str(item) for item in record.metadata.get("tags", ()) if str(item)),
             )
