@@ -71,7 +71,12 @@ class PairBasedSTDP:
             if synapse.target in spike_set:
                 delta += self.parameters.potentiation * self.pre_traces[synapse.source]
             if delta:
-                weight = synapse.weight + gate * delta
+                # Clamp magnitude to the synapse's configured range; the
+                # rule may request potentiation/depression beyond a hard bound.
+                weight = min(
+                    synapse.maximum_weight,
+                    max(0.0, synapse.weight + gate * delta),
+                )
                 simulation.update_synapse_weight(synapse.identifier, weight)
 
         for neuron in spike_set:
