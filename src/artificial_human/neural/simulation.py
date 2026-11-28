@@ -344,6 +344,19 @@ class NeuralSimulation:
             raise ValueError("synaptic weight is outside configured bounds")
         self.synapses[synapse_id] = replace(synapse, weight=weight)
 
+    def update_synapse_delay(self, synapse_id: str, delay_steps: int) -> None:
+        """Change delay for future spikes; already queued events keep their due time."""
+        synapse = self.synapses.get(synapse_id)
+        if synapse is None:
+            raise ValueError(f"unknown synapse: {synapse_id}")
+        if (
+            isinstance(delay_steps, bool)
+            or not isinstance(delay_steps, int)
+            or not 1 <= delay_steps <= 10000
+        ):
+            raise ValueError("delay_steps must be an integer in [1, 10000]")
+        self.synapses[synapse_id] = replace(synapse, delay_steps=delay_steps)
+
     def pause(self) -> None:
         self.paused = True
 

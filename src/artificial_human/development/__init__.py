@@ -5,5 +5,25 @@ from artificial_human.development.prenatal import (
     PrenatalModality,
     PrenatalPhase,
 )
+from artificial_human.development.program import (
+    DevelopmentalComparison,
+    DevelopmentalExperienceOutcome,
+    DevelopmentalModality,
+    DevelopmentalProgram,
+    DevelopmentalSnapshot,
+    DevelopmentalStage,
+    run_developmental_comparison,
+)
 
-__all__ = ["PrenatalBrain", "PrenatalModality", "PrenatalPhase"]
+__all__ = [
+    "PrenatalBrain",
+    "PrenatalModality",
+    "PrenatalPhase",
+    "DevelopmentalComparison",
+    "DevelopmentalExperienceOutcome",
+    "DevelopmentalModality",
+    "DevelopmentalProgram",
+    "DevelopmentalSnapshot",
+    "DevelopmentalStage",
+    "run_developmental_comparison",
+]
