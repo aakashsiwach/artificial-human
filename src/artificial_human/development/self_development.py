@@ -222,8 +222,8 @@ class SafeSelfDevelopment:
             not isinstance(checks, tuple)
             or not checks
             or len(checks) > self.limits.max_checks
+            or any(not isinstance(check, str) or check not in _ALLOWED_CHECKS for check in checks)
             or len(set(checks)) != len(checks)
-            or any(check not in _ALLOWED_CHECKS for check in checks)
         ):
             raise ValueError("checks must be unique, non-empty and allowlisted")
 
@@ -293,16 +293,20 @@ class SafeSelfDevelopment:
         results: tuple[SandboxCheckResult, ...],
     ) -> SandboxEvidence:
         failure: str | None = None
+        safe_results = (
+            tuple(item for item in results if isinstance(item, SandboxCheckResult))
+            if isinstance(results, tuple) else ()
+        )
         if not isinstance(results, tuple) or len(results) != len(proposal.checks):
             failure = "sandbox evidence is incomplete or has unexpected check count"
-        elif any(not isinstance(item, SandboxCheckResult) for item in results):
+        elif len(safe_results) != len(results):
             failure = "sandbox evidence contains an invalid result type"
         else:
-            sandbox_ids = {item.sandbox_id for item in results}
+            sandbox_ids = {item.sandbox_id for item in safe_results}
             if len(sandbox_ids) != 1 or not next(iter(sandbox_ids), ""):
                 failure = "checks must run in one identified isolated workspace"
             else:
-                for expected, result in zip(proposal.checks, results, strict=True):
+                for expected, result in zip(proposal.checks, safe_results, strict=True):
                     if result.check != expected:
                         failure = "sandbox evidence does not match the requested check order"
                         break
@@ -346,11 +350,11 @@ class SafeSelfDevelopment:
                         break
 
         status = "verified_for_human_review" if failure is None else "checks_failed"
-        digest = self._evidence_digest(proposal, results, status, failure)
+        digest = self._evidence_digest(proposal, safe_results, status, failure)
         return SandboxEvidence(
             proposal_id=proposal.identifier,
             base_revision=proposal.base_revision,
-            results=results,
+            results=safe_results,
             verified=failure is None,
             status=status,
             failure_reason=failure,
