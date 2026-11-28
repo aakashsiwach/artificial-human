@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 
+from artificial_human.neural.world_model import WorldState
 from artificial_human.neural.adaptive_control import (
     AdaptiveForwardController,
     run_adaptive_control_comparison,
@@ -15,7 +18,7 @@ def test_forward_model_learns_from_sensory_prediction_error() -> None:
     actual_next_velocity = 0.82 * velocity + 0.28 * command + 0.12
 
     before = controller.model.predict(
-        __import__("artificial_human.neural.world_model", fromlist=["WorldState"]).WorldState((velocity,), 0),
+        WorldState((velocity,), 0),
         (command,),
     ).state.values[0]
     initial_error = abs(actual_next_velocity - before)
@@ -29,7 +32,7 @@ def test_forward_model_learns_from_sensory_prediction_error() -> None:
         )
 
     after = controller.model.predict(
-        __import__("artificial_human.neural.world_model", fromlist=["WorldState"]).WorldState((velocity,), 31),
+        WorldState((velocity,), 31),
         (command,),
     ).state.values[0]
     assert abs(actual_next_velocity - after) < initial_error
@@ -54,8 +57,8 @@ def test_motor_command_is_bounded_and_prediction_is_inspectable() -> None:
     command = controller.command(-1.0, -1.0, 1.0, tick=0)
 
     assert -1.0 <= command.command <= 1.0
-    assert math_is_finite(command.predicted_next_velocity)
-    assert math_is_finite(command.predicted_next_position)
+    assert math.isfinite(command.predicted_next_velocity)
+    assert math.isfinite(command.predicted_next_position)
     assert command.uncertainty > 0.0
 
 
@@ -105,6 +108,3 @@ def test_controller_rejects_invalid_delay_and_sensor_values() -> None:
     with pytest.raises(ValueError, match="sensor_noise_std"):
         run_adaptive_control_comparison(sensor_noise_std=0.2)
 
-
-def math_is_finite(value: float) -> bool:
-    return value == value and abs(value) != float("inf")

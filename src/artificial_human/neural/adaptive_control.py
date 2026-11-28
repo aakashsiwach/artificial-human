@@ -233,7 +233,6 @@ def _simulate_tracking(
     controller: AdaptiveForwardController,
     *,
     steps: int,
-    feedback_delay_steps: int,
     sensor_noise_std: float,
     seed: int,
 ) -> tuple[list[float], int]:
@@ -318,7 +317,6 @@ def run_adaptive_control_comparison(
     baseline_errors, shift_tick = _simulate_tracking(
         baseline,
         steps=steps,
-        feedback_delay_steps=feedback_delay_steps,
         sensor_noise_std=sensor_noise_std,
         seed=seed,
     )
