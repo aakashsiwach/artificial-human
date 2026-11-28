@@ -278,9 +278,8 @@ def test_executor_exception_is_recorded_without_falling_back_to_host_execution()
 
 def test_evidence_dataclasses_are_immutable() -> None:
     proposal = make_proposal(checks=("pytest -q",))
-    evidence = SafeSelfDevelopment().verify(
-        proposal, (make_result("pytest -q"),)
-    )
+    guard = SafeSelfDevelopment()
+    evidence = guard.verify(proposal, (make_result("pytest -q"),))
     with pytest.raises(FrozenInstanceError):
         evidence.verified = False  # type: ignore[misc]
     with pytest.raises(ValueError, match="human approval reference"):
