@@ -52,6 +52,15 @@ from artificial_human.neural.integration import (
     project_integrated_state,
     run_multisensory_comparison,
 )
+from artificial_human.neural.world_model import (
+    PredictionError,
+    PredictiveWorldModel,
+    RecoveryEvaluation,
+    WorldModelComparison,
+    WorldPrediction,
+    WorldState,
+    run_world_model_comparison,
+)
 from artificial_human.neural.homeostasis import (
     HomeostaticController,
     HomeostasisParameters,
@@ -78,4 +87,6 @@ __all__ = [
     "SensoryEstimate", "MultisensoryParameters", "MultisensoryEstimate",
     "MultisensoryIntegrator", "MultisensoryComparison", "estimate_from_percept",
     "project_integrated_state", "run_multisensory_comparison",
+    "WorldState", "WorldPrediction", "PredictionError", "PredictiveWorldModel",
+    "RecoveryEvaluation", "WorldModelComparison", "run_world_model_comparison",
 ]
