@@ -30,17 +30,20 @@ class InternalModulatorySignals:
 
     def __post_init__(self) -> None:
         if (
-            not math.isfinite(self.salience)
+            isinstance(self.salience, bool)
+            or not math.isfinite(self.salience)
             or not 0.0 <= self.salience <= 1.0
         ):
             raise ValueError("salience must be finite and in [0, 1]")
         if (
-            not math.isfinite(self.reward_prediction_error)
+            isinstance(self.reward_prediction_error, bool)
+            or not math.isfinite(self.reward_prediction_error)
             or not -1.0 <= self.reward_prediction_error <= 1.0
         ):
             raise ValueError("reward_prediction_error must be finite and in [-1, 1]")
         if (
-            not math.isfinite(self.stress_load)
+            isinstance(self.stress_load, bool)
+            or not math.isfinite(self.stress_load)
             or not 0.0 <= self.stress_load <= 1.0
         ):
             raise ValueError("stress_load must be finite and in [0, 1]")
@@ -87,27 +90,33 @@ class HomeostasisParameters:
         ):
             raise ValueError("observation_window_steps must be an integer in [1, 100000]")
         if (
-            not math.isfinite(self.target_spike_rate)
+            isinstance(self.target_spike_rate, bool)
+            or not math.isfinite(self.target_spike_rate)
             or not 0.0 <= self.target_spike_rate <= 1.0
         ):
             raise ValueError("target_spike_rate must be finite and in [0, 1]")
         if (
-            not math.isfinite(self.rate_ema_decay)
+            isinstance(self.rate_ema_decay, bool)
+            or not math.isfinite(self.rate_ema_decay)
             or not 0.0 <= self.rate_ema_decay < 1.0
         ):
             raise ValueError("rate_ema_decay must be finite and in [0, 1)")
         if (
-            not math.isfinite(self.adaptation_rate)
+            isinstance(self.adaptation_rate, bool)
+            or not math.isfinite(self.adaptation_rate)
             or not 0.0 <= self.adaptation_rate <= 10.0
         ):
             raise ValueError("adaptation_rate must be finite and in [0, 10]")
         if (
-            not math.isfinite(self.deadband)
+            isinstance(self.deadband, bool)
+            or not math.isfinite(self.deadband)
             or not 0.0 <= self.deadband < 1.0
         ):
             raise ValueError("deadband must be finite and in [0, 1)")
         if (
-            not math.isfinite(self.minimum_input_gain)
+            isinstance(self.minimum_input_gain, bool)
+            or isinstance(self.maximum_input_gain, bool)
+            or not math.isfinite(self.minimum_input_gain)
             or not math.isfinite(self.maximum_input_gain)
             or self.minimum_input_gain < LIFNeuron.MIN_INPUT_GAIN
             or self.maximum_input_gain > LIFNeuron.MAX_INPUT_GAIN
@@ -328,26 +337,37 @@ class HomeostaticController:
             snapshot.version != self.VERSION
             or snapshot.neuron_ids != self._neuron_ids
             or snapshot.parameters != self.parameters
+            or len(snapshot.initial_gains) != len(self._neuron_ids)
             or dict(snapshot.initial_gains) != self._initial_gains
         ):
             raise ValueError("homeostasis snapshot version, parameters or topology does not match")
-        if not 0 <= snapshot.window_steps_elapsed < self.parameters.observation_window_steps:
+        if (
+            isinstance(snapshot.window_steps_elapsed, bool)
+            or not isinstance(snapshot.window_steps_elapsed, int)
+            or not 0 <= snapshot.window_steps_elapsed < self.parameters.observation_window_steps
+        ):
             raise ValueError("homeostasis snapshot window position is invalid")
         if (
             snapshot.last_step_index is not None
             and (
-                snapshot.last_step_index < 0
+                isinstance(snapshot.last_step_index, bool)
+                or not isinstance(snapshot.last_step_index, int)
+                or snapshot.last_step_index < 0
                 or snapshot.last_step_index != self.simulation.step_index - 1
             )
         ):
             raise ValueError("homeostasis snapshot clock does not match simulation state")
 
         counts = dict(snapshot.window_spike_counts)
-        if set(counts) != set(self._neuron_ids) or any(
+        if (
+            len(snapshot.window_spike_counts) != len(self._neuron_ids)
+            or set(counts) != set(self._neuron_ids)
+            or any(
             isinstance(count, bool)
             or not isinstance(count, int)
             or not 0 <= count <= snapshot.window_steps_elapsed
-            for count in counts.values()
+                for count in counts.values()
+            )
         ):
             raise ValueError("homeostasis snapshot contains invalid window counts")
         states = {state.identifier: state for state in snapshot.neuron_states}
@@ -373,11 +393,16 @@ class HomeostaticController:
                     <= state.input_gain
                     <= self.parameters.maximum_input_gain
                 )
-                or min(
-                    state.quiescent_windows,
-                    state.low_gain_saturation_windows,
-                    state.high_gain_saturation_windows,
-                ) < 0
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, int)
+                    or value < 0
+                    for value in (
+                        state.quiescent_windows,
+                        state.low_gain_saturation_windows,
+                        state.high_gain_saturation_windows,
+                    )
+                )
             ):
                 raise ValueError("homeostasis snapshot contains invalid regulator state")
 
@@ -414,7 +439,6 @@ class HomeostaticController:
             self._high_gain_saturation_windows[identifier] = 0
         self._window_steps_elapsed = 0
         self._last_step_index = None
-
 
 
 def _build_recurrent_stress_network() -> NeuralSimulation:
