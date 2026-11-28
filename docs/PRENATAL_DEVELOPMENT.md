@@ -86,3 +86,13 @@ These are background reviews, not data used to fit simulator parameters. Develop
 - This simulator does not provide pregnancy, nutrition, supplement, exercise or medical advice.
 - It does not claim consciousness, sentience, personhood or biological equivalence.
 - No database writes or external actions occur.
+
+
+## Migration status
+
+The original `PrenatalBrain` aggregate-population implementation is retained
+as a compatibility and parity reference. The active developmental path is now
+`DevelopmentalProgram`, which advances the shared in-memory LIF neuron/synapse
+substrate through prenatal and postnatal stages. It reuses this document's
+coarse prenatal phase and sensory-onset schedule but does not instantiate a
+second aggregate network. See `docs/POSTNATAL_DEVELOPMENT.md`.

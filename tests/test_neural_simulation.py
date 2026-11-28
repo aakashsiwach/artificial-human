@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from artificial_human.neural.circuits import (
     build_recurrent_microcircuit,
     run_fixed_rate_reference,
@@ -227,3 +229,36 @@ def test_neural_benchmark_reports_throughput_and_traced_memory() -> None:
     assert report["performance"]["steps_per_second"] > 0
     assert report["python_traced_memory"]["peak_bytes"] > 0
     assert report["events"]["dropped"] == 0
+
+
+
+def test_synapse_delay_update_affects_future_events_not_queued_events() -> None:
+    simulation = NeuralSimulation()
+    simulation.add_neuron(LIFNeuron("source"))
+    simulation.add_neuron(LIFNeuron("target"))
+    simulation.add_synapse(
+        Synapse("source_to_target", "source", "target", 10.0, delay_steps=3)
+    )
+
+    simulation.step({"source": 1000.0})
+    pending_before = simulation.snapshot().pending_events
+    assert pending_before > 0
+
+    simulation.update_synapse_delay("source_to_target", 1)
+
+    assert simulation.synapses["source_to_target"].delay_steps == 1
+    assert simulation.snapshot().pending_events == pending_before
+
+
+def test_synapse_delay_update_rejects_invalid_values() -> None:
+    simulation = NeuralSimulation()
+    simulation.add_neuron(LIFNeuron("source"))
+    simulation.add_neuron(LIFNeuron("target"))
+    simulation.add_synapse(Synapse("s", "source", "target", 1.0))
+
+    with pytest.raises(ValueError, match="delay_steps"):
+        simulation.update_synapse_delay("s", True)
+    with pytest.raises(ValueError, match="delay_steps"):
+        simulation.update_synapse_delay("s", 0)
+    with pytest.raises(ValueError, match="unknown synapse"):
+        simulation.update_synapse_delay("missing", 1)
