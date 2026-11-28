@@ -231,7 +231,7 @@ class SafeSelfDevelopment:
             raise ValueError("proposal diff exceeds the configured patch budget")
         if "\x00" in diff or "GIT binary patch" in diff or "Binary files " in diff:
             raise ValueError("binary or malformed patches are not accepted")
-        if re.search(r"(?m)^(?:new file mode 120000|old mode |new mode |rename from |rename to )", diff):
+        if re.search(r"(?m)^(?:new file mode (?:100755|120000)|old mode |new mode |rename from |rename to )", diff):
             raise ValueError("symlink, mode-change and rename patches are not accepted")
 
         matches = list(re.finditer(r"(?m)^diff --git a/(.+) b/(.+)$", diff))
