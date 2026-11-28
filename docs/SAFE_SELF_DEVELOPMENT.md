@@ -131,10 +131,13 @@ case callers must invoke finish or close.
 - Wall time is enforced by the host supervisor, which kills the sandbox process
   group when the per-check deadline expires.
 - CPU time, address space, core dumps, open file descriptors and process count
-  are bounded with POSIX resource limits inherited by the check process.
-- Aggregate process-group RSS is sampled by the host supervisor and the group
-  is killed if the configured memory ceiling is crossed. Address-space is a
-  per-process RLIMIT_AS, not a kernel cgroup-wide memory cap.
+  are bounded with POSIX resource limits inherited by every check child.
+- The sandbox caps the process count at four and divides the configured memory
+  budget across those processes using RLIMIT_AS. The aggregate address-space
+  ceiling is therefore bounded by the configured memory budget. The host
+  supervisor also samples aggregate process-group RSS and kills the group if
+  actual resident memory crosses the same ceiling; this is an additional
+  early-stop guard, not a kernel cgroup memory controller.
 - Captured stdout/stderr are byte-counted and the process group is terminated
   when the output ceiling is crossed.
 - Candidate workspace and temporary files live on size-limited tmpfs mounts.
