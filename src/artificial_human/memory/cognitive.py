@@ -626,7 +626,8 @@ class SpatialMemoryStore:
                 (
                     item for item in self._places.values()
                     if item.owner_id == owner_id and item.consent_id == consent_id
-                    and item.context_id == context_id and item.label.casefold() == label.casefold()
+                    and item.source_id == source_id and item.context_id == context_id
+                    and item.label.casefold() == label.casefold()
                 ),
                 None,
             )
