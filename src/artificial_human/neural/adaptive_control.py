@@ -138,7 +138,8 @@ class AdaptiveForwardController:
         if isinstance(tick, bool) or not isinstance(tick, int) or tick < 0:
             raise ValueError("tick must be a non-negative integer")
 
-        bias, damping, learned_gain = self.model.weights[0]
+        weights = self.model.weights[0]
+        bias, damping, learned_gain = weights[0], weights[1], weights[2]
         control_gain = max(0.05, learned_gain)
         desired_velocity = _clamp(
             self.position_gain * (target_position - position)
@@ -337,7 +338,8 @@ def run_adaptive_control_comparison(
         adaptive_errors[shift_tick:shift_tick + recovery_window]
     )
     late_recovery = _tracking_rmse(adaptive_errors[-recovery_window:])
-    bias, damping, gain = adaptive.model.weights[0]
+    learned_weights = adaptive.model.weights[0]
+    bias, damping, gain = learned_weights[0], learned_weights[1], learned_weights[2]
 
     return AdaptiveControlComparison(
         steps=steps,
