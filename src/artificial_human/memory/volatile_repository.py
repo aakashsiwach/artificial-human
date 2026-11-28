@@ -31,13 +31,14 @@ from artificial_human.memory.repository import (
     content_fingerprint,
 )
 from artificial_human.memory.temporal import optional_utc_iso
+from artificial_human.memory.contracts import MemoryStore
 
 DEFAULT_MAX_RECORDS = 10_000
 DEFAULT_MAX_TRAINING_EXAMPLES = 1_000
 DEFAULT_MAX_EMBEDDINGS = 10_000
 
 
-class InMemoryMemoryRepository:
+class InMemoryMemoryRepository(MemoryStore):
     """Consent-aware repository backed only by bounded in-process dictionaries."""
 
     def __init__(
