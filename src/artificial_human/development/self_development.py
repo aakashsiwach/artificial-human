@@ -336,6 +336,46 @@ class SafeSelfDevelopment:
             trigger_evidence_digest=trigger_evidence_digest,
         )
 
+    def _validate_proposal(self, proposal: ImprovementProposal) -> None:
+        if not isinstance(proposal, ImprovementProposal):
+            raise ValueError("proposal must be an ImprovementProposal")
+        if not isinstance(proposal.base_revision, str) or not _REVISION.fullmatch(proposal.base_revision):
+            raise ValueError("proposal base revision is invalid")
+        if not isinstance(proposal.diff, str) or hashlib.sha256(proposal.diff.encode()).hexdigest() != proposal.patch_digest:
+            raise ValueError("proposal patch digest does not match its immutable diff")
+        if self._validate_diff(proposal.diff) != proposal.file_paths:
+            raise ValueError("proposal file manifest does not match its diff")
+        if (
+            not isinstance(proposal.checks, tuple)
+            or not proposal.checks
+            or len(proposal.checks) > self.limits.max_checks
+            or any(not isinstance(check, str) or check not in _ALLOWED_CHECKS for check in proposal.checks)
+            or len(set(proposal.checks)) != len(proposal.checks)
+        ):
+            raise ValueError("proposal check manifest is invalid")
+        expected_identifier = hashlib.sha256(
+            (
+                f"{proposal.base_revision}\\0{proposal.hypothesis}\\0{proposal.patch_digest}\\0"
+                f"{proposal.trigger_benchmark_id or ''}\\0{proposal.trigger_evidence_digest or ''}"
+            ).encode()
+        ).hexdigest()[:24]
+        if proposal.identifier != expected_identifier:
+            raise ValueError("proposal identifier does not match its content")
+        if (
+            proposal.rollback_plan.base_revision != proposal.base_revision
+            or proposal.rollback_plan.proposal_digest != proposal.patch_digest
+        ):
+            raise ValueError("proposal rollback plan does not match its base or patch")
+        if (proposal.trigger_benchmark_id is None) != (proposal.trigger_evidence_digest is None):
+            raise ValueError("proposal benchmark provenance is incomplete")
+        if proposal.trigger_benchmark_id is not None and (
+            not isinstance(proposal.trigger_benchmark_id, str)
+            or not proposal.trigger_benchmark_id.strip()
+            or not isinstance(proposal.trigger_evidence_digest, str)
+            or not _SHA256.fullmatch(proposal.trigger_evidence_digest)
+        ):
+            raise ValueError("proposal benchmark provenance is invalid")
+
     def propose_from_gap(
         self,
         gap: EvaluationGap,
@@ -407,6 +447,7 @@ class SafeSelfDevelopment:
         proposal: ImprovementProposal,
         results: tuple[SandboxCheckResult, ...],
     ) -> SandboxEvidence:
+        self._validate_proposal(proposal)
         failure: str | None = None
         safe_results = (
             tuple(item for item in results if isinstance(item, SandboxCheckResult))
@@ -505,6 +546,7 @@ class SafeSelfDevelopment:
 
     def run_checks(self, proposal: ImprovementProposal) -> SandboxEvidence:
         """Delegate checks to an explicitly injected isolated sandbox adapter."""
+        self._validate_proposal(proposal)
         if self._executor is None:
             raise RuntimeError("no trusted isolated sandbox executor is configured")
         results: list[SandboxCheckResult] = []
@@ -526,18 +568,25 @@ class SafeSelfDevelopment:
             )
         return self.verify(proposal, tuple(results))
 
-    @staticmethod
     def record_human_approval(
+        self,
         proposal: ImprovementProposal,
         evidence: SandboxEvidence,
         approval_reference: str,
     ) -> HumanApprovalRecord:
+        self._validate_proposal(proposal)
+        if not isinstance(evidence, SandboxEvidence):
+            raise ValueError("only verified evidence for this proposal can be approved")
+        recomputed = self.verify(proposal, evidence.results)
         if (
             not evidence.verified
             or evidence.status != "verified_for_human_review"
             or evidence.proposal_id != proposal.identifier
             or evidence.base_revision != proposal.base_revision
+            or not isinstance(evidence.evidence_digest, str)
             or not _SHA256.fullmatch(evidence.evidence_digest)
+            or recomputed.evidence_digest != evidence.evidence_digest
+            or not recomputed.verified
         ):
             raise ValueError("only verified evidence for this proposal can be approved")
         if not isinstance(approval_reference, str) or not approval_reference.strip():
