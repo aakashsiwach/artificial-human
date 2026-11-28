@@ -104,6 +104,12 @@ class LIFNeuron:
             raise ValueError("current and simulation time must be finite")
         if not math.isfinite(dt_ms) or dt_ms <= 0:
             raise ValueError("dt_ms must be finite and positive")
+        if (
+            isinstance(self.input_gain, bool)
+            or not math.isfinite(self.input_gain)
+            or not self.MIN_INPUT_GAIN <= self.input_gain <= self.MAX_INPUT_GAIN
+        ):
+            raise ValueError("input_gain is outside configured bounds")
         if time_ms + 1e-12 < self.refractory_until_ms:
             self.membrane_potential_mV = self.parameters.reset_potential_mV
             return False
