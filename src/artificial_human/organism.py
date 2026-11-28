@@ -20,6 +20,7 @@ from artificial_human.identity.repository import IdentityRepository
 from artificial_human.immune.engine import ImmuneSystem
 from artificial_human.learning import LearningSystem
 from artificial_human.memory.embeddings import EmbeddingProvider, embedding_provider_from_env
+from artificial_human.memory.cognitive import InMemoryCognitiveMemory
 from artificial_human.memory.volatile_repository import InMemoryMemoryRepository
 from artificial_human.memory.search import SearchConfig
 from artificial_human.memory.system import LongTermMemory
@@ -52,6 +53,7 @@ class ArtificialOrganism:
         self.identity_repository: IdentityRepository | None = None
         self.identity = core_identity_profile(self.owner_id)
         self.memory = InMemoryMemoryRepository()
+        self.cognitive_memory = InMemoryCognitiveMemory()
         if embedding_provider == "env":
             self.embedding_provider = embedding_provider_from_env()
         else:
@@ -75,8 +77,10 @@ class ArtificialOrganism:
             architecture=CognitiveArchitecture(
                 retriever=retriever,
                 memory_search=self.long_term_memory.search_engine,
+                cognitive_memory=self.cognitive_memory,
                 learning=self.learning,
             ),
+            working_memory_sessions=self.cognitive_memory.working,
         )
         self.senses = ManualSensor()
         self.immune = ImmuneSystem()
@@ -138,6 +142,7 @@ class ArtificialOrganism:
             "neural_simulation": self.neural_simulation.snapshot().as_dict(),
             "associative_memory": self.cognitive_brain.knowledge_network.snapshot(),
             "relational_memory": self.cognitive_brain.architecture.relational_memory.snapshot(),
+            "cognitive_memory": self.cognitive_memory.snapshot(),
             "episodic_memory": self.cognitive_brain.architecture.episodic_memory.snapshot(),
             "sleep_consolidation": self.sleep.snapshot(self.owner_id),
             "schema_extraction": self.schema_extraction.snapshot(self.owner_id),
