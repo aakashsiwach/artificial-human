@@ -430,12 +430,6 @@ class DevelopmentalProgram:
             total_spikes=self.total_spikes,
         )
 
-    def reset(self) -> None:
-        self.__init__(
-            plasticity_enabled=self.plasticity_enabled,
-            mature_from_start=self.mature_from_start,
-        )
-
 
 def run_developmental_comparison(
     *, training_trials: int = 60,
