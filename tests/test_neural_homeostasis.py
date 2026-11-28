@@ -127,7 +127,7 @@ def test_homeostasis_snapshot_restore_replays_partial_window_deterministically()
     expected_regulator = controller.snapshot()
 
     simulation.restore(saved_simulation)
-    controller.restore(saved_regulator= saved_regulator)  # type: ignore[call-arg]
+    controller.restore(saved_regulator)
     replay_trace = []
     for _ in range(37):
         step = simulation.step({"cell": 400.0})
@@ -191,7 +191,7 @@ def test_typed_modulatory_channels_remain_separate_and_gate_stdp() -> None:
     )
     controller.observe_step(("pre",), modulation=suppressed)
     controller.observe_step(("post",), modulation=suppressed)
-    assert simulation.synapses["pair"].weight != before or before > 0.5
+    assert simulation.synapses["pair"].weight == before
 
 
 def test_homeostasis_rejects_invalid_parameters_and_skipped_steps() -> None:
